@@ -11,14 +11,24 @@ export default function DomsInfo() {
   const [rows, setRows] = useState([])
   const [sites, setSites] = useState([])
   const [loading, setLoading] = useState(false)
+  const [pushing, setPushing] = useState(false)
+  const [pushMsg, setPushMsg] = useState('')
 
-  const today = new Date().toISOString().slice(0, 10)
-  const ninetyDaysAgo = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10)
-  const [filters, setFilters] = useState({ siteId: '', dateFrom: ninetyDaysAgo, dateTo: today })
+  function handleGitPush() {
+    setPushing(true)
+    setPushMsg('')
+    api.post('/git/push')
+      .then(r => setPushMsg(r.data?.message || 'Pushed to GitHub'))
+      .catch(e => setPushMsg(e.response?.data?.message || 'Push failed'))
+      .finally(() => setPushing(false))
+  }
+
+  const defaultDate = '2026-02-18'
+  const [filters, setFilters] = useState({ siteId: '', dateFrom: defaultDate, dateTo: defaultDate })
 
   useEffect(() => {
     sitesApi.getAll().then(s => setSites(s || [])).catch(console.error)
-    loadData({ siteId: '', dateFrom: ninetyDaysAgo, dateTo: today })
+    loadData({ siteId: '', dateFrom: defaultDate, dateTo: defaultDate })
   }, [])
 
   function loadData(f) {
@@ -35,7 +45,7 @@ export default function DomsInfo() {
 
   function handleSearch() { setPage(1); loadData(filters) }
   function handleClear() {
-    const reset = { siteId: '', dateFrom: ninetyDaysAgo, dateTo: today }
+    const reset = { siteId: '', dateFrom: defaultDate, dateTo: defaultDate }
     setFilters(reset)
     setPage(1)
     loadData(reset)
@@ -53,10 +63,38 @@ export default function DomsInfo() {
 
   return (
     <ErrorBoundary fallback="Doms Info page error.">
-      <div className="page-header mb-4">
+      <div className="page-header mb-4" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <div className="page-title">Doms Info</div>
           <div className="page-subtitle">Pump monitoring overview — all sites</div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+          <button
+            onClick={handleGitPush}
+            disabled={pushing}
+            title="Push to GitHub"
+            style={{
+              background: 'none',
+              border: '1px solid var(--border)',
+              borderRadius: 6,
+              padding: '6px 10px',
+              cursor: pushing ? 'not-allowed' : 'pointer',
+              color: 'var(--text-secondary)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: 13,
+              opacity: pushing ? 0.6 : 1,
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            {pushing ? 'Pushing…' : 'Push to GitHub'}
+          </button>
+          {pushMsg && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{pushMsg}</span>}
         </div>
       </div>
 
