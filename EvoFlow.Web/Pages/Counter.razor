@@ -1,0 +1,75 @@
+@page "/totals"
+@using EvoFlow.Web.Services
+@using EvoFlow.Web.Models
+@inject EvoFlowApiService Api
+
+<PageTitle>Pump Totals</PageTitle>
+
+<h1>Pump Totals</h1>
+
+@if (loading)
+{
+    <p><em>Loading pump totals...</em></p>
+}
+else if (error != null)
+{
+    <div class="alert alert-danger">@error</div>
+}
+else if (totals == null || totals.Count == 0)
+{
+    <div class="alert alert-info">No pump totals data available.</div>
+}
+else
+{
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Pump</th>
+                <th>Business Date</th>
+                <th>Type</th>
+                <th>Volume Total (L)</th>
+                <th>Volume Diff (L)</th>
+                <th>Money Total</th>
+                <th>Money Diff</th>
+                <th>Snapshot UTC</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var t in totals)
+            {
+                <tr>
+                    <td>@t.PumpDeviceId</td>
+                    <td>@t.BusinessDate</td>
+                    <td>@t.TotType</td>
+                    <td>@t.VolumeTotal.ToString("N2")</td>
+                    <td>@t.VolumeDiff.ToString("N2")</td>
+                    <td>@t.MoneyTotal.ToString("N2")</td>
+                    <td>@t.MoneyDiff.ToString("N2")</td>
+                    <td>@t.SnapshotUtc.ToString("yyyy-MM-dd HH:mm")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    List<PumpTotals>? totals;
+    bool loading = true;
+    string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            totals = await Api.GetPumpTotalsAsync();
+        }
+        catch (Exception ex)
+        {
+            error = $"Failed to load pump totals: {ex.Message}";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+}

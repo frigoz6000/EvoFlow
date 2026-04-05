@@ -1,0 +1,55 @@
+@page "/pumpmonitor"
+@using EvoFlow.Web.Services
+@using EvoFlow.Web.Models
+@inject EvoFlowApiService Api
+
+<PageTitle>EvoFlow - Pump Monitor</PageTitle>
+<h5 class="fw-bold mb-1">Pump Monitor</h5>
+<p class="text-muted mb-3" style="font-size:0.8rem">Real-time pump device status</p>
+
+@if (loading)
+{
+    <div class="d-flex align-items-center gap-2 text-muted"><div class="spinner-border spinner-border-sm" role="status"></div><span>Loading...</span></div>
+}
+else if (error != null)
+{
+    <div class="alert alert-danger">@error</div>
+}
+else
+{
+    <div class="card">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr><th>ID</th><th>Site</th><th>Device</th><th>Status</th><th>Offline Count</th><th>Protocol</th><th>Last Seen</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in pumps ?? [])
+                    {
+                        <tr>
+                            <td>@p.PumpDeviceId</td>
+                            <td>@p.SiteId</td>
+                            <td>@p.DeviceId</td>
+                            <td>@if (p.Online) { <span class="badge bg-success">Online</span> } else { <span class="badge bg-secondary">Offline</span> }</td>
+                            <td>@p.OfflineCount</td>
+                            <td>@(p.Protocol ?? "—")</td>
+                            <td class="text-muted">@p.LastSeenUtc.ToString("MM-dd HH:mm")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@code {
+    List<PumpDevice>? pumps;
+    bool loading = true;
+    string? error;
+    protected override async Task OnInitializedAsync()
+    {
+        try { pumps = await Api.GetPumpDevicesAsync(); }
+        catch (Exception ex) { error = ex.Message; }
+        finally { loading = false; }
+    }
+}

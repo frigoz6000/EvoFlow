@@ -1,0 +1,197 @@
+import { useEffect, useState } from 'react'
+import { sitesApi } from '../api/client'
+import api from '../api/client'
+import ErrorBoundary from '../components/ErrorBoundary'
+
+const domsInfoApi = {
+  getAll: (params = {}) => api.get('/domsinfo', { params }).then(r => r.data),
+}
+
+export default function DomsInfo() {
+  const [rows, setRows] = useState([])
+  const [sites, setSites] = useState([])
+  const [loading, setLoading] = useState(false)
+
+  const today = new Date().toISOString().slice(0, 10)
+  const ninetyDaysAgo = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10)
+  const [filters, setFilters] = useState({ siteId: '', dateFrom: ninetyDaysAgo, dateTo: today })
+
+  useEffect(() => {
+    sitesApi.getAll().then(s => setSites(s || [])).catch(console.error)
+    loadData({ siteId: '', dateFrom: ninetyDaysAgo, dateTo: today })
+  }, [])
+
+  function loadData(f) {
+    setLoading(true)
+    const params = {}
+    if (f.siteId) params.siteId = f.siteId
+    if (f.dateFrom) params.dateFrom = f.dateFrom
+    if (f.dateTo) params.dateTo = f.dateTo
+    domsInfoApi.getAll(params)
+      .then(r => setRows(r || []))
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }
+
+  function handleSearch() { setPage(1); loadData(filters) }
+  function handleClear() {
+    const reset = { siteId: '', dateFrom: ninetyDaysAgo, dateTo: today }
+    setFilters(reset)
+    setPage(1)
+    loadData(reset)
+  }
+
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 100
+
+  const totalTransactions = rows.reduce((s, r) => s + (r.transactions || 0), 0)
+  const onlineDevices = new Set(rows.filter(r => r.deviceStatus === 'Online').map(r => r.device)).size
+  const totalDevices = new Set(rows.map(r => r.device)).size
+
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
+  const pageRows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+  return (
+    <ErrorBoundary fallback="Doms Info page error.">
+      <div className="page-header mb-4">
+        <div>
+          <div className="page-title">Doms Info</div>
+          <div className="page-subtitle">Pump monitoring overview — all sites</div>
+        </div>
+      </div>
+
+      <div className="stat-cards-row mb-5" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
+        <div className="stat-card">
+          <div className="stat-card-label">Rows</div>
+          <div className="stat-card-value">{rows.length}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-card-label">Devices</div>
+          <div className="stat-card-value">{totalDevices}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-card-label">Online</div>
+          <div className="stat-card-value" style={{ color: 'var(--green)' }}>{onlineDevices}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-card-label">Total Transactions</div>
+          <div className="stat-card-value">{totalTransactions.toLocaleString()}</div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-header">
+          <span className="card-title">Doms Info — {rows.length.toLocaleString()} rows (page {page} of {totalPages})</span>
+        </div>
+
+        <div className="filters-bar">
+          <select className="filter-select" value={filters.siteId}
+            onChange={e => setFilters(f => ({ ...f, siteId: e.target.value }))}>
+            <option value="">All Sites</option>
+            {sites.map(s => <option key={s.siteId} value={s.siteId}>{s.siteName}</option>)}
+          </select>
+          <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>From</label>
+          <input type="date" className="filter-search" style={{ minWidth: 130 }} value={filters.dateFrom}
+            onChange={e => setFilters(f => ({ ...f, dateFrom: e.target.value }))} />
+          <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>To</label>
+          <input type="date" className="filter-search" style={{ minWidth: 130 }} value={filters.dateTo}
+            onChange={e => setFilters(f => ({ ...f, dateTo: e.target.value }))} />
+          <button className="btn btn-primary btn-sm" onClick={handleSearch}>Search</button>
+          <button className="btn btn-outline btn-sm" onClick={handleClear}>Clear</button>
+        </div>
+
+        <div className="table-responsive">
+          {loading ? (
+            <div className="loading-state"><div className="spinner" />Loading Doms Info...</div>
+          ) : (
+            <table className="evo-table">
+              <thead>
+                <tr>
+                  <th>DOMS Date</th>
+                  <th>Site ID</th>
+                  <th>Name</th>
+                  <th>Device</th>
+                  <th>Device Status</th>
+                  <th>Offline Count</th>
+                  <th>Error Type</th>
+                  <th>Error Text</th>
+                  <th>Error Date</th>
+                  <th>Lifetime Vol (L)</th>
+                  <th>Grade ID</th>
+                  <th>Grade Option</th>
+                  <th>Grade Description</th>
+                  <th>Transactions</th>
+                  <th>Peak Flow</th>
+                  <th>Uptime (min)</th>
+                  <th>Zero Trans</th>
+                  <th>Tank ID</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.length === 0 ? (
+                  <tr><td colSpan={18}><div className="empty-state">No data for selected filters</div></td></tr>
+                ) : pageRows.map((r, i) => (
+                  <tr key={i}>
+                    <td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{r.domsDate}</td>
+                    <td><span className="badge badge-blue">{r.siteId}</span></td>
+                    <td style={{ color: 'var(--text-secondary)' }}>{r.name}</td>
+                    <td style={{ fontWeight: 700 }}><span className="site-id-link">{r.device}</span></td>
+                    <td>
+                      <span className={`badge ${r.deviceStatus === 'Online' ? 'badge-green' : 'badge-red'}`}>
+                        {r.deviceStatus}
+                      </span>
+                    </td>
+                    <td>
+                      {r.deviceOfflineCount > 0
+                        ? <span className="badge badge-orange">{r.deviceOfflineCount}x</span>
+                        : <span style={{ color: 'var(--text-muted)' }}>0</span>}
+                    </td>
+                    <td style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+                      {r.deviceErrorType || '—'}
+                    </td>
+                    <td>
+                      {r.deviceErrorText
+                        ? <span className="badge badge-gray">{r.deviceErrorText}</span>
+                        : '—'}
+                    </td>
+                    <td style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                      {r.deviceErrorDate ? new Date(r.deviceErrorDate).toLocaleDateString() : '—'}
+                    </td>
+                    <td style={{ color: 'var(--accent)', fontWeight: 600 }}>
+                      {r.deviceLifetimeVolume != null
+                        ? Number(r.deviceLifetimeVolume).toLocaleString(undefined, { maximumFractionDigits: 0 })
+                        : '—'}
+                    </td>
+                    <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{r.gradeId || '—'}</td>
+                    <td style={{ color: 'var(--text-muted)' }}>{r.gradeOption}</td>
+                    <td style={{ color: 'var(--text-secondary)' }}>{r.gradeDescription || '—'}</td>
+                    <td style={{ fontWeight: 600 }}>{(r.transactions || 0).toLocaleString()}</td>
+                    <td style={{ color: 'var(--text-secondary)' }}>
+                      {r.peakFlow != null ? Number(r.peakFlow).toFixed(2) : '—'}
+                    </td>
+                    <td style={{ color: 'var(--text-secondary)' }}>{r.uptime.toLocaleString()}</td>
+                    <td style={{ color: r.numberZeroTransactions > 0 ? 'var(--red)' : 'var(--text-muted)' }}>
+                      {r.numberZeroTransactions}
+                    </td>
+                    <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{r.tankId || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        <div className="pagination">
+          <span className="pagination-info">
+            {rows.length.toLocaleString()} total rows · showing {((page - 1) * PAGE_SIZE) + 1}–{Math.min(page * PAGE_SIZE, rows.length)}
+          </span>
+          <button className="page-btn" disabled={page <= 1} onClick={() => setPage(1)}>«</button>
+          <button className="page-btn" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>‹</button>
+          <button className="page-btn active">{page}</button>
+          <button className="page-btn" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>›</button>
+          <button className="page-btn" disabled={page >= totalPages} onClick={() => setPage(totalPages)}>»</button>
+        </div>
+      </div>
+    </ErrorBoundary>
+  )
+}

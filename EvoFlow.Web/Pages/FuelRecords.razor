@@ -1,0 +1,54 @@
+@page "/fuelrecords"
+@using EvoFlow.Web.Services
+@using EvoFlow.Web.Models
+@inject EvoFlowApiService Api
+
+<PageTitle>EvoFlow - Fuel Records</PageTitle>
+<h5 class="fw-bold mb-1">Fuel Records</h5>
+<p class="text-muted mb-3" style="font-size:0.8rem">Pump totals by device and business date</p>
+
+@if (loading)
+{
+    <div class="d-flex align-items-center gap-2 text-muted"><div class="spinner-border spinner-border-sm" role="status"></div><span>Loading...</span></div>
+}
+else if (error != null)
+{
+    <div class="alert alert-danger">@error</div>
+}
+else
+{
+    <div class="card">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr><th>Pump</th><th>Date</th><th>Type</th><th>Volume (L)</th><th>Revenue (£)</th><th>Snapshot UTC</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in (totals ?? []).Take(200))
+                    {
+                        <tr>
+                            <td>@t.PumpDeviceId</td>
+                            <td>@t.BusinessDate</td>
+                            <td><span class="badge bg-secondary">@t.TotType</span></td>
+                            <td>@t.VolumeDiff.ToString("N0")</td>
+                            <td class="text-pink fw-medium">£@t.MoneyDiff.ToString("N2")</td>
+                            <td class="text-muted">@t.SnapshotUtc.ToString("MM-dd HH:mm")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@code {
+    List<PumpTotals>? totals;
+    bool loading = true;
+    string? error;
+    protected override async Task OnInitializedAsync()
+    {
+        try { totals = await Api.GetPumpTotalsAsync(); }
+        catch (Exception ex) { error = ex.Message; }
+        finally { loading = false; }
+    }
+}

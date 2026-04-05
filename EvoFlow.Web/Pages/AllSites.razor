@@ -1,0 +1,54 @@
+@page "/allsites"
+@using EvoFlow.Web.Services
+@using EvoFlow.Web.Models
+@inject EvoFlowApiService Api
+
+<PageTitle>EvoFlow - All Sites</PageTitle>
+<h5 class="fw-bold mb-1">All Sites</h5>
+<p class="text-muted mb-3" style="font-size:0.8rem">Registered fuel site locations</p>
+
+@if (loading)
+{
+    <div class="d-flex align-items-center gap-2 text-muted"><div class="spinner-border spinner-border-sm" role="status"></div><span>Loading...</span></div>
+}
+else if (error != null)
+{
+    <div class="alert alert-danger">@error</div>
+}
+else
+{
+    <div class="card">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr><th>Site ID</th><th>Name</th><th>Address</th><th>City</th><th>Post Code</th><th>Hours</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in sites ?? [])
+                    {
+                        <tr>
+                            <td><span class="badge bg-secondary">@s.SiteId</span></td>
+                            <td class="fw-medium">@s.SiteName</td>
+                            <td class="text-muted">@(s.Address1 ?? "—")</td>
+                            <td class="text-muted">@(s.City ?? "—")</td>
+                            <td class="text-muted">@(s.PostCode ?? "—")</td>
+                            <td class="text-muted" style="font-size:0.75rem">@s.OpeningHour – @s.ClosingHour</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@code {
+    List<Site>? sites;
+    bool loading = true;
+    string? error;
+    protected override async Task OnInitializedAsync()
+    {
+        try { sites = await Api.GetSitesAsync(); }
+        catch (Exception ex) { error = ex.Message; }
+        finally { loading = false; }
+    }
+}

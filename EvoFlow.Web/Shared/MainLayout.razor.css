@@ -1,0 +1,72 @@
+.page {
+    display: flex;
+    flex-direction: row;
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: var(--sidebar-width);
+    flex-shrink: 0;
+    background-color: var(--sidebar-bg);
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    overflow: hidden;
+    transition: width 0.25s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.page.sidebar-collapsed .sidebar {
+    width: var(--sidebar-collapsed-width);
+}
+
+main {
+    flex: 1;
+    min-width: 0;
+    background-color: var(--bg-page);
+    display: flex;
+    flex-direction: column;
+    transition: background-color 0.2s;
+}
+
+.top-row {
+    background-color: var(--bg-toprow);
+    border-bottom: 1px solid var(--border-color);
+    height: var(--toprow-height);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.5rem;
+    gap: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: var(--shadow-sm);
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.top-row-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.content {
+    flex: 1;
+    overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        position: fixed;
+        z-index: 100;
+        height: 100vh;
+    }
+    .page.sidebar-collapsed .sidebar {
+        width: 0;
+    }
+    main {
+        margin-left: 0;
+    }
+}
