@@ -2,6 +2,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import '../styles/theme.css'
 import ErrorBoundary from './ErrorBoundary'
+import api from '../api/client'
 import {
   IconHome, IconBell, IconFuel, IconPump, IconCar, IconMapPin,
   IconSearch, IconSun, IconMoon, IconChevronLeft, IconChevronRight, IconTable
@@ -36,7 +37,18 @@ export default function Layout() {
   const [search, setSearch] = useState('')
   const [collapsed, setCollapsed] = useState(false)
   const [dark, setDark] = useState(() => localStorage.getItem('evoflow-theme') === 'dark')
+  const [pushing, setPushing] = useState(false)
+  const [pushMsg, setPushMsg] = useState('')
   const title = PAGE_TITLES[location.pathname] || 'EvoFlow'
+
+  function handleGitPush() {
+    setPushing(true)
+    setPushMsg('')
+    api.post('/git/push')
+      .then(r => setPushMsg(r.data?.message || 'Pushed!'))
+      .catch(e => setPushMsg(e.response?.data?.message || 'Push failed'))
+      .finally(() => setPushing(false))
+  }
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
@@ -100,6 +112,25 @@ export default function Layout() {
           </div>
           <div className="topbar-spacer" />
           <div className="topbar-actions">
+            <button
+              className="topbar-icon-btn"
+              onClick={handleGitPush}
+              disabled={pushing}
+              title={pushing ? 'Pushing to GitHub…' : pushMsg || 'Push to GitHub'}
+              style={{ opacity: pushing ? 0.6 : 1, position: 'relative' }}
+            >
+              {pushing ? (
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}>
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                </svg>
+              ) : (
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+              )}
+            </button>
             <button
               className="topbar-icon-btn"
               onClick={() => setDark(d => !d)}
