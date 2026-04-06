@@ -4,7 +4,8 @@ import api from '../api/client'
 import ErrorBoundary from '../components/ErrorBoundary'
 
 const domsInfoApi = {
-  getAll: (params = {}) => api.get('/domsinfo', { params }).then(r => r.data),
+  getAll: (params = {}) => api.get('/domsinfosnapshot', { params }).then(r => r.data),
+  populate: () => api.post('/domsinfosnapshot/populate').then(r => r.data),
 }
 
 export default function DomsInfo() {
@@ -13,6 +14,20 @@ export default function DomsInfo() {
   const [loading, setLoading] = useState(false)
   const [pushing, setPushing] = useState(false)
   const [pushMsg, setPushMsg] = useState('')
+  const [populating, setPopulating] = useState(false)
+  const [populateMsg, setPopulateMsg] = useState('')
+
+  function handlePopulate() {
+    setPopulating(true)
+    setPopulateMsg('')
+    domsInfoApi.populate()
+      .then(r => {
+        setPopulateMsg(`Snapshot updated: ${r.rowsInserted} rows`)
+        loadData(filters)
+      })
+      .catch(e => setPopulateMsg(e.response?.data?.message || 'Populate failed'))
+      .finally(() => setPopulating(false))
+  }
 
   function handleGitPush() {
     setPushing(true)
@@ -69,32 +84,60 @@ export default function DomsInfo() {
           <div className="page-subtitle">Pump monitoring overview — all sites</div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-          <button
-            onClick={handleGitPush}
-            disabled={pushing}
-            title="Push to GitHub"
-            style={{
-              background: 'none',
-              border: '1px solid var(--border)',
-              borderRadius: 6,
-              padding: '6px 10px',
-              cursor: pushing ? 'not-allowed' : 'pointer',
-              color: 'var(--text-secondary)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              fontSize: 13,
-              opacity: pushing ? 0.6 : 1,
-            }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="17 8 12 3 7 8"/>
-              <line x1="12" y1="3" x2="12" y2="15"/>
-            </svg>
-            {pushing ? 'Pushing…' : 'Push to GitHub'}
-          </button>
-          {pushMsg && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{pushMsg}</span>}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={handlePopulate}
+              disabled={populating}
+              title="Refresh snapshot from source tables"
+              style={{
+                background: 'none',
+                border: '1px solid var(--border)',
+                borderRadius: 6,
+                padding: '6px 10px',
+                cursor: populating ? 'not-allowed' : 'pointer',
+                color: 'var(--text-secondary)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                fontSize: 13,
+                opacity: populating ? 0.6 : 1,
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="1 4 1 10 7 10"/>
+                <path d="M3.51 15a9 9 0 1 0 .49-3.51"/>
+              </svg>
+              {populating ? 'Refreshing…' : 'Refresh Snapshot'}
+            </button>
+            <button
+              onClick={handleGitPush}
+              disabled={pushing}
+              title="Push to GitHub"
+              style={{
+                background: 'none',
+                border: '1px solid var(--border)',
+                borderRadius: 6,
+                padding: '6px 10px',
+                cursor: pushing ? 'not-allowed' : 'pointer',
+                color: 'var(--text-secondary)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                fontSize: 13,
+                opacity: pushing ? 0.6 : 1,
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              {pushing ? 'Pushing…' : 'Push to GitHub'}
+            </button>
+          </div>
+          {(pushMsg || populateMsg) && (
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{populateMsg || pushMsg}</span>
+          )}
         </div>
       </div>
 
