@@ -4,8 +4,8 @@ import '../styles/theme.css'
 import ErrorBoundary from './ErrorBoundary'
 import api from '../api/client'
 import {
-  IconHome, IconBell, IconFuel, IconPump, IconCar, IconMapPin,
-  IconSearch, IconSun, IconMoon, IconChevronLeft, IconChevronRight, IconTable,
+  IconHome, IconBell, IconFuel, IconPump, IconMapPin,
+  IconSearch, IconSun, IconMoon, IconTable,
   IconActivity, IconAlertTriangle, IconBarChart
 } from './Icons'
 
@@ -16,8 +16,7 @@ const NAV = [
   { section: 'MONITORING' },
   { to: '/fuel-records', icon: IconFuel, label: 'Fuel Records' },
   { to: '/pump-monitoring', icon: IconPump, label: 'Pump Monitor' },
-  { section: 'FLEET' },
-  { to: '/vehicles', icon: IconCar, label: 'Vehicles' },
+  { section: 'SITES' },
   { to: '/sites', icon: IconMapPin, label: 'All Sites' },
   { section: 'REPORTS' },
   { to: '/doms-info', icon: IconTable, label: 'Doms Info' },
@@ -42,7 +41,7 @@ const PAGE_TITLES = {
 export default function Layout() {
   const location = useLocation()
   const [search, setSearch] = useState('')
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(() => window.innerWidth < 768)
   const [dark, setDark] = useState(() => localStorage.getItem('evoflow-theme') === 'dark')
   const [pushing, setPushing] = useState(false)
   const [pushMsg, setPushMsg] = useState('')
@@ -67,7 +66,15 @@ export default function Layout() {
       {/* Sidebar */}
       <nav className={`sidebar${collapsed ? ' sidebar-collapsed' : ''}`}>
         <div className="sidebar-brand">
-          <div className="sidebar-brand-logo">E</div>
+          <button
+            className="sidebar-hamburger"
+            onClick={() => setCollapsed(c => !c)}
+            title={collapsed ? 'Expand menu' : 'Collapse menu'}
+          >
+            <span className="hamburger-line" />
+            <span className="hamburger-line" />
+            <span className="hamburger-line" />
+          </button>
           {!collapsed && <span className="sidebar-brand-name">EvoFlow</span>}
         </div>
         <div className="sidebar-nav">
@@ -85,6 +92,7 @@ export default function Layout() {
                 end={item.exact}
                 className={({ isActive }) => isActive ? 'active' : ''}
                 title={collapsed ? item.label : undefined}
+                onClick={() => { if (window.innerWidth < 768) setCollapsed(true) }}
               >
                 <span className="nav-icon"><Icon size={15} /></span>
                 {!collapsed && item.label}
@@ -92,17 +100,10 @@ export default function Layout() {
             )
           })}
         </div>
-        <button
-          className="sidebar-collapse-btn"
-          onClick={() => setCollapsed(c => !c)}
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          <span className="nav-icon">
-            {collapsed ? <IconChevronRight size={14} /> : <IconChevronLeft size={14} />}
-          </span>
-          {!collapsed && <span>Collapse</span>}
-        </button>
       </nav>
+
+      {/* Mobile overlay — tap to close sidebar */}
+      {!collapsed && <div className="sidebar-overlay" onClick={() => setCollapsed(true)} />}
 
       {/* Main */}
       <div className={`main-wrapper${collapsed ? ' main-wrapper-collapsed' : ''}`}>

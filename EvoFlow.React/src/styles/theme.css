@@ -130,11 +130,45 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 16px 14px;
+  padding: 12px 14px;
   border-bottom: 1px solid rgba(255,255,255,0.05);
   flex-shrink: 0;
   overflow: hidden;
   white-space: nowrap;
+}
+
+/* Hamburger toggle button */
+.sidebar-hamburger {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 28px;
+  height: 28px;
+  padding: 4px 3px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  border-radius: 5px;
+  transition: background 0.12s;
+}
+
+.sidebar-hamburger:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+.hamburger-line {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: var(--sidebar-text);
+  border-radius: 2px;
+  transition: background 0.12s;
+}
+
+.sidebar-hamburger:hover .hamburger-line {
+  background: #c8d0f0;
 }
 
 .sidebar-brand-logo {
@@ -222,34 +256,31 @@ body {
   opacity: 1;
 }
 
-.sidebar-collapse-btn {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 10px 14px;
-  color: var(--sidebar-text);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  background: none;
-  border: none;
-  border-top: 1px solid rgba(255,255,255,0.05);
-  width: 100%;
-  text-align: left;
-  transition: background 0.12s, color 0.12s;
-  white-space: nowrap;
-  overflow: hidden;
-  flex-shrink: 0;
+/* Mobile overlay behind open sidebar */
+.sidebar-overlay {
+  display: none;
 }
 
-.sidebar-collapsed .sidebar-collapse-btn {
-  justify-content: center;
-  padding: 10px 0;
-}
-
-.sidebar-collapse-btn:hover {
-  background: var(--sidebar-hover);
-  color: #c8d0f0;
+@media (max-width: 768px) {
+  .sidebar {
+    z-index: 200;
+  }
+  .sidebar-collapsed {
+    width: 0;
+    overflow: hidden;
+  }
+  .main-wrapper,
+  .main-wrapper-collapsed {
+    margin-left: 0 !important;
+    width: 100%;
+  }
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 199;
+  }
 }
 
 /* ── Main wrapper ── */
@@ -521,6 +552,7 @@ table.evo-table {
   white-space: nowrap;
   position: sticky;
   top: 0;
+  text-align: left;
   transition: background var(--transition);
 }
 
