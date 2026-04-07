@@ -44,25 +44,34 @@ const HISTORY = Array.from({ length: 150 }, (_, i) => {
   }
 })
 
-// Build chart data: alarms by week (grouped by severity)
-function buildChartData(rows) {
-  const weeks = {}
-  rows.forEach(r => {
-    const d = new Date(r.openingDate)
-    const weekStart = new Date(d)
-    weekStart.setDate(d.getDate() - d.getDay())
-    const key = weekStart.toISOString().split('T')[0]
-    if (!weeks[key]) weeks[key] = { week: key, Critical: 0, High: 0, Medium: 0, Low: 0 }
-    weeks[key][r.severity]++
-  })
-  return Object.values(weeks).sort((a, b) => a.week.localeCompare(b.week))
-}
 
 const SEV_BADGE = {
   Critical: 'badge-red', High: 'badge-orange', Medium: 'badge-yellow', Low: 'badge-green',
 }
 
 const SEV_COLORS = { Critical: '#dc2626', High: '#ea580c', Medium: '#d97706', Low: '#16a34a' }
+const CAT_COLORS = {
+  Mechanical: '#6366f1', Electrical: '#0ea5e9', Network: '#8b5cf6',
+  Safety: '#f43f5e', Operational: '#14b8a6',
+}
+
+// Build chart data grouped by either severity or category, bucketed by week
+function buildChartDataBy(rows, groupBy) {
+  const keys = groupBy === 'severity' ? SEVERITIES : CATEGORIES
+  const weeks = {}
+  rows.forEach(r => {
+    const d = new Date(r.openingDate)
+    const weekStart = new Date(d)
+    weekStart.setDate(d.getDate() - d.getDay())
+    const key = weekStart.toISOString().split('T')[0]
+    if (!weeks[key]) {
+      weeks[key] = { week: key }
+      keys.forEach(k => { weeks[key][k] = 0 })
+    }
+    weeks[key][r[groupBy]]++
+  })
+  return Object.values(weeks).sort((a, b) => a.week.localeCompare(b.week))
+}
 
 const PAGE_SIZE = 20
 
@@ -76,6 +85,7 @@ export default function AlarmHistory() {
     category: '',
   })
   const [page, setPage] = useState(1)
+  const [chartGroupBy, setChartGroupBy] = useState('severity')
 
   const filtered = useMemo(() => {
     return HISTORY.filter(a =>
@@ -88,7 +98,9 @@ export default function AlarmHistory() {
     )
   }, [filters])
 
-  const chartData = useMemo(() => buildChartData(filtered), [filtered])
+  const chartData = useMemo(() => buildChartDataBy(filtered, chartGroupBy), [filtered, chartGroupBy])
+  const chartKeys = chartGroupBy === 'severity' ? SEVERITIES : CATEGORIES
+  const chartColors = chartGroupBy === 'severity' ? SEV_COLORS : CAT_COLORS
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
@@ -157,8 +169,22 @@ export default function AlarmHistory() {
 
       {/* Chart */}
       <div className="card mb-4">
-        <div className="card-header">
+        <div className="card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
           <span className="card-title">Alarms by Week — {filtered.length} total · Avg resolution {avgDuration} days</span>
+          <div style={{ display: 'flex', gap: 4 }}>
+            <button
+              className={`btn btn-sm ${chartGroupBy === 'severity' ? 'btn-primary' : 'btn-outline'}`}
+              onClick={() => setChartGroupBy('severity')}
+            >
+              By Severity
+            </button>
+            <button
+              className={`btn btn-sm ${chartGroupBy === 'category' ? 'btn-primary' : 'btn-outline'}`}
+              onClick={() => setChartGroupBy('category')}
+            >
+              By Category
+            </button>
+          </div>
         </div>
         <div style={{ padding: '16px', height: 280 }}>
           {chartData.length === 0 ? (
@@ -173,8 +199,8 @@ export default function AlarmHistory() {
                   contentStyle={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12 }}
                 />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                {SEVERITIES.map(sev => (
-                  <Bar key={sev} dataKey={sev} stackId="a" fill={SEV_COLORS[sev]} />
+                {chartKeys.map(key => (
+                  <Bar key={key} dataKey={key} stackId="a" fill={chartColors[key]} />
                 ))}
               </BarChart>
             </ResponsiveContainer>
