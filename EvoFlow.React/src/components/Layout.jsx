@@ -50,10 +50,14 @@ export default function Layout() {
   const location = useLocation()
   const [search, setSearch] = useState('')
   const [collapsed, setCollapsed] = useState(() => window.innerWidth < 768)
+  const [hovered, setHovered] = useState(false)
   const [dark, setDark] = useState(() => localStorage.getItem('evoflow-theme') === 'dark')
   const [pushing, setPushing] = useState(false)
   const [pushMsg, setPushMsg] = useState('')
   const title = PAGE_TITLES[location.pathname] || 'EvoFlow'
+
+  // Sidebar visually expands on hover even when collapsed
+  const effectiveCollapsed = collapsed && !hovered
 
   function handleGitPush() {
     setPushing(true)
@@ -80,23 +84,18 @@ export default function Layout() {
   return (
     <>
       {/* Sidebar */}
-      <nav className={`sidebar${collapsed ? ' sidebar-collapsed' : ''}`}>
+      <nav
+        className={`sidebar${effectiveCollapsed ? ' sidebar-collapsed' : ''}`}
+        onMouseEnter={() => collapsed && setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
         <div className="sidebar-brand">
-          <button
-            className="sidebar-hamburger"
-            onClick={() => setCollapsed(c => !c)}
-            title={collapsed ? 'Expand menu' : 'Collapse menu'}
-          >
-            <span className="hamburger-line" />
-            <span className="hamburger-line" />
-            <span className="hamburger-line" />
-          </button>
-          {!collapsed && <span className="sidebar-brand-name">EvoFlow</span>}
+          {!effectiveCollapsed && <span className="sidebar-brand-name">EvoFlow</span>}
         </div>
         <div className="sidebar-nav">
           {NAV.map((item, i) => {
             if (item.section) {
-              return collapsed ? null : (
+              return effectiveCollapsed ? null : (
                 <div key={i} className="sidebar-section-label">{item.section}</div>
               )
             }
@@ -107,11 +106,11 @@ export default function Layout() {
                 to={item.to}
                 end={item.exact}
                 className={({ isActive }) => isActive ? 'active' : ''}
-                title={collapsed ? item.label : undefined}
-                onClick={() => { if (window.innerWidth < 768) setCollapsed(true) }}
+                title={effectiveCollapsed ? item.label : undefined}
+                onClick={() => { if (window.innerWidth < 768) { setCollapsed(true); setHovered(false) } }}
               >
                 <span className="nav-icon"><Icon size={15} /></span>
-                {!collapsed && item.label}
+                {!effectiveCollapsed && item.label}
               </NavLink>
             )
           })}
@@ -119,26 +118,24 @@ export default function Layout() {
       </nav>
 
       {/* Mobile overlay — tap to close sidebar */}
-      {!collapsed && <div className="sidebar-overlay" onClick={() => setCollapsed(true)} />}
+      {!collapsed && <div className="sidebar-overlay" onClick={() => { setCollapsed(true); setHovered(false) }} />}
 
       {/* Main */}
-      <div className={`main-wrapper${collapsed ? ' main-wrapper-collapsed' : ''}`}>
+      <div className={`main-wrapper${effectiveCollapsed ? ' main-wrapper-collapsed' : ''}`}>
         {/* Topbar */}
         <header className="topbar">
-          {collapsed && (
-            <button
-              className="topbar-icon-btn"
-              onClick={() => setCollapsed(false)}
-              title="Open menu"
-              style={{ marginRight: 8 }}
-            >
-              <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <span style={{ display: 'block', width: 15, height: 2, background: 'currentColor', borderRadius: 1 }} />
-                <span style={{ display: 'block', width: 15, height: 2, background: 'currentColor', borderRadius: 1 }} />
-                <span style={{ display: 'block', width: 15, height: 2, background: 'currentColor', borderRadius: 1 }} />
-              </span>
-            </button>
-          )}
+          <button
+            className="topbar-icon-btn"
+            onClick={() => { setCollapsed(c => !c); setHovered(false) }}
+            title={collapsed ? 'Expand menu' : 'Collapse menu'}
+            style={{ marginRight: 8 }}
+          >
+            <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <span style={{ display: 'block', width: 15, height: 2, background: 'currentColor', borderRadius: 1 }} />
+              <span style={{ display: 'block', width: 15, height: 2, background: 'currentColor', borderRadius: 1 }} />
+              <span style={{ display: 'block', width: 15, height: 2, background: 'currentColor', borderRadius: 1 }} />
+            </span>
+          </button>
           <div className="topbar-search">
             <span className="topbar-search-icon"><IconSearch size={13} /></span>
             <input
