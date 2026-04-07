@@ -125,6 +125,20 @@ export default function Layout() {
       <div className={`main-wrapper${collapsed ? ' main-wrapper-collapsed' : ''}`}>
         {/* Topbar */}
         <header className="topbar">
+          {collapsed && (
+            <button
+              className="topbar-icon-btn"
+              onClick={() => setCollapsed(false)}
+              title="Open menu"
+              style={{ marginRight: 8 }}
+            >
+              <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <span style={{ display: 'block', width: 15, height: 2, background: 'currentColor', borderRadius: 1 }} />
+                <span style={{ display: 'block', width: 15, height: 2, background: 'currentColor', borderRadius: 1 }} />
+                <span style={{ display: 'block', width: 15, height: 2, background: 'currentColor', borderRadius: 1 }} />
+              </span>
+            </button>
+          )}
           <div className="topbar-search">
             <span className="topbar-search-icon"><IconSearch size={13} /></span>
             <input
