@@ -8,6 +8,11 @@
         <NavMenu IsSidebarCollapsed="sidebarCollapsed" OnToggleCollapse="ToggleSidebar" />
     </div>
 
+    @if (!sidebarCollapsed)
+    {
+        <div class="sidebar-overlay" @onclick="ToggleSidebar"></div>
+    }
+
     <main>
         <div class="top-row">
             <div class="search-wrapper">
@@ -45,6 +50,11 @@
         {
             darkMode = await JS.InvokeAsync<bool>("evoflow.getDarkMode");
             await JS.InvokeVoidAsync("evoflow.applyDarkMode", darkMode);
+
+            var width = await JS.InvokeAsync<int>("evoflow.getWindowWidth");
+            if (width < 768)
+                sidebarCollapsed = true;
+
             StateHasChanged();
         }
     }

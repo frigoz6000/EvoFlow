@@ -3,9 +3,13 @@
     [Parameter] public EventCallback OnToggleCollapse { get; set; }
 }
 
-<!-- Logo -->
-<div class="nav-logo">
-    <div class="nav-logo-icon">E</div>
+<!-- Hamburger button at top -->
+<div class="nav-hamburger">
+    <button class="nav-hamburger-btn" @onclick="OnToggleCollapse" title="@(IsSidebarCollapsed ? "Expand menu" : "Collapse menu")">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+    </button>
     @if (!IsSidebarCollapsed)
     {
         <span class="nav-logo-text">EvoFlow</span>
@@ -34,27 +38,11 @@
 
     @if (!IsSidebarCollapsed)
     {
-        <div class="nav-section-label">Fleet</div>
+        <div class="nav-section-label">Sites</div>
     }
     else
     {
         <div class="nav-section-divider"></div>
     }
-    <NavItem Href="vehicles" Icon="oi-wrench" Label="Vehicles" Collapsed="IsSidebarCollapsed" />
     <NavItem Href="allsites" Icon="oi-map-marker" Label="All Sites" Collapsed="IsSidebarCollapsed" />
-</div>
-
-<!-- Collapse button -->
-<div class="nav-footer">
-    <button class="nav-collapse-btn" @onclick="OnToggleCollapse" title="@(IsSidebarCollapsed ? "Expand" : "Collapse")">
-        @if (!IsSidebarCollapsed)
-        {
-            <span class="oi oi-chevron-left" aria-hidden="true"></span>
-            <span class="nav-collapse-label">Collapse</span>
-        }
-        else
-        {
-            <span class="oi oi-chevron-right" aria-hidden="true"></span>
-        }
-    </button>
 </div>

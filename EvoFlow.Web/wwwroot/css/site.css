@@ -106,6 +106,7 @@ a:hover { color: var(--pink); }
     text-transform: uppercase;
     letter-spacing: 0.05em;
     padding: 0.625rem 0.875rem;
+    text-align: left !important;
 }
 .table tbody td { padding: 0.625rem 0.875rem; border-color: var(--border-color); }
 .table-hover > tbody > tr:hover > * { background-color: rgba(99,102,241,0.04); }

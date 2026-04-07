@@ -35,6 +35,9 @@
         window.evoflow = {
             _charts: {},
 
+            getWindowWidth: function () {
+                return window.innerWidth;
+            },
             getDarkMode: function () {
                 return localStorage.getItem('evoflow-dark-mode') === 'true';
             },
