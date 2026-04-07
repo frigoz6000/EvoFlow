@@ -7,7 +7,8 @@ import {
   IconHome, IconBell, IconFuel, IconPump, IconMapPin,
   IconSearch, IconSun, IconMoon, IconTable,
   IconActivity, IconAlertTriangle, IconBarChart,
-  IconAlarmActive, IconAlarmHistory, IconNotifications
+  IconAlarmActive, IconAlarmHistory, IconNotifications,
+  IconMenu
 } from './Icons'
 
 const NAV = [
@@ -130,11 +131,7 @@ export default function Layout() {
             title={collapsed ? 'Expand menu' : 'Collapse menu'}
             style={{ marginRight: 8 }}
           >
-            <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <span style={{ display: 'block', width: 15, height: 2, background: 'currentColor', borderRadius: 1 }} />
-              <span style={{ display: 'block', width: 15, height: 2, background: 'currentColor', borderRadius: 1 }} />
-              <span style={{ display: 'block', width: 15, height: 2, background: 'currentColor', borderRadius: 1 }} />
-            </span>
+            <IconMenu size={18} />
           </button>
           <div className="topbar-search">
             <span className="topbar-search-icon"><IconSearch size={13} /></span>
