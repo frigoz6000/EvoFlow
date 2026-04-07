@@ -65,6 +65,14 @@ export default function Layout() {
   }
 
   useEffect(() => {
+    function handleResize() {
+      if (window.innerWidth < 768) setCollapsed(true)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  useEffect(() => {
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
     localStorage.setItem('evoflow-theme', dark ? 'dark' : 'light')
   }, [dark])
