@@ -7,6 +7,9 @@ import Vehicles from './pages/Vehicles'
 import PumpMonitoring from './pages/PumpMonitoring'
 import Alerts from './pages/Alerts'
 import DomsInfo from './pages/DomsInfo'
+import FlowRates from './pages/FlowRates'
+import DeviceAlerts from './pages/DeviceAlerts'
+import VolumeRevenue from './pages/VolumeRevenue'
 
 export default function App() {
   return (
@@ -20,6 +23,9 @@ export default function App() {
           <Route path="pump-monitoring" element={<PumpMonitoring />} />
           <Route path="alerts" element={<Alerts />} />
           <Route path="doms-info" element={<DomsInfo />} />
+          <Route path="flow-rates" element={<FlowRates />} />
+          <Route path="device-alerts" element={<DeviceAlerts />} />
+          <Route path="volume-revenue" element={<VolumeRevenue />} />
         </Route>
       </Routes>
     </BrowserRouter>

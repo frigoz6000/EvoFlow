@@ -5,7 +5,8 @@ import ErrorBoundary from './ErrorBoundary'
 import api from '../api/client'
 import {
   IconHome, IconBell, IconFuel, IconPump, IconCar, IconMapPin,
-  IconSearch, IconSun, IconMoon, IconChevronLeft, IconChevronRight, IconTable
+  IconSearch, IconSun, IconMoon, IconChevronLeft, IconChevronRight, IconTable,
+  IconActivity, IconAlertTriangle, IconBarChart
 } from './Icons'
 
 const NAV = [
@@ -20,6 +21,9 @@ const NAV = [
   { to: '/sites', icon: IconMapPin, label: 'All Sites' },
   { section: 'REPORTS' },
   { to: '/doms-info', icon: IconTable, label: 'Doms Info' },
+  { to: '/flow-rates', icon: IconActivity, label: 'Flow Rates' },
+  { to: '/device-alerts', icon: IconAlertTriangle, label: 'Device Alerts' },
+  { to: '/volume-revenue', icon: IconBarChart, label: 'Volume & Revenue' },
 ]
 
 const PAGE_TITLES = {
@@ -30,6 +34,9 @@ const PAGE_TITLES = {
   '/pump-monitoring': 'Pump Monitoring',
   '/alerts': 'Alerts',
   '/doms-info': 'Doms Info',
+  '/flow-rates': 'Flow Rates',
+  '/device-alerts': 'Device Alerts',
+  '/volume-revenue': 'Volume & Revenue',
 }
 
 export default function Layout() {
