@@ -119,3 +119,29 @@ export const IconBarChart = ({ size = 16 }) => (
     <line x1="6" y1="20" x2="6" y2="16"/>
   </svg>
 )
+
+export const IconAlarmActive = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="13" r="7"/>
+    <polyline points="12 10 12 14 14 14"/>
+    <path d="M5 3L3 5"/>
+    <path d="M19 3L21 5"/>
+  </svg>
+)
+
+export const IconAlarmHistory = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 3h18v4H3z"/>
+    <path d="M3 10h18v4H3z"/>
+    <path d="M3 17h10v4H3z"/>
+    <circle cx="18" cy="19" r="3"/>
+    <path d="M18 17v2l1 1"/>
+  </svg>
+)
+
+export const IconNotifications = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+    <polyline points="22,6 12,13 2,6"/>
+  </svg>
+)

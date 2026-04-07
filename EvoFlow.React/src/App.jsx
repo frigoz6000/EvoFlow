@@ -9,6 +9,9 @@ import DomsInfo from './pages/DomsInfo'
 import FlowRates from './pages/FlowRates'
 import DeviceAlerts from './pages/DeviceAlerts'
 import VolumeRevenue from './pages/VolumeRevenue'
+import ActiveAlarms from './pages/ActiveAlarms'
+import AlarmHistory from './pages/AlarmHistory'
+import AlarmNotifications from './pages/AlarmNotifications'
 
 export default function App() {
   return (
@@ -24,6 +27,9 @@ export default function App() {
           <Route path="flow-rates" element={<FlowRates />} />
           <Route path="device-alerts" element={<DeviceAlerts />} />
           <Route path="volume-revenue" element={<VolumeRevenue />} />
+          <Route path="active-alarms" element={<ActiveAlarms />} />
+          <Route path="alarm-history" element={<AlarmHistory />} />
+          <Route path="alarm-notifications" element={<AlarmNotifications />} />
         </Route>
       </Routes>
     </BrowserRouter>

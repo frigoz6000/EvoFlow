@@ -6,7 +6,8 @@ import api from '../api/client'
 import {
   IconHome, IconBell, IconFuel, IconPump, IconMapPin,
   IconSearch, IconSun, IconMoon, IconTable,
-  IconActivity, IconAlertTriangle, IconBarChart
+  IconActivity, IconAlertTriangle, IconBarChart,
+  IconAlarmActive, IconAlarmHistory, IconNotifications
 } from './Icons'
 
 const NAV = [
@@ -23,6 +24,10 @@ const NAV = [
   { to: '/flow-rates', icon: IconActivity, label: 'Flow Rates' },
   { to: '/device-alerts', icon: IconAlertTriangle, label: 'Device Alerts' },
   { to: '/volume-revenue', icon: IconBarChart, label: 'Volume & Revenue' },
+  { section: 'ALARMS' },
+  { to: '/active-alarms', icon: IconAlarmActive, label: 'Active Alarms' },
+  { to: '/alarm-history', icon: IconAlarmHistory, label: 'Alarm History' },
+  { to: '/alarm-notifications', icon: IconNotifications, label: 'Notifications' },
 ]
 
 const PAGE_TITLES = {
@@ -36,6 +41,9 @@ const PAGE_TITLES = {
   '/flow-rates': 'Flow Rates',
   '/device-alerts': 'Device Alerts',
   '/volume-revenue': 'Volume & Revenue',
+  '/active-alarms': 'Active Alarms',
+  '/alarm-history': 'Alarm History',
+  '/alarm-notifications': 'Notifications',
 }
 
 export default function Layout() {
