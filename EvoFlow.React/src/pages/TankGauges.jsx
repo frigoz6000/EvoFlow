@@ -14,8 +14,8 @@ function TankGaugeVisual({ fillPct, uid }) {
   const color = pct > 55 ? '#22c55e' : pct >= 25 ? '#f59e0b' : '#ef4444'
   const fillRatio = Math.min(100, Math.max(0, pct)) / 100
 
-  const w = 28, h = 52
-  const capH = 7, bodyY = capH, bodyH = h - capH - 2
+  const w = 42, h = 52
+  const capW = 12, capH = 7, bodyY = capH, bodyH = h - capH - 2
   const fillH = Math.round(bodyH * fillRatio)
   const fillY = bodyY + bodyH - fillH
   const clipId = `tg-clip-${uid}`
@@ -29,7 +29,7 @@ function TankGaugeVisual({ fillPct, uid }) {
         </clipPath>
       </defs>
       {/* Neck/cap — white in light mode, dark in dark mode */}
-      <rect x={10} y={1} width={8} height={capH} rx={2} style={{ fill: 'var(--tank-cap-color)' }} stroke="#475569" strokeWidth={1} />
+      <rect x={(w - capW) / 2} y={1} width={capW} height={capH} rx={2} style={{ fill: 'var(--tank-cap-color)' }} stroke="#475569" strokeWidth={1} />
       {/* Tank body background — theme-aware empty space */}
       <rect x={2} y={bodyY} width={w - 4} height={bodyH} rx={rx} style={{ fill: 'var(--tank-body-bg)' }} stroke="#475569" strokeWidth={1.5} />
       {/* Fuel fill — clipped to body shape */}
