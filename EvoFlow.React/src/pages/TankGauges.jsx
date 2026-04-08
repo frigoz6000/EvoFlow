@@ -7,6 +7,40 @@ const tankGaugesApi = {
   getAll: (params = {}) => api.get('/tankgauges', { params }).then(r => r.data),
 }
 
+function TankGaugeVisual({ fillPct, uid }) {
+  const pct = parseFloat(fillPct)
+  if (isNaN(pct)) return null
+
+  const color = pct > 55 ? '#22c55e' : pct >= 25 ? '#f59e0b' : '#ef4444'
+  const fillRatio = Math.min(100, Math.max(0, pct)) / 100
+
+  const w = 28, h = 52
+  const capH = 7, bodyY = capH, bodyH = h - capH - 2
+  const fillH = Math.round(bodyH * fillRatio)
+  const fillY = bodyY + bodyH - fillH
+  const clipId = `tg-clip-${uid}`
+
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ display: 'block' }}>
+      <defs>
+        <clipPath id={clipId}>
+          <rect x={2} y={bodyY} width={w - 4} height={bodyH} rx={5} />
+        </clipPath>
+      </defs>
+      {/* Neck/cap */}
+      <rect x={10} y={1} width={8} height={capH} rx={2} fill="#64748b" />
+      {/* Tank body background */}
+      <rect x={2} y={bodyY} width={w - 4} height={bodyH} rx={5} fill="#1e293b" stroke="#475569" strokeWidth={1.5} />
+      {/* Fuel fill — clipped to body shape */}
+      {fillH > 0 && (
+        <rect x={2} y={fillY} width={w - 4} height={fillH} fill={color} opacity={0.88} clipPath={`url(#${clipId})`} />
+      )}
+      {/* Body border on top */}
+      <rect x={2} y={bodyY} width={w - 4} height={bodyH} rx={5} fill="none" stroke="#475569" strokeWidth={1.5} />
+    </svg>
+  )
+}
+
 const defaultDate = '2026-04-07'
 
 export default function TankGauges() {
@@ -120,6 +154,7 @@ export default function TankGauges() {
                   <th>Shell Cap (L)</th>
                   <th>Gauged (L)</th>
                   <th>Fill %</th>
+                  <th>Gauge</th>
                   <th>Daily Diff (L)</th>
                   <th>Ullage (L)</th>
                   <th>Prod Height (mm)</th>
@@ -132,10 +167,11 @@ export default function TankGauges() {
               </thead>
               <tbody>
                 {rows.length === 0 ? (
-                  <tr><td colSpan={21}><div className="empty-state">No data for selected filters</div></td></tr>
+                  <tr><td colSpan={22}><div className="empty-state">No data for selected filters</div></td></tr>
                 ) : pageRows.map((r, i) => {
                   const fillPct = r.capacity > 0 ? ((r.gauged / r.capacity) * 100).toFixed(1) : '—'
-                  const fillColor = parseFloat(fillPct) < 20 ? 'var(--red)' : parseFloat(fillPct) < 40 ? 'var(--orange)' : 'var(--green)'
+                  const pctVal = parseFloat(fillPct)
+                  const fillColor = pctVal > 55 ? 'var(--green)' : pctVal >= 25 ? 'var(--orange)' : 'var(--red)'
                   return (
                     <tr key={i}>
                       <td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{r.businessDate}</td>
@@ -162,6 +198,9 @@ export default function TankGauges() {
                       </td>
                       <td style={{ color: fillColor, fontWeight: 600 }}>
                         {fillPct}{fillPct !== '—' ? '%' : ''}
+                      </td>
+                      <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '4px 6px' }}>
+                        <TankGaugeVisual fillPct={fillPct} uid={i} />
                       </td>
                       <td style={{ color: r.gaugedDif < 0 ? 'var(--red)' : 'var(--green)', fontWeight: 600 }}>
                         {Number(r.gaugedDif).toLocaleString(undefined, { maximumFractionDigits: 0 })}
