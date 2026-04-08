@@ -93,6 +93,7 @@ export default function Layout() {
         onMouseLeave={() => setHovered(false)}
       >
         <div className="sidebar-brand">
+          <img src="/evoflow-icon.png" alt="EvoFlow" className="sidebar-brand-logo-img" />
           {!effectiveCollapsed && <span className="sidebar-brand-name">EvoFlow</span>}
         </div>
         <div className="sidebar-nav">

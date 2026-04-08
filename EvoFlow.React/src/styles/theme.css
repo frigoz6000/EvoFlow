@@ -181,6 +181,14 @@ body {
   letter-spacing: -0.5px;
 }
 
+.sidebar-brand-logo-img {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
 .sidebar-brand-name {
   font-size: 15px;
   font-weight: 700;
