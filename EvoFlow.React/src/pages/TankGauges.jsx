@@ -19,24 +19,25 @@ function TankGaugeVisual({ fillPct, uid }) {
   const fillH = Math.round(bodyH * fillRatio)
   const fillY = bodyY + bodyH - fillH
   const clipId = `tg-clip-${uid}`
+  const rx = 9
 
   return (
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ display: 'block' }}>
       <defs>
         <clipPath id={clipId}>
-          <rect x={2} y={bodyY} width={w - 4} height={bodyH} rx={5} />
+          <rect x={2} y={bodyY} width={w - 4} height={bodyH} rx={rx} />
         </clipPath>
       </defs>
-      {/* Neck/cap */}
-      <rect x={10} y={1} width={8} height={capH} rx={2} fill="#64748b" />
+      {/* Neck/cap — white in light mode, dark in dark mode */}
+      <rect x={10} y={1} width={8} height={capH} rx={2} style={{ fill: 'var(--tank-cap-color)' }} stroke="#475569" strokeWidth={1} />
       {/* Tank body background */}
-      <rect x={2} y={bodyY} width={w - 4} height={bodyH} rx={5} fill="#1e293b" stroke="#475569" strokeWidth={1.5} />
+      <rect x={2} y={bodyY} width={w - 4} height={bodyH} rx={rx} fill="#1e293b" stroke="#475569" strokeWidth={1.5} />
       {/* Fuel fill — clipped to body shape */}
       {fillH > 0 && (
         <rect x={2} y={fillY} width={w - 4} height={fillH} fill={color} opacity={0.88} clipPath={`url(#${clipId})`} />
       )}
       {/* Body border on top */}
-      <rect x={2} y={bodyY} width={w - 4} height={bodyH} rx={5} fill="none" stroke="#475569" strokeWidth={1.5} />
+      <rect x={2} y={bodyY} width={w - 4} height={bodyH} rx={rx} fill="none" stroke="#475569" strokeWidth={1.5} />
     </svg>
   )
 }

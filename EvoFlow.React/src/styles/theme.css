@@ -47,6 +47,8 @@
   --radius-lg: 12px;
 
   --transition: 0.18s ease;
+
+  --tank-cap-color: #ffffff;
 }
 
 [data-theme="dark"] {
@@ -88,6 +90,8 @@
 
   --input-bg: #1a1f38;
   --input-border: #232847;
+
+  --tank-cap-color: #1e2340;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
