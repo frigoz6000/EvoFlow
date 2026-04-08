@@ -6,7 +6,7 @@ import api from '../api/client'
 import {
   IconHome, IconBell, IconFuel, IconPump, IconMapPin,
   IconSearch, IconSun, IconMoon, IconTable,
-  IconActivity, IconAlertTriangle, IconBarChart,
+  IconActivity, IconAlertTriangle, IconBarChart, IconDroplets,
   IconAlarmActive, IconAlarmHistory, IconNotifications,
   IconMenu
 } from './Icons'
@@ -25,6 +25,7 @@ const NAV = [
   { to: '/flow-rates', icon: IconActivity, label: 'Flow Rates' },
   { to: '/device-alerts', icon: IconAlertTriangle, label: 'Device Alerts' },
   { to: '/volume-revenue', icon: IconBarChart, label: 'Volume & Revenue' },
+  { to: '/tank-gauges', icon: IconDroplets, label: 'Tank Gauges' },
   { section: 'ALARMS' },
   { to: '/active-alarms', icon: IconAlarmActive, label: 'Active Alarms' },
   { to: '/alarm-history', icon: IconAlarmHistory, label: 'Alarm History' },
@@ -42,6 +43,7 @@ const PAGE_TITLES = {
   '/flow-rates': 'Flow Rates',
   '/device-alerts': 'Device Alerts',
   '/volume-revenue': 'Volume & Revenue',
+  '/tank-gauges': 'Tank Gauges',
   '/active-alarms': 'Active Alarms',
   '/alarm-history': 'Alarm History',
   '/alarm-notifications': 'Notifications',

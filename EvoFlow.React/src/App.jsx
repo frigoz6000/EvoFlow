@@ -12,6 +12,7 @@ import VolumeRevenue from './pages/VolumeRevenue'
 import ActiveAlarms from './pages/ActiveAlarms'
 import AlarmHistory from './pages/AlarmHistory'
 import AlarmNotifications from './pages/AlarmNotifications'
+import TankGauges from './pages/TankGauges'
 
 export default function App() {
   return (
@@ -30,6 +31,7 @@ export default function App() {
           <Route path="active-alarms" element={<ActiveAlarms />} />
           <Route path="alarm-history" element={<AlarmHistory />} />
           <Route path="alarm-notifications" element={<AlarmNotifications />} />
+          <Route path="tank-gauges" element={<TankGauges />} />
         </Route>
       </Routes>
     </BrowserRouter>
