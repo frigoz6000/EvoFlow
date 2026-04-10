@@ -265,6 +265,7 @@ export default function FlowRates() {
                   <th>Device</th>
                   <th>Grade</th>
                   <th>Fuel</th>
+                  <th>Flow Type</th>
                   <th>Transactions</th>
                   <th>Nominal (L/min)</th>
                   <th>Avg (L/min)</th>
@@ -277,7 +278,7 @@ export default function FlowRates() {
               </thead>
               <tbody>
                 {displayRows.length === 0 ? (
-                  <tr><td colSpan={14}><div className="empty-state">No data for selected filters</div></td></tr>
+                  <tr><td colSpan={15}><div className="empty-state">No data for selected filters</div></td></tr>
                 ) : pageRows.map((r, i) => {
                   const avgOutlier = r.avgFlowRate != null && (r.avgFlowRate > AVG_HIGH_THRESHOLD || r.avgFlowRate < AVG_LOW_THRESHOLD)
                   const peakOutlier = r.peakFlowRate != null && (r.peakFlowRate > PEAK_HIGH_THRESHOLD || r.peakFlowRate < PEAK_LOW_THRESHOLD)
@@ -289,6 +290,7 @@ export default function FlowRates() {
                       <td style={{ fontWeight: 700 }}><span className="site-id-link">{r.deviceId}</span></td>
                       <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{r.gradeOption}</td>
                       <td style={{ color: 'var(--text-secondary)' }}>{r.gradeDescription || r.gradeId || '—'}</td>
+                      <td><span className="badge badge-blue">{r.flowType}</span></td>
                       <td style={{ fontWeight: 600, color: r.totalPumpTrans < LOW_TRANS_THRESHOLD ? 'var(--orange)' : undefined }}>
                         {r.totalPumpTrans.toLocaleString()}
                       </td>
