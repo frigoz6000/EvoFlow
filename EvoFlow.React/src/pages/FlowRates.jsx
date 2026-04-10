@@ -22,42 +22,54 @@ const QUICK_FILTERS = [
     label: `High Avg Flow (>${AVG_HIGH_THRESHOLD})`,
     title: 'Avg flow rate above normal — possible high-demand pumps',
     fn: r => r.avgFlowRate != null && r.avgFlowRate > AVG_HIGH_THRESHOLD,
-    color: 'var(--accent)',
+    bg: '#2563eb',      // blue
+    bgLight: '#dbeafe',
+    textLight: '#1d4ed8',
   },
   {
     key: 'avgLow',
     label: `Low Avg Flow (<${AVG_LOW_THRESHOLD})`,
     title: 'Avg flow rate below normal — possible underperforming pumps',
     fn: r => r.avgFlowRate != null && r.avgFlowRate < AVG_LOW_THRESHOLD,
-    color: 'var(--orange)',
+    bg: '#f59e0b',      // amber
+    bgLight: '#fef3c7',
+    textLight: '#b45309',
   },
   {
     key: 'peakHigh',
     label: `High Peak Flow (>${PEAK_HIGH_THRESHOLD})`,
     title: 'Peak flow well above average — possible burst demand or anomalous reading',
     fn: r => r.peakFlowRate != null && r.peakFlowRate > PEAK_HIGH_THRESHOLD,
-    color: 'var(--green)',
+    bg: '#16a34a',      // green
+    bgLight: '#dcfce7',
+    textLight: '#15803d',
   },
   {
     key: 'peakLow',
     label: `Low Peak Flow (<${PEAK_LOW_THRESHOLD})`,
     title: 'Peak flow very low — possible flow restriction or meter issue',
     fn: r => r.peakFlowRate != null && r.peakFlowRate < PEAK_LOW_THRESHOLD,
-    color: 'var(--red, #e05)',
+    bg: '#dc2626',      // red
+    bgLight: '#fee2e2',
+    textLight: '#b91c1c',
   },
   {
     key: 'lowTrans',
     label: `Low Transactions (<${LOW_TRANS_THRESHOLD})`,
     title: 'Very few pump transactions — possible inactive or faulty pump',
     fn: r => r.totalPumpTrans < LOW_TRANS_THRESHOLD,
-    color: 'var(--text-secondary)',
+    bg: '#7c3aed',      // purple
+    bgLight: '#ede9fe',
+    textLight: '#6d28d9',
   },
   {
     key: 'noData',
     label: 'Missing Flow Data',
     title: 'Rows where avg or peak flow rate is missing',
     fn: r => r.avgFlowRate == null || r.peakFlowRate == null,
-    color: 'var(--text-muted)',
+    bg: '#475569',      // slate
+    bgLight: '#f1f5f9',
+    textLight: '#334155',
   },
 ]
 
@@ -165,21 +177,22 @@ export default function FlowRates() {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 6,
-                  padding: '5px 12px',
+                  padding: '6px 13px',
                   borderRadius: 6,
-                  border: isActive ? `2px solid ${qf.color}` : '1px solid var(--border)',
-                  background: isActive ? `color-mix(in srgb, ${qf.color} 12%, var(--card-bg))` : 'var(--card-bg)',
-                  color: isActive ? qf.color : 'var(--text-primary)',
+                  border: isActive ? `2px solid ${qf.bg}` : `1.5px solid ${qf.bg}`,
+                  background: isActive ? qf.bg : qf.bgLight,
+                  color: isActive ? '#fff' : qf.textLight,
                   fontSize: 12,
-                  fontWeight: isActive ? 700 : 500,
+                  fontWeight: 600,
                   cursor: 'pointer',
                   transition: 'all 0.15s',
+                  boxShadow: isActive ? `0 2px 8px ${qf.bg}55` : 'none',
                 }}
               >
                 <span>{qf.label}</span>
                 <span style={{
-                  background: isActive ? qf.color : 'var(--border)',
-                  color: isActive ? '#fff' : 'var(--text-secondary)',
+                  background: isActive ? 'rgba(255,255,255,0.25)' : qf.bg,
+                  color: '#fff',
                   borderRadius: 10,
                   padding: '1px 7px',
                   fontSize: 11,
