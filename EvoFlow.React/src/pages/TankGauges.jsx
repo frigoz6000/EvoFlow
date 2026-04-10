@@ -42,7 +42,7 @@ function TankGaugeVisual({ fillPct, uid }) {
   )
 }
 
-const defaultDate = '2026-04-07'
+const defaultDate = '2026-04-09'
 
 export default function TankGauges() {
   const [rows, setRows] = useState([])

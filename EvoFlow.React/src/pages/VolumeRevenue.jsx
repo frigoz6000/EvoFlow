@@ -7,7 +7,7 @@ const volumeRevenueApi = {
   getAll: (params = {}) => api.get('/volumerevenue', { params }).then(r => r.data),
 }
 
-const defaultDate = '2026-02-18'
+const defaultDate = '2026-04-10'
 
 export default function VolumeRevenue() {
   const [rows, setRows] = useState([])

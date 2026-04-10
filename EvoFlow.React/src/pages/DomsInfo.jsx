@@ -38,7 +38,7 @@ export default function DomsInfo() {
       .finally(() => setPushing(false))
   }
 
-  const defaultDate = '2026-02-18'
+  const defaultDate = '2026-04-10'
   const [filters, setFilters] = useState({ siteId: '', dateFrom: defaultDate, dateTo: defaultDate })
 
   useEffect(() => {

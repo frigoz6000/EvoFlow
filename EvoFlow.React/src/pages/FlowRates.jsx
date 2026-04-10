@@ -7,7 +7,7 @@ const flowRatesApi = {
   getAll: (params = {}) => api.get('/flowrates', { params }).then(r => r.data),
 }
 
-const defaultDate = '2026-02-18'
+const defaultDate = '2026-04-10'
 
 export default function FlowRates() {
   const [rows, setRows] = useState([])

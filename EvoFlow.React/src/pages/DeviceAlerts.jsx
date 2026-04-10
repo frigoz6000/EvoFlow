@@ -7,7 +7,7 @@ const deviceAlertsApi = {
   getAll: (params = {}) => api.get('/devicealerts', { params }).then(r => r.data),
 }
 
-const defaultDate = '2026-02-18'
+const defaultDate = '2026-04-10'
 
 export default function DeviceAlerts() {
   const [rows, setRows] = useState([])
