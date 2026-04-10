@@ -34,7 +34,7 @@ public class DomsInfoSnapshotController(IDapperConnectionFactory connectionFacto
         JOIN Sites s ON s.SiteId = pd.SiteId
         LEFT JOIN PumpFlowInfo pfi
             ON pfi.PumpMonitoringGradeId = pmg.PumpMonitoringGradeId
-           AND pfi.FlowType = 'high_speed'
+           AND pfi.FlowType = 'normal_speed'
         LEFT JOIN PumpStatus ps
             ON ps.PumpDeviceId = pm.PumpDeviceId
            AND ps.BusinessDate = pm.BusinessDate
