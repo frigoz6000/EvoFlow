@@ -57,7 +57,8 @@ public class FlowRatesController(IDapperConnectionFactory connectionFactory) : C
         LEFT JOIN PumpGradeTotals pgt ON pgt.PumpTotalsId = pt.PumpTotalsId
                                      AND pgt.GradeOption  = pmg.GradeOption
         LEFT JOIN FuelTypes ft       ON ft.FuelTypeId = pgt.GradeId
-        WHERE (@SiteId   IS NULL OR s.SiteId      = @SiteId)
+        WHERE pfi.FlowType != 'high_speed'
+          AND (@SiteId   IS NULL OR s.SiteId      = @SiteId)
           AND (@DateFrom IS NULL OR pm.BusinessDate >= @DateFrom)
           AND (@DateTo   IS NULL OR pm.BusinessDate <= @DateTo)
         ORDER BY pm.BusinessDate DESC, s.SiteId, pd.DeviceId, pmg.GradeOption, pfi.FlowType";

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { sitesApi } from '../api/client'
 import api from '../api/client'
 import ErrorBoundary from '../components/ErrorBoundary'
@@ -9,11 +9,64 @@ const flowRatesApi = {
 
 const defaultDate = '2026-04-10'
 
+// Outlier thresholds (L/min)
+const AVG_HIGH_THRESHOLD = 30
+const AVG_LOW_THRESHOLD = 15
+const PEAK_HIGH_THRESHOLD = 70
+const PEAK_LOW_THRESHOLD = 15
+const LOW_TRANS_THRESHOLD = 10
+
+const QUICK_FILTERS = [
+  {
+    key: 'avgHigh',
+    label: `High Avg Flow (>${AVG_HIGH_THRESHOLD})`,
+    title: 'Avg flow rate above normal — possible high-demand pumps',
+    fn: r => r.avgFlowRate != null && r.avgFlowRate > AVG_HIGH_THRESHOLD,
+    color: 'var(--accent)',
+  },
+  {
+    key: 'avgLow',
+    label: `Low Avg Flow (<${AVG_LOW_THRESHOLD})`,
+    title: 'Avg flow rate below normal — possible underperforming pumps',
+    fn: r => r.avgFlowRate != null && r.avgFlowRate < AVG_LOW_THRESHOLD,
+    color: 'var(--orange)',
+  },
+  {
+    key: 'peakHigh',
+    label: `High Peak Flow (>${PEAK_HIGH_THRESHOLD})`,
+    title: 'Peak flow well above average — possible burst demand or anomalous reading',
+    fn: r => r.peakFlowRate != null && r.peakFlowRate > PEAK_HIGH_THRESHOLD,
+    color: 'var(--green)',
+  },
+  {
+    key: 'peakLow',
+    label: `Low Peak Flow (<${PEAK_LOW_THRESHOLD})`,
+    title: 'Peak flow very low — possible flow restriction or meter issue',
+    fn: r => r.peakFlowRate != null && r.peakFlowRate < PEAK_LOW_THRESHOLD,
+    color: 'var(--red, #e05)',
+  },
+  {
+    key: 'lowTrans',
+    label: `Low Transactions (<${LOW_TRANS_THRESHOLD})`,
+    title: 'Very few pump transactions — possible inactive or faulty pump',
+    fn: r => r.totalPumpTrans < LOW_TRANS_THRESHOLD,
+    color: 'var(--text-secondary)',
+  },
+  {
+    key: 'noData',
+    label: 'Missing Flow Data',
+    title: 'Rows where avg or peak flow rate is missing',
+    fn: r => r.avgFlowRate == null || r.peakFlowRate == null,
+    color: 'var(--text-muted)',
+  },
+]
+
 export default function FlowRates() {
   const [rows, setRows] = useState([])
   const [sites, setSites] = useState([])
   const [loading, setLoading] = useState(false)
   const [filters, setFilters] = useState({ siteId: '', dateFrom: defaultDate, dateTo: defaultDate })
+  const [activeQuickFilter, setActiveQuickFilter] = useState(null)
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 100
 
@@ -24,6 +77,7 @@ export default function FlowRates() {
 
   function loadData(f) {
     setLoading(true)
+    setActiveQuickFilter(null)
     const params = {}
     if (f.siteId) params.siteId = f.siteId
     if (f.dateFrom) params.dateFrom = f.dateFrom
@@ -41,12 +95,27 @@ export default function FlowRates() {
     loadData(reset)
   }
 
+  function toggleQuickFilter(key) {
+    setActiveQuickFilter(prev => prev === key ? null : key)
+    setPage(1)
+  }
+
+  const displayRows = useMemo(() => {
+    if (!activeQuickFilter) return rows
+    const qf = QUICK_FILTERS.find(f => f.key === activeQuickFilter)
+    return qf ? rows.filter(qf.fn) : rows
+  }, [rows, activeQuickFilter])
+
   const withData = rows.filter(r => r.peakFlowRate != null)
   const avgPeak = withData.length ? (withData.reduce((s, r) => s + r.peakFlowRate, 0) / withData.length).toFixed(2) : '—'
   const maxPeak = withData.length ? Math.max(...withData.map(r => r.peakFlowRate)).toFixed(2) : '—'
+  const outlierCount = rows.filter(r =>
+    (r.avgFlowRate != null && (r.avgFlowRate > AVG_HIGH_THRESHOLD || r.avgFlowRate < AVG_LOW_THRESHOLD)) ||
+    (r.peakFlowRate != null && (r.peakFlowRate > PEAK_HIGH_THRESHOLD || r.peakFlowRate < PEAK_LOW_THRESHOLD))
+  ).length
 
-  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
-  const pageRows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const totalPages = Math.max(1, Math.ceil(displayRows.length / PAGE_SIZE))
+  const pageRows = displayRows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   return (
     <ErrorBoundary fallback="Flow Rates page error.">
@@ -57,7 +126,7 @@ export default function FlowRates() {
         </div>
       </div>
 
-      <div className="stat-cards-row mb-5" style={{ gridTemplateColumns: 'repeat(3,1fr)' }}>
+      <div className="stat-cards-row mb-5" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
         <div className="stat-card">
           <div className="stat-card-label">Rows</div>
           <div className="stat-card-value">{rows.length.toLocaleString()}</div>
@@ -70,11 +139,88 @@ export default function FlowRates() {
           <div className="stat-card-label">Max Peak Flow (L/min)</div>
           <div className="stat-card-value" style={{ color: 'var(--green)' }}>{maxPeak}</div>
         </div>
+        <div className="stat-card">
+          <div className="stat-card-label">Flow Outliers</div>
+          <div className="stat-card-value" style={{ color: outlierCount > 0 ? 'var(--orange)' : 'var(--text-secondary)' }}>
+            {outlierCount.toLocaleString()}
+          </div>
+        </div>
+      </div>
+
+      {/* Outlier quick-filter buttons */}
+      <div className="card mb-4" style={{ padding: '12px 16px' }}>
+        <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-secondary)', marginBottom: 10 }}>
+          Quick Filters — Outliers
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {QUICK_FILTERS.map(qf => {
+            const count = rows.filter(qf.fn).length
+            const isActive = activeQuickFilter === qf.key
+            return (
+              <button
+                key={qf.key}
+                title={qf.title}
+                onClick={() => toggleQuickFilter(qf.key)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '5px 12px',
+                  borderRadius: 6,
+                  border: isActive ? `2px solid ${qf.color}` : '1px solid var(--border)',
+                  background: isActive ? `color-mix(in srgb, ${qf.color} 12%, var(--card-bg))` : 'var(--card-bg)',
+                  color: isActive ? qf.color : 'var(--text-primary)',
+                  fontSize: 12,
+                  fontWeight: isActive ? 700 : 500,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+              >
+                <span>{qf.label}</span>
+                <span style={{
+                  background: isActive ? qf.color : 'var(--border)',
+                  color: isActive ? '#fff' : 'var(--text-secondary)',
+                  borderRadius: 10,
+                  padding: '1px 7px',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  minWidth: 24,
+                  textAlign: 'center',
+                }}>
+                  {count}
+                </span>
+              </button>
+            )
+          })}
+          {activeQuickFilter && (
+            <button
+              onClick={() => { setActiveQuickFilter(null); setPage(1) }}
+              style={{
+                padding: '5px 12px',
+                borderRadius: 6,
+                border: '1px solid var(--border)',
+                background: 'transparent',
+                color: 'var(--text-secondary)',
+                fontSize: 12,
+                cursor: 'pointer',
+              }}
+            >
+              ✕ Clear filter
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="card">
         <div className="card-header">
-          <span className="card-title">Flow Rates — {rows.length.toLocaleString()} rows (page {page} of {totalPages})</span>
+          <span className="card-title">
+            Flow Rates —{' '}
+            {activeQuickFilter
+              ? `${displayRows.length.toLocaleString()} matching rows (filtered from ${rows.length.toLocaleString()})`
+              : `${rows.length.toLocaleString()} rows`
+            }
+            {' '}· page {page} of {totalPages}
+          </span>
         </div>
 
         <div className="filters-bar">
@@ -106,7 +252,6 @@ export default function FlowRates() {
                   <th>Device</th>
                   <th>Grade</th>
                   <th>Fuel</th>
-                  <th>Flow Type</th>
                   <th>Transactions</th>
                   <th>Nominal (L/min)</th>
                   <th>Avg (L/min)</th>
@@ -118,31 +263,36 @@ export default function FlowRates() {
                 </tr>
               </thead>
               <tbody>
-                {rows.length === 0 ? (
-                  <tr><td colSpan={15}><div className="empty-state">No data for selected filters</div></td></tr>
-                ) : pageRows.map((r, i) => (
-                  <tr key={i}>
-                    <td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{r.businessDate}</td>
-                    <td><span className="badge badge-blue">{r.siteId}</span></td>
-                    <td style={{ color: 'var(--text-secondary)' }}>{r.siteName}</td>
-                    <td style={{ fontWeight: 700 }}><span className="site-id-link">{r.deviceId}</span></td>
-                    <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{r.gradeOption}</td>
-                    <td style={{ color: 'var(--text-secondary)' }}>{r.gradeDescription || r.gradeId || '—'}</td>
-                    <td>
-                      <span className={`badge ${r.flowType === 'high_speed' ? 'badge-orange' : 'badge-blue'}`}>
-                        {r.flowType}
-                      </span>
-                    </td>
-                    <td style={{ fontWeight: 600 }}>{r.totalPumpTrans.toLocaleString()}</td>
-                    <td style={{ color: 'var(--text-muted)' }}>{r.nominalFlowRate != null ? Number(r.nominalFlowRate).toFixed(2) : '—'}</td>
-                    <td style={{ color: 'var(--accent)' }}>{r.avgFlowRate != null ? Number(r.avgFlowRate).toFixed(2) : '—'}</td>
-                    <td style={{ color: 'var(--green)', fontWeight: 600 }}>{r.peakFlowRate != null ? Number(r.peakFlowRate).toFixed(2) : '—'}</td>
-                    <td style={{ color: 'var(--text-secondary)' }}>{r.avgTimeToFlow ?? '—'}</td>
-                    <td style={{ color: 'var(--text-secondary)' }}>{r.maxTimeToFlow ?? '—'}</td>
-                    <td style={{ color: 'var(--text-secondary)' }}>{r.avgTimeToPeakFlow ?? '—'}</td>
-                    <td style={{ color: 'var(--text-secondary)' }}>{r.maxTimeToPeakFlow ?? '—'}</td>
-                  </tr>
-                ))}
+                {displayRows.length === 0 ? (
+                  <tr><td colSpan={14}><div className="empty-state">No data for selected filters</div></td></tr>
+                ) : pageRows.map((r, i) => {
+                  const avgOutlier = r.avgFlowRate != null && (r.avgFlowRate > AVG_HIGH_THRESHOLD || r.avgFlowRate < AVG_LOW_THRESHOLD)
+                  const peakOutlier = r.peakFlowRate != null && (r.peakFlowRate > PEAK_HIGH_THRESHOLD || r.peakFlowRate < PEAK_LOW_THRESHOLD)
+                  return (
+                    <tr key={i}>
+                      <td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{r.businessDate}</td>
+                      <td><span className="badge badge-blue">{r.siteId}</span></td>
+                      <td style={{ color: 'var(--text-secondary)' }}>{r.siteName}</td>
+                      <td style={{ fontWeight: 700 }}><span className="site-id-link">{r.deviceId}</span></td>
+                      <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{r.gradeOption}</td>
+                      <td style={{ color: 'var(--text-secondary)' }}>{r.gradeDescription || r.gradeId || '—'}</td>
+                      <td style={{ fontWeight: 600, color: r.totalPumpTrans < LOW_TRANS_THRESHOLD ? 'var(--orange)' : undefined }}>
+                        {r.totalPumpTrans.toLocaleString()}
+                      </td>
+                      <td style={{ color: 'var(--text-muted)' }}>{r.nominalFlowRate != null ? Number(r.nominalFlowRate).toFixed(2) : '—'}</td>
+                      <td style={{ color: avgOutlier ? 'var(--orange)' : 'var(--accent)', fontWeight: avgOutlier ? 700 : undefined }}>
+                        {r.avgFlowRate != null ? Number(r.avgFlowRate).toFixed(2) : '—'}
+                      </td>
+                      <td style={{ color: peakOutlier ? 'var(--orange)' : 'var(--green)', fontWeight: peakOutlier ? 700 : 600 }}>
+                        {r.peakFlowRate != null ? Number(r.peakFlowRate).toFixed(2) : '—'}
+                      </td>
+                      <td style={{ color: 'var(--text-secondary)' }}>{r.avgTimeToFlow ?? '—'}</td>
+                      <td style={{ color: 'var(--text-secondary)' }}>{r.maxTimeToFlow ?? '—'}</td>
+                      <td style={{ color: 'var(--text-secondary)' }}>{r.avgTimeToPeakFlow ?? '—'}</td>
+                      <td style={{ color: 'var(--text-secondary)' }}>{r.maxTimeToPeakFlow ?? '—'}</td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           )}
@@ -150,7 +300,7 @@ export default function FlowRates() {
 
         <div className="pagination">
           <span className="pagination-info">
-            {rows.length.toLocaleString()} total rows · showing {Math.min((page - 1) * PAGE_SIZE + 1, rows.length)}–{Math.min(page * PAGE_SIZE, rows.length)}
+            {displayRows.length.toLocaleString()} rows · showing {Math.min((page - 1) * PAGE_SIZE + 1, displayRows.length)}–{Math.min(page * PAGE_SIZE, displayRows.length)}
           </span>
           <button className="page-btn" disabled={page <= 1} onClick={() => setPage(1)}>«</button>
           <button className="page-btn" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>‹</button>
