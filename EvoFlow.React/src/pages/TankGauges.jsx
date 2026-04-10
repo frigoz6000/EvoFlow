@@ -49,6 +49,7 @@ export default function TankGauges() {
   const [sites, setSites] = useState([])
   const [loading, setLoading] = useState(false)
   const [filters, setFilters] = useState({ siteId: '', dateFrom: defaultDate, dateTo: defaultDate })
+  const [showLowOnly, setShowLowOnly] = useState(false)
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 100
 
@@ -73,6 +74,7 @@ export default function TankGauges() {
   function handleClear() {
     const reset = { siteId: '', dateFrom: defaultDate, dateTo: defaultDate }
     setFilters(reset)
+    setShowLowOnly(false)
     loadData(reset)
   }
 
@@ -83,8 +85,12 @@ export default function TankGauges() {
     ? (rows.reduce((s, r) => s + (r.capacity > 0 ? (r.gauged / r.capacity) * 100 : 0), 0) / rows.length).toFixed(1)
     : '—'
 
-  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
-  const pageRows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const displayRows = showLowOnly
+    ? rows.filter(r => r.capacity > 0 && (r.gauged / r.capacity) * 100 < 25)
+    : rows
+
+  const totalPages = Math.max(1, Math.ceil(displayRows.length / PAGE_SIZE))
+  const pageRows = displayRows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   return (
     <ErrorBoundary fallback="Tank Gauges page error.">
@@ -116,7 +122,7 @@ export default function TankGauges() {
 
       <div className="card">
         <div className="card-header">
-          <span className="card-title">Tank Gauges — {rows.length.toLocaleString()} rows (page {page} of {totalPages})</span>
+          <span className="card-title">Tank Gauges — {displayRows.length.toLocaleString()} rows (page {page} of {totalPages})</span>
         </div>
 
         <div className="filters-bar">
@@ -133,6 +139,18 @@ export default function TankGauges() {
             onChange={e => setFilters(f => ({ ...f, dateTo: e.target.value }))} />
           <button className="btn btn-primary btn-sm" onClick={handleSearch}>Search</button>
           <button className="btn btn-outline btn-sm" onClick={handleClear}>Clear</button>
+          <button
+            className="btn btn-sm"
+            style={{
+              background: showLowOnly ? '#ef4444' : 'transparent',
+              color: showLowOnly ? '#fff' : '#ef4444',
+              border: '2px solid #ef4444',
+              fontWeight: 700,
+            }}
+            onClick={() => { setShowLowOnly(v => !v); setPage(1) }}
+          >
+            Low Tank
+          </button>
         </div>
 
         <div className="table-responsive">
@@ -167,7 +185,7 @@ export default function TankGauges() {
                 </tr>
               </thead>
               <tbody>
-                {rows.length === 0 ? (
+                {displayRows.length === 0 ? (
                   <tr><td colSpan={22}><div className="empty-state">No data for selected filters</div></td></tr>
                 ) : pageRows.map((r, i) => {
                   const fillPct = r.capacity > 0 ? ((r.gauged / r.capacity) * 100).toFixed(1) : '—'
@@ -225,7 +243,7 @@ export default function TankGauges() {
 
         <div className="pagination">
           <span className="pagination-info">
-            {rows.length.toLocaleString()} total rows · showing {Math.min((page - 1) * PAGE_SIZE + 1, rows.length)}–{Math.min(page * PAGE_SIZE, rows.length)}
+            {displayRows.length.toLocaleString()} total rows · showing {Math.min((page - 1) * PAGE_SIZE + 1, displayRows.length)}–{Math.min(page * PAGE_SIZE, displayRows.length)}
           </span>
           <button className="page-btn" disabled={page <= 1} onClick={() => setPage(1)}>«</button>
           <button className="page-btn" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>‹</button>
