@@ -95,7 +95,7 @@ export default function FlowRates() {
     if (f.dateFrom) params.dateFrom = f.dateFrom
     if (f.dateTo) params.dateTo = f.dateTo
     flowRatesApi.getAll(params)
-      .then(r => { setRows(r || []); setPage(1) })
+      .then(r => { setRows((r || []).filter(x => x.flowType !== 'high_speed')); setPage(1) })
       .catch(console.error)
       .finally(() => setLoading(false))
   }
