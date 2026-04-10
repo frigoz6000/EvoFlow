@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { sitesApi } from '../api/client'
 import api from '../api/client'
 import ErrorBoundary from '../components/ErrorBoundary'
+import * as XLSX from 'xlsx'
 
 const domsInfoApi = {
   getAll: (params = {}) => api.get('/domsinfosnapshot', { params }).then(r => r.data),
@@ -58,6 +59,33 @@ export default function DomsInfo() {
       .finally(() => setLoading(false))
   }
 
+  function handleExportExcel() {
+    const exportRows = rows.map(r => ({
+      'DOMS Date': r.domsDate,
+      'Site ID': r.siteId,
+      'Name': r.name,
+      'Device': r.device,
+      'Device Status': r.deviceStatus,
+      'Offline Count': r.deviceOfflineCount,
+      'Error Type': r.deviceErrorType || '',
+      'Error Text': r.deviceErrorText || '',
+      'Error Date': r.deviceErrorDate ? new Date(r.deviceErrorDate).toLocaleDateString() : '',
+      'Lifetime Vol (L)': r.deviceLifetimeVolume,
+      'Grade ID': r.gradeId || '',
+      'Grade Option': r.gradeOption,
+      'Grade Description': r.gradeDescription || '',
+      'Transactions': r.transactions || 0,
+      'Peak Flow': r.peakFlow != null ? Number(r.peakFlow) : '',
+      'Uptime (min)': r.uptime,
+      'Zero Transactions': r.numberZeroTransactions,
+      'Tank ID': r.tankId || '',
+    }))
+    const ws = XLSX.utils.json_to_sheet(exportRows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Doms Info')
+    XLSX.writeFile(wb, `DomsInfo_${filters.dateFrom || 'all'}_to_${filters.dateTo || 'all'}.xlsx`)
+  }
+
   function handleSearch() { setPage(1); loadData(filters) }
   function handleClear() {
     const reset = { siteId: '', dateFrom: defaultDate, dateTo: defaultDate }
@@ -85,6 +113,33 @@ export default function DomsInfo() {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
           <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={handleExportExcel}
+              disabled={rows.length === 0}
+              title="Export to Excel"
+              style={{
+                background: 'none',
+                border: '1px solid var(--border)',
+                borderRadius: 6,
+                padding: '6px 10px',
+                cursor: rows.length === 0 ? 'not-allowed' : 'pointer',
+                color: 'var(--text-secondary)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                fontSize: 13,
+                opacity: rows.length === 0 ? 0.4 : 1,
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10 9 9 9 8 9"/>
+              </svg>
+              Export Excel
+            </button>
             <button
               onClick={handlePopulate}
               disabled={populating}
