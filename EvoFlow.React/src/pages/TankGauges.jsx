@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { sitesApi } from '../api/client'
 import api from '../api/client'
 import ErrorBoundary from '../components/ErrorBoundary'
@@ -44,12 +44,19 @@ function TankGaugeVisual({ fillPct, uid }) {
 
 const defaultDate = '2026-04-09'
 
+function SortIcon({ col, sort }) {
+  if (sort.col !== col) return <span style={{ opacity: 0.3, marginLeft: 4, fontSize: 10 }}>↕</span>
+  return <span style={{ marginLeft: 4, fontSize: 10 }}>{sort.dir === 'asc' ? '↑' : '↓'}</span>
+}
+
 export default function TankGauges() {
   const [rows, setRows] = useState([])
   const [sites, setSites] = useState([])
   const [loading, setLoading] = useState(false)
   const [filters, setFilters] = useState({ siteId: '', dateFrom: defaultDate, dateTo: defaultDate })
   const [showLowOnly, setShowLowOnly] = useState(false)
+  const [search, setSearch] = useState('')
+  const [sort, setSort] = useState({ col: null, dir: 'asc' })
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 100
 
@@ -75,19 +82,53 @@ export default function TankGauges() {
     const reset = { siteId: '', dateFrom: defaultDate, dateTo: defaultDate }
     setFilters(reset)
     setShowLowOnly(false)
+    setSearch('')
+    setSort({ col: null, dir: 'asc' })
     loadData(reset)
   }
 
+  function handleSort(col) {
+    setSort(s => s.col === col ? { col, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { col, dir: 'asc' })
+    setPage(1)
+  }
+
+  const thStyle = { cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }
+
   const onlineCount = rows.filter(r => r.online).length
   const offlineCount = rows.filter(r => !r.online).length
-  const totalGauged = rows.reduce((s, r) => s + (r.gauged || 0), 0)
   const avgFillPct = rows.length
     ? (rows.reduce((s, r) => s + (r.capacity > 0 ? (r.gauged / r.capacity) * 100 : 0), 0) / rows.length).toFixed(1)
     : '—'
 
-  const displayRows = showLowOnly
-    ? rows.filter(r => r.capacity > 0 && (r.gauged / r.capacity) * 100 < 25)
-    : rows
+  const displayRows = useMemo(() => {
+    // Augment rows with computed fillPct for sorting/filtering
+    let result = rows.map(r => ({
+      ...r,
+      _fillPct: r.capacity > 0 ? (r.gauged / r.capacity) * 100 : null,
+    }))
+
+    if (showLowOnly) result = result.filter(r => r._fillPct !== null && r._fillPct < 25)
+
+    if (search.trim()) {
+      const q = search.trim().toLowerCase()
+      result = result.filter(r =>
+        (r.siteId || '').toLowerCase().includes(q) ||
+        (r.siteName || '').toLowerCase().includes(q)
+      )
+    }
+
+    if (sort.col) {
+      result = [...result].sort((a, b) => {
+        let av = a[sort.col], bv = b[sort.col]
+        if (av === null || av === undefined) av = sort.dir === 'asc' ? Infinity : -Infinity
+        if (bv === null || bv === undefined) bv = sort.dir === 'asc' ? Infinity : -Infinity
+        if (typeof av === 'string') return sort.dir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av)
+        return sort.dir === 'asc' ? av - bv : bv - av
+      })
+    }
+
+    return result
+  }, [rows, showLowOnly, search, sort])
 
   const totalPages = Math.max(1, Math.ceil(displayRows.length / PAGE_SIZE))
   const pageRows = displayRows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
@@ -137,6 +178,14 @@ export default function TankGauges() {
           <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>To</label>
           <input type="date" className="filter-search" style={{ minWidth: 130 }} value={filters.dateTo}
             onChange={e => setFilters(f => ({ ...f, dateTo: e.target.value }))} />
+          <input
+            type="text"
+            className="filter-search"
+            placeholder="Search site ID or name..."
+            style={{ minWidth: 180 }}
+            value={search}
+            onChange={e => { setSearch(e.target.value); setPage(1) }}
+          />
           <button className="btn btn-primary btn-sm" onClick={handleSearch}>Search</button>
           <button className="btn btn-outline btn-sm" onClick={handleClear}>Clear</button>
           <button
@@ -160,35 +209,35 @@ export default function TankGauges() {
             <table className="evo-table">
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Site ID</th>
-                  <th>Site Name</th>
-                  <th>Device</th>
-                  <th>Tank</th>
-                  <th>Status</th>
-                  <th>Offline Count</th>
-                  <th>Protocol</th>
-                  <th>Capacity (L)</th>
-                  <th>Tank Height (mm)</th>
-                  <th>Shell Cap (L)</th>
-                  <th>Gauged (L)</th>
-                  <th>Fill %</th>
+                  <th style={thStyle} onClick={() => handleSort('businessDate')}>Date<SortIcon col="businessDate" sort={sort} /></th>
+                  <th style={thStyle} onClick={() => handleSort('siteId')}>Site ID<SortIcon col="siteId" sort={sort} /></th>
+                  <th style={thStyle} onClick={() => handleSort('siteName')}>Site Name<SortIcon col="siteName" sort={sort} /></th>
+                  <th style={thStyle} onClick={() => handleSort('deviceId')}>Device<SortIcon col="deviceId" sort={sort} /></th>
+                  <th style={thStyle} onClick={() => handleSort('tankId')}>Tank<SortIcon col="tankId" sort={sort} /></th>
+                  <th style={thStyle} onClick={() => handleSort('online')}>Status<SortIcon col="online" sort={sort} /></th>
+                  <th style={thStyle} onClick={() => handleSort('offlineCount')}>Offline Count<SortIcon col="offlineCount" sort={sort} /></th>
+                  <th style={thStyle} onClick={() => handleSort('protocol')}>Protocol<SortIcon col="protocol" sort={sort} /></th>
+                  <th style={thStyle} onClick={() => handleSort('capacity')}>Capacity (L)<SortIcon col="capacity" sort={sort} /></th>
+                  <th style={thStyle} onClick={() => handleSort('tankHeight')}>Tank Height (mm)<SortIcon col="tankHeight" sort={sort} /></th>
+                  <th style={thStyle} onClick={() => handleSort('shellCapacity')}>Shell Cap (L)<SortIcon col="shellCapacity" sort={sort} /></th>
+                  <th style={thStyle} onClick={() => handleSort('gauged')}>Gauged (L)<SortIcon col="gauged" sort={sort} /></th>
+                  <th style={thStyle} onClick={() => handleSort('_fillPct')}>Fill %<SortIcon col="_fillPct" sort={sort} /></th>
                   <th>Gauge</th>
-                  <th>Daily Diff (L)</th>
-                  <th>Ullage (L)</th>
-                  <th>Prod Height (mm)</th>
-                  <th>Temp (°C)</th>
-                  <th>TC Corr Vol</th>
-                  <th>Water Vol (L)</th>
-                  <th>Water Height (mm)</th>
-                  <th>Uptime (min)</th>
+                  <th style={thStyle} onClick={() => handleSort('gaugedDif')}>Daily Diff (L)<SortIcon col="gaugedDif" sort={sort} /></th>
+                  <th style={thStyle} onClick={() => handleSort('ullage')}>Ullage (L)<SortIcon col="ullage" sort={sort} /></th>
+                  <th style={thStyle} onClick={() => handleSort('prodHeight')}>Prod Height (mm)<SortIcon col="prodHeight" sort={sort} /></th>
+                  <th style={thStyle} onClick={() => handleSort('temp')}>Temp (°C)<SortIcon col="temp" sort={sort} /></th>
+                  <th style={thStyle} onClick={() => handleSort('tcCorrVol')}>TC Corr Vol<SortIcon col="tcCorrVol" sort={sort} /></th>
+                  <th style={thStyle} onClick={() => handleSort('waterVol')}>Water Vol (L)<SortIcon col="waterVol" sort={sort} /></th>
+                  <th style={thStyle} onClick={() => handleSort('waterHeight')}>Water Height (mm)<SortIcon col="waterHeight" sort={sort} /></th>
+                  <th style={thStyle} onClick={() => handleSort('uptime')}>Uptime (min)<SortIcon col="uptime" sort={sort} /></th>
                 </tr>
               </thead>
               <tbody>
                 {displayRows.length === 0 ? (
                   <tr><td colSpan={22}><div className="empty-state">No data for selected filters</div></td></tr>
                 ) : pageRows.map((r, i) => {
-                  const fillPct = r.capacity > 0 ? ((r.gauged / r.capacity) * 100).toFixed(1) : '—'
+                  const fillPct = r._fillPct !== null ? r._fillPct.toFixed(1) : '—'
                   const pctVal = parseFloat(fillPct)
                   const fillColor = pctVal > 55 ? 'var(--green)' : pctVal >= 25 ? 'var(--orange)' : 'var(--red)'
                   return (
