@@ -298,26 +298,28 @@ export default function DomsInfo() {
           <button
             onClick={() => toggleQuickFilter('offline')}
             style={{
-              border: quickFilter === 'offline' ? '1.5px solid var(--red)' : '1px solid var(--border)',
-              borderRadius: 6, padding: '5px 10px', cursor: 'pointer',
-              background: quickFilter === 'offline' ? 'rgba(239,68,68,0.08)' : 'none',
-              color: quickFilter === 'offline' ? 'var(--red)' : 'var(--text-secondary)',
-              fontSize: 12, fontWeight: quickFilter === 'offline' ? 600 : 400,
+              border: '1px solid #dc2626',
+              borderRadius: 6, padding: '5px 12px', cursor: 'pointer',
+              background: quickFilter === 'offline' ? '#dc2626' : 'rgba(220,38,38,0.08)',
+              color: quickFilter === 'offline' ? '#fff' : '#dc2626',
+              fontSize: 12, fontWeight: 600,
               display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap',
+              transition: 'background 0.15s, color 0.15s',
             }}
           >
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: quickFilter === 'offline' ? 'var(--red)' : 'var(--text-muted)', display: 'inline-block' }} />
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: quickFilter === 'offline' ? '#fff' : '#dc2626', display: 'inline-block' }} />
             Offline ({offlineCount})
           </button>
           <button
             onClick={() => toggleQuickFilter('fault')}
             style={{
-              border: quickFilter === 'fault' ? '1.5px solid var(--orange)' : '1px solid var(--border)',
-              borderRadius: 6, padding: '5px 10px', cursor: 'pointer',
-              background: quickFilter === 'fault' ? 'rgba(249,115,22,0.08)' : 'none',
-              color: quickFilter === 'fault' ? 'var(--orange)' : 'var(--text-secondary)',
-              fontSize: 12, fontWeight: quickFilter === 'fault' ? 600 : 400,
+              border: '1px solid #ea580c',
+              borderRadius: 6, padding: '5px 12px', cursor: 'pointer',
+              background: quickFilter === 'fault' ? '#ea580c' : 'rgba(234,88,12,0.08)',
+              color: quickFilter === 'fault' ? '#fff' : '#ea580c',
+              fontSize: 12, fontWeight: 600,
               display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap',
+              transition: 'background 0.15s, color 0.15s',
             }}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
