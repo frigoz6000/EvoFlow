@@ -9,6 +9,14 @@ const domsInfoApi = {
   populate: () => api.post('/domsinfosnapshot/populate').then(r => r.data),
 }
 
+const FAULT_KEYWORDS = ['fault', 'error', 'fail', 'alarm', 'critical', 'warning']
+
+function isFault(errorText) {
+  if (!errorText) return false
+  const lower = errorText.toLowerCase()
+  return FAULT_KEYWORDS.some(k => lower.includes(k))
+}
+
 export default function DomsInfo() {
   const [rows, setRows] = useState([])
   const [sites, setSites] = useState([])
@@ -17,6 +25,7 @@ export default function DomsInfo() {
   const [pushMsg, setPushMsg] = useState('')
   const [populating, setPopulating] = useState(false)
   const [populateMsg, setPopulateMsg] = useState('')
+  const [quickFilter, setQuickFilter] = useState('')
 
   function handlePopulate() {
     setPopulating(true)
@@ -54,13 +63,20 @@ export default function DomsInfo() {
     if (f.dateFrom) params.dateFrom = f.dateFrom
     if (f.dateTo) params.dateTo = f.dateTo
     domsInfoApi.getAll(params)
-      .then(r => setRows(r || []))
+      .then(r => { setRows(r || []); setQuickFilter('') })
       .catch(console.error)
       .finally(() => setLoading(false))
   }
 
+  // Apply quick filters on top of the loaded rows
+  const displayRows = quickFilter === 'offline'
+    ? rows.filter(r => r.deviceStatus !== 'Online')
+    : quickFilter === 'fault'
+      ? rows.filter(r => isFault(r.deviceErrorText))
+      : rows
+
   function handleExportExcel() {
-    const exportRows = rows.map(r => ({
+    const exportRows = displayRows.map(r => ({
       'DOMS Date': r.domsDate,
       'Site ID': r.siteId,
       'Name': r.name,
@@ -83,7 +99,8 @@ export default function DomsInfo() {
     const ws = XLSX.utils.json_to_sheet(exportRows)
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Doms Info')
-    XLSX.writeFile(wb, `DomsInfo_${filters.dateFrom || 'all'}_to_${filters.dateTo || 'all'}.xlsx`)
+    const suffix = quickFilter ? `_${quickFilter}` : ''
+    XLSX.writeFile(wb, `DomsInfo_${filters.dateFrom || 'all'}_to_${filters.dateTo || 'all'}${suffix}.xlsx`)
   }
 
   function handleSearch() { setPage(1); loadData(filters) }
@@ -94,15 +111,22 @@ export default function DomsInfo() {
     loadData(reset)
   }
 
+  function toggleQuickFilter(f) {
+    setQuickFilter(q => q === f ? '' : f)
+    setPage(1)
+  }
+
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 100
 
   const totalTransactions = rows.reduce((s, r) => s + (r.transactions || 0), 0)
   const onlineDevices = new Set(rows.filter(r => r.deviceStatus === 'Online').map(r => r.device)).size
   const totalDevices = new Set(rows.map(r => r.device)).size
+  const offlineCount = rows.filter(r => r.deviceStatus !== 'Online').length
+  const faultCount = rows.filter(r => isFault(r.deviceErrorText)).length
 
-  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
-  const pageRows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const totalPages = Math.max(1, Math.ceil(displayRows.length / PAGE_SIZE))
+  const pageRows = displayRows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   return (
     <ErrorBoundary fallback="Doms Info page error.">
@@ -113,33 +137,6 @@ export default function DomsInfo() {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              onClick={handleExportExcel}
-              disabled={rows.length === 0}
-              title="Export to Excel"
-              style={{
-                background: 'none',
-                border: '1px solid var(--border)',
-                borderRadius: 6,
-                padding: '6px 10px',
-                cursor: rows.length === 0 ? 'not-allowed' : 'pointer',
-                color: 'var(--text-secondary)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                fontSize: 13,
-                opacity: rows.length === 0 ? 0.4 : 1,
-              }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-                <line x1="16" y1="13" x2="8" y2="13"/>
-                <line x1="16" y1="17" x2="8" y2="17"/>
-                <polyline points="10 9 9 9 8 9"/>
-              </svg>
-              Export Excel
-            </button>
             <button
               onClick={handlePopulate}
               disabled={populating}
@@ -236,6 +233,90 @@ export default function DomsInfo() {
           <button className="btn btn-outline btn-sm" onClick={handleClear}>Clear</button>
         </div>
 
+        {/* Quick-filter bar + Export button */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px', borderBottom: '1px solid var(--border)', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={() => toggleQuickFilter('offline')}
+              style={{
+                border: quickFilter === 'offline' ? '1.5px solid var(--red)' : '1px solid var(--border)',
+                borderRadius: 6,
+                padding: '5px 12px',
+                cursor: 'pointer',
+                background: quickFilter === 'offline' ? 'rgba(239,68,68,0.08)' : 'none',
+                color: quickFilter === 'offline' ? 'var(--red)' : 'var(--text-secondary)',
+                fontSize: 13,
+                fontWeight: quickFilter === 'offline' ? 600 : 400,
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--red)', display: 'inline-block' }} />
+              Offline ({offlineCount})
+            </button>
+            <button
+              onClick={() => toggleQuickFilter('fault')}
+              style={{
+                border: quickFilter === 'fault' ? '1.5px solid var(--orange)' : '1px solid var(--border)',
+                borderRadius: 6,
+                padding: '5px 12px',
+                cursor: 'pointer',
+                background: quickFilter === 'fault' ? 'rgba(249,115,22,0.08)' : 'none',
+                color: quickFilter === 'fault' ? 'var(--orange)' : 'var(--text-secondary)',
+                fontSize: 13,
+                fontWeight: quickFilter === 'fault' ? 600 : 400,
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              Has Fault ({faultCount})
+            </button>
+            {quickFilter && (
+              <button
+                onClick={() => { setQuickFilter(''); setPage(1) }}
+                style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 12, padding: '5px 8px' }}
+              >
+                ✕ Clear filter
+              </button>
+            )}
+            {quickFilter && (
+              <span style={{ fontSize: 12, color: 'var(--text-muted)', alignSelf: 'center' }}>
+                Showing {displayRows.length.toLocaleString()} of {rows.length.toLocaleString()} rows
+              </span>
+            )}
+          </div>
+          <button
+            onClick={handleExportExcel}
+            disabled={displayRows.length === 0}
+            title="Export to Excel"
+            style={{
+              background: displayRows.length === 0 ? 'none' : '#16a34a',
+              border: '1px solid ' + (displayRows.length === 0 ? 'var(--border)' : '#16a34a'),
+              borderRadius: 6,
+              padding: '6px 14px',
+              cursor: displayRows.length === 0 ? 'not-allowed' : 'pointer',
+              color: displayRows.length === 0 ? 'var(--text-muted)' : '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: 13,
+              fontWeight: 600,
+              opacity: displayRows.length === 0 ? 0.4 : 1,
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+            Export Excel
+          </button>
+        </div>
+
         <div className="table-responsive">
           {loading ? (
             <div className="loading-state"><div className="spinner" />Loading Doms Info...</div>
@@ -264,7 +345,7 @@ export default function DomsInfo() {
                 </tr>
               </thead>
               <tbody>
-                {rows.length === 0 ? (
+                {displayRows.length === 0 ? (
                   <tr><td colSpan={18}><div className="empty-state">No data for selected filters</div></td></tr>
                 ) : pageRows.map((r, i) => (
                   <tr key={i}>
@@ -287,7 +368,7 @@ export default function DomsInfo() {
                     </td>
                     <td>
                       {r.deviceErrorText
-                        ? <span className="badge badge-gray">{r.deviceErrorText}</span>
+                        ? <span className={`badge ${isFault(r.deviceErrorText) ? 'badge-orange' : 'badge-gray'}`}>{r.deviceErrorText}</span>
                         : '—'}
                     </td>
                     <td style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
@@ -319,7 +400,7 @@ export default function DomsInfo() {
 
         <div className="pagination">
           <span className="pagination-info">
-            {rows.length.toLocaleString()} total rows · showing {((page - 1) * PAGE_SIZE) + 1}–{Math.min(page * PAGE_SIZE, rows.length)}
+            {displayRows.length.toLocaleString()} total rows · showing {((page - 1) * PAGE_SIZE) + 1}–{Math.min(page * PAGE_SIZE, displayRows.length)}
           </span>
           <button className="page-btn" disabled={page <= 1} onClick={() => setPage(1)}>«</button>
           <button className="page-btn" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>‹</button>
