@@ -27,7 +27,7 @@ const DAYS = [
 
 const EMPTY_FORM = {
   name: '',
-  reportType: REPORT_TYPES[0],
+  reportTypes: [],
   recurrencePattern: 'Daily',
   daysOfWeek: [],
   dayOfMonth: 1,
@@ -101,7 +101,7 @@ export default function ReportSchedules() {
     const s = item.schedule
     setForm({
       name: s.name,
-      reportType: s.reportType,
+      reportTypes: s.reportType ? s.reportType.split(',').map(r => r.trim()).filter(Boolean) : [],
       recurrencePattern: s.recurrencePattern,
       daysOfWeek: s.daysOfWeek ? s.daysOfWeek.split(',') : [],
       dayOfMonth: s.dayOfMonth ?? 1,
@@ -131,6 +131,15 @@ export default function ReportSchedules() {
     }))
   }
 
+  function toggleReportType(rt) {
+    setForm(f => ({
+      ...f,
+      reportTypes: f.reportTypes.includes(rt)
+        ? f.reportTypes.filter(x => x !== rt)
+        : [...f.reportTypes, rt]
+    }))
+  }
+
   function toggleRecipient(id) {
     setForm(f => ({
       ...f,
@@ -143,6 +152,7 @@ export default function ReportSchedules() {
   async function handleSubmit(e) {
     e.preventDefault()
     if (!form.name.trim()) { setError('Name is required'); return }
+    if (form.reportTypes.length === 0) { setError('Select at least one report type'); return }
     if (form.recurrencePattern === 'Weekly' && form.daysOfWeek.length === 0) {
       setError('Select at least one day for weekly recurrence'); return
     }
@@ -150,6 +160,7 @@ export default function ReportSchedules() {
     setError('')
     const payload = {
       ...form,
+      reportType: form.reportTypes.join(','),
       daysOfWeek: form.recurrencePattern === 'Weekly' ? form.daysOfWeek.join(',') : null,
       dayOfMonth: form.recurrencePattern === 'Monthly' ? form.dayOfMonth : null,
     }
@@ -238,7 +249,17 @@ export default function ReportSchedules() {
                         {new Date(d.dispatchedAt).toLocaleString()}
                       </td>
                       <td style={{ fontWeight: 600 }}>{d.scheduleName}</td>
-                      <td style={{ fontSize: 12 }}>{d.reportType}</td>
+                      <td style={{ fontSize: 12 }}>
+                        {d.reportType
+                          ? d.reportType.split(',').map(r => r.trim()).map(r => (
+                            <span key={r} style={{
+                              display: 'inline-block', marginRight: 4,
+                              padding: '1px 6px', borderRadius: 3, fontSize: 11,
+                              background: 'var(--input-bg)', border: '1px solid var(--card-border)',
+                            }}>{r}</span>
+                          ))
+                          : '—'}
+                      </td>
                       <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{d.recipients || '—'}</td>
                       <td>
                         <span style={{
@@ -274,13 +295,24 @@ export default function ReportSchedules() {
                   placeholder="e.g. Morning Fuel Summary" required />
               </div>
 
-              {/* Report Type */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <label style={labelStyle}>Report Type *</label>
-                <select className="filter-input" value={form.reportType}
-                  onChange={e => setForm(f => ({ ...f, reportType: e.target.value }))}>
-                  {REPORT_TYPES.map(r => <option key={r} value={r}>{r}</option>)}
-                </select>
+              {/* Report Types */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label style={labelStyle}>Reports * ({form.reportTypes.length} selected)</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {REPORT_TYPES.map(rt => (
+                    <label key={rt} style={{
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      padding: '5px 10px', borderRadius: 4, cursor: 'pointer',
+                      border: '1px solid var(--border)', fontSize: 12,
+                      background: form.reportTypes.includes(rt) ? 'var(--accent-bg, #eff6ff)' : 'transparent',
+                      userSelect: 'none',
+                    }}>
+                      <input type="checkbox" checked={form.reportTypes.includes(rt)}
+                        onChange={() => toggleReportType(rt)} />
+                      {rt}
+                    </label>
+                  ))}
+                </div>
               </div>
 
               {/* Recurrence + Time row */}
@@ -413,7 +445,17 @@ export default function ReportSchedules() {
                 ) : schedules.map(item => (
                   <tr key={item.schedule.id}>
                     <td style={{ fontWeight: 600 }}>{item.schedule.name}</td>
-                    <td style={{ fontSize: 12 }}>{item.schedule.reportType}</td>
+                    <td style={{ fontSize: 12 }}>
+                      {item.schedule.reportType
+                        ? item.schedule.reportType.split(',').map(r => r.trim()).map(r => (
+                          <span key={r} style={{
+                            display: 'inline-block', marginRight: 4, marginBottom: 2,
+                            padding: '1px 6px', borderRadius: 3, fontSize: 11,
+                            background: 'var(--input-bg)', border: '1px solid var(--card-border)',
+                          }}>{r}</span>
+                        ))
+                        : '—'}
+                    </td>
                     <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{describeSchedule(item.schedule)}</td>
                     <td style={{ fontSize: 12 }}>
                       {item.recipients.length === 0

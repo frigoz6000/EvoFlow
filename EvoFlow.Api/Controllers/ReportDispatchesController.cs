@@ -56,22 +56,27 @@ public class ReportDispatchesController(IDapperConnectionFactory connectionFacto
 
         try
         {
-            var excelResult = await excelReportService.GenerateAsync(schedule.ReportType);
-            var subject = $"EvoFlow Report: {schedule.ReportType}";
-            var body = BuildEmailBody(schedule, nowUtc, excelResult?.FileName);
+            var reportTypes = schedule.ReportType
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-            if (excelResult.HasValue)
+            var attachments = new List<(byte[] Data, string FileName, string ContentType)>();
+            foreach (var rt in reportTypes)
             {
-                var attachments = new[] { (excelResult.Value.Data, excelResult.Value.FileName,
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") };
-                await emailService.SendAsync(recipientEmails, subject, body, attachments);
-                notes = $"Sent to: {string.Join(", ", recipientEmails)}. Attachment: {excelResult.Value.FileName}";
+                var result = await excelReportService.GenerateAsync(rt);
+                if (result.HasValue)
+                    attachments.Add((result.Value.Data, result.Value.FileName,
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
             }
-            else
-            {
-                await emailService.SendAsync(recipientEmails, subject, body);
-                notes = $"Sent to: {string.Join(", ", recipientEmails)}. (No attachment)";
-            }
+
+            var reportLabel = reportTypes.Length == 1 ? reportTypes[0] : $"{reportTypes.Length} reports";
+            var subject = $"EvoFlow Report: {reportLabel}";
+            var body = BuildEmailBody(schedule, nowUtc, attachments.Select(a => a.FileName).ToList());
+            await emailService.SendAsync(recipientEmails, subject, body, attachments);
+
+            var fileList = attachments.Count > 0
+                ? string.Join(", ", attachments.Select(a => a.FileName))
+                : "none";
+            notes = $"Sent to: {string.Join(", ", recipientEmails)}. Attachments: {fileList}";
             status = "Sent";
         }
         catch (Exception ex)
@@ -93,7 +98,7 @@ public class ReportDispatchesController(IDapperConnectionFactory connectionFacto
         return Ok(new { status, notes });
     }
 
-    private static string BuildEmailBody(ReportSchedule schedule, DateTime nowUtc, string? attachmentName)
+    private static string BuildEmailBody(ReportSchedule schedule, DateTime nowUtc, List<string>? attachmentNames)
     {
         var localTime = nowUtc.ToLocalTime();
         return $"""
@@ -109,8 +114,8 @@ public class ReportDispatchesController(IDapperConnectionFactory connectionFacto
             </p>
             <div style="background:#f2f4f8;border-radius:8px;padding:20px;margin-bottom:24px">
               <p style="margin:0;color:#5c6478;font-size:13px">
-                {(attachmentName != null
-                    ? $"Please find the latest data attached as <strong>{attachmentName}</strong>."
+                {(attachmentNames != null && attachmentNames.Count > 0
+                    ? $"Please find the latest data attached: {string.Join(", ", attachmentNames.Select(n => $"<strong>{n}</strong>"))}."
                     : "This is an automated report notification from EvoFlow.")}
               </p>
             </div>

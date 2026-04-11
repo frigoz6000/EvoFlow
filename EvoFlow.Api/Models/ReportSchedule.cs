@@ -13,8 +13,9 @@ public class ReportSchedule
     [MaxLength(200)]
     public string Name { get; set; } = null!;
 
+    /// <summary>Comma-separated report type names, e.g. "Daily Fuel Summary,Flow Rate Analysis"</summary>
     [Required]
-    [MaxLength(100)]
+    [MaxLength(1000)]
     public string ReportType { get; set; } = null!;
 
     /// <summary>Daily | Weekly | Monthly</summary>
