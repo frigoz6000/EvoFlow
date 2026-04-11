@@ -9,8 +9,7 @@ namespace EvoFlow.Api.Controllers;
 [Route("api/import")]
 public class ImportController(IDapperConnectionFactory connectionFactory, ILogger<ImportController> logger) : ControllerBase
 {
-    private static readonly string ScriptPath = Path.GetFullPath(
-        Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "import_xml.py"));
+    private static readonly string ScriptPath = @"C:\Users\roryj\.paperclip\instances\default\workspaces\0f171b86-1c9b-491f-b414-089c40818833\import_xml.py";
 
     private const string PopulateSql = @"
         TRUNCATE TABLE DomsInfoSnapshot;
