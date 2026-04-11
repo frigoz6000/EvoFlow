@@ -17,6 +17,7 @@ public class EvoFlowDbContext(DbContextOptions<EvoFlowDbContext> options) : DbCo
     public DbSet<PumpTotals> PumpTotals => Set<PumpTotals>();
     public DbSet<PumpGradeTotals> PumpGradeTotals => Set<PumpGradeTotals>();
     public DbSet<PumpTankConsumption> PumpTankConsumption => Set<PumpTankConsumption>();
+    public DbSet<EmailRecipient> EmailRecipients => Set<EmailRecipient>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

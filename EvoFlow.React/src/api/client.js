@@ -38,4 +38,11 @@ export const pumpMonitoringApi = {
   getAll: (params = {}) => api.get('/pumpmonitoring', { params }).then(r => r.data),
 }
 
+export const emailRecipientsApi = {
+  getAll: () => api.get('/emailrecipients').then(r => r.data),
+  create: (recipient) => api.post('/emailrecipients', recipient).then(r => r.data),
+  update: (id, recipient) => api.put(`/emailrecipients/${id}`, recipient).then(r => r.data),
+  remove: (id) => api.delete(`/emailrecipients/${id}`),
+}
+
 export default api

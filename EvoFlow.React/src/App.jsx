@@ -13,6 +13,7 @@ import ActiveAlarms from './pages/ActiveAlarms'
 import AlarmHistory from './pages/AlarmHistory'
 import AlarmNotifications from './pages/AlarmNotifications'
 import TankGauges from './pages/TankGauges'
+import EmailRecipients from './pages/EmailRecipients'
 
 export default function App() {
   return (
@@ -32,6 +33,7 @@ export default function App() {
           <Route path="alarm-history" element={<AlarmHistory />} />
           <Route path="alarm-notifications" element={<AlarmNotifications />} />
           <Route path="tank-gauges" element={<TankGauges />} />
+          <Route path="config/email-recipients" element={<EmailRecipients />} />
         </Route>
       </Routes>
     </BrowserRouter>
