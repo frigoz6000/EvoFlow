@@ -98,6 +98,10 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+button, input, select, textarea {
+  font-family: inherit;
+}
+
 html { height: 100%; }
 
 body {
@@ -509,6 +513,7 @@ body {
   padding: 6px 13px;
   border-radius: var(--radius);
   font-size: 12px;
+  font-family: inherit;
   font-weight: 600;
   cursor: pointer;
   border: 1px solid transparent;
