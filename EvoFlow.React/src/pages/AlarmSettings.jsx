@@ -82,7 +82,7 @@ export default function AlarmSettings() {
           <div className="card-header">
             <span className="card-title">Configure: {editingAlarm.alarmType.name}</span>
           </div>
-          <div style={{ padding: '16px 20px' }}>
+          <div style={{ padding: '20px 22px' }}>
             <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 14 }}>
               {editingAlarm.alarmType.description}
             </p>
@@ -202,8 +202,7 @@ export default function AlarmSettings() {
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         <button
-                          className="btn btn-secondary"
-                          style={{ fontSize: 11, padding: '2px 10px' }}
+                          className="btn btn-secondary btn-sm"
                           onClick={() => handleEdit(alarm)}
                         >Configure</button>
                       </td>

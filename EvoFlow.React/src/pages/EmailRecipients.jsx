@@ -92,7 +92,7 @@ export default function EmailRecipients() {
           <div className="card-header">
             <span className="card-title">{editingId ? 'Edit Recipient' : 'Add Recipient'}</span>
           </div>
-          <div style={{ padding: '16px 20px' }}>
+          <div style={{ padding: '20px 22px' }}>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 480 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Email Address *</label>
@@ -179,13 +179,12 @@ export default function EmailRecipients() {
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       <button
-                        className="btn btn-secondary"
-                        style={{ fontSize: 11, padding: '2px 10px', marginRight: 6 }}
+                        className="btn btn-secondary btn-sm"
+                        style={{ marginRight: 6 }}
                         onClick={() => handleEdit(r)}
                       >Edit</button>
                       <button
-                        className="btn"
-                        style={{ fontSize: 11, padding: '2px 10px', background: 'var(--danger, #dc2626)', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}
+                        className="btn btn-danger btn-sm"
                         onClick={() => handleDelete(r.id)}
                       >Remove</button>
                     </td>

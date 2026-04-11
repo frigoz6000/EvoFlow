@@ -179,7 +179,7 @@ export default function ReportSchedules() {
           <div className="card-header">
             <span className="card-title">{editingId ? 'Edit Schedule' : 'New Report Schedule'}</span>
           </div>
-          <div style={{ padding: '16px 20px' }}>
+          <div style={{ padding: '20px 22px' }}>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 560 }}>
 
               {/* Name */}
@@ -347,11 +347,10 @@ export default function ReportSchedules() {
                       </span>
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      <button className="btn btn-secondary"
-                        style={{ fontSize: 11, padding: '2px 10px', marginRight: 6 }}
+                      <button className="btn btn-secondary btn-sm"
+                        style={{ marginRight: 6 }}
                         onClick={() => handleEdit(item)}>Edit</button>
-                      <button className="btn"
-                        style={{ fontSize: 11, padding: '2px 10px', background: 'var(--danger, #dc2626)', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}
+                      <button className="btn btn-danger btn-sm"
                         onClick={() => handleDelete(item.schedule.id)}>Delete</button>
                     </td>
                   </tr>
