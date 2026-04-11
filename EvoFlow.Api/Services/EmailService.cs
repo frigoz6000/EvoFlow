@@ -5,7 +5,8 @@ namespace EvoFlow.Api.Services;
 
 public interface IEmailService
 {
-    Task SendAsync(IEnumerable<string> to, string subject, string body);
+    Task SendAsync(IEnumerable<string> to, string subject, string body,
+        IEnumerable<(byte[] Data, string FileName, string ContentType)>? attachments = null);
     bool IsConfigured { get; }
 }
 
@@ -23,7 +24,8 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger) :
         && !string.IsNullOrWhiteSpace(_username)
         && !string.IsNullOrWhiteSpace(_fromAddress);
 
-    public async Task SendAsync(IEnumerable<string> to, string subject, string body)
+    public async Task SendAsync(IEnumerable<string> to, string subject, string body,
+        IEnumerable<(byte[] Data, string FileName, string ContentType)>? attachments = null)
     {
         if (!IsConfigured)
         {
@@ -49,8 +51,27 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger) :
         foreach (var addr in to)
             message.To.Add(addr);
 
-        logger.LogInformation("Sending email: subject={Subject} to={To}", subject, string.Join(", ", to));
-        await smtp.SendMailAsync(message);
-        logger.LogInformation("Email sent successfully.");
+        var streams = new List<MemoryStream>();
+        if (attachments != null)
+        {
+            foreach (var (data, fileName, contentType) in attachments)
+            {
+                var ms = new MemoryStream(data);
+                streams.Add(ms);
+                message.Attachments.Add(new Attachment(ms, fileName, contentType));
+            }
+        }
+
+        try
+        {
+            logger.LogInformation("Sending email: subject={Subject} to={To} attachments={Count}",
+                subject, string.Join(", ", to), message.Attachments.Count);
+            await smtp.SendMailAsync(message);
+            logger.LogInformation("Email sent successfully.");
+        }
+        finally
+        {
+            foreach (var s in streams) s.Dispose();
+        }
     }
 }

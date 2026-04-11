@@ -112,11 +112,25 @@ public class ReportDispatchService(IServiceScopeFactory scopeFactory, ILogger<Re
             }
             else
             {
+                var reportGenerator = scope.ServiceProvider.GetRequiredService<IExcelReportService>();
+                var excelResult = await reportGenerator.GenerateAsync(schedule.ReportType);
+
                 var subject = $"EvoFlow Report: {schedule.ReportType}";
-                var body = BuildEmailBody(schedule, nowUtc);
-                await emailService.SendAsync(recipientEmails, subject, body);
+                var body = BuildEmailBody(schedule, nowUtc, excelResult?.FileName);
+
+                if (excelResult.HasValue)
+                {
+                    var attachments = new[] { (excelResult.Value.Data, excelResult.Value.FileName,
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") };
+                    await emailService.SendAsync(recipientEmails, subject, body, attachments);
+                    notes = $"Sent to: {string.Join(", ", recipientEmails)}. Attachment: {excelResult.Value.FileName}";
+                }
+                else
+                {
+                    await emailService.SendAsync(recipientEmails, subject, body);
+                    notes = $"Sent to: {string.Join(", ", recipientEmails)}. (No attachment — report generation failed)";
+                }
                 status = "Sent";
-                notes = $"Sent to: {string.Join(", ", recipientEmails)}";
             }
 
             logger.LogInformation(
@@ -142,7 +156,7 @@ public class ReportDispatchService(IServiceScopeFactory scopeFactory, ILogger<Re
         await db.SaveChangesAsync();
     }
 
-    private static string BuildEmailBody(ReportSchedule schedule, DateTime nowUtc)
+    private static string BuildEmailBody(ReportSchedule schedule, DateTime nowUtc, string? attachmentName = null)
     {
         var localTime = nowUtc.ToLocalTime();
         return $"""
@@ -158,8 +172,9 @@ public class ReportDispatchService(IServiceScopeFactory scopeFactory, ILogger<Re
             </p>
             <div style="background:#f2f4f8;border-radius:8px;padding:20px;margin-bottom:24px">
               <p style="margin:0;color:#5c6478;font-size:13px">
-                This is an automated report notification from EvoFlow.<br/>
-                Full report data will be available in the EvoFlow dashboard.
+                {(attachmentName != null
+                    ? $"Please find the latest data attached as <strong>{attachmentName}</strong>."
+                    : "This is an automated report notification from EvoFlow.")}
               </p>
             </div>
             {(string.IsNullOrWhiteSpace(schedule.Notes) ? "" : $"<p style='font-size:12px;color:#9ca3af'>Note: {schedule.Notes}</p>")}
