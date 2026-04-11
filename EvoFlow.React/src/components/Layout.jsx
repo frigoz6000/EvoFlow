@@ -8,7 +8,7 @@ import {
   IconSearch, IconSun, IconMoon, IconTable,
   IconActivity, IconAlertTriangle, IconBarChart, IconDroplets,
   IconAlarmActive, IconAlarmHistory, IconNotifications,
-  IconMenu, IconMail
+  IconMenu, IconMail, IconSettings
 } from './Icons'
 
 const NAV = [
@@ -32,6 +32,7 @@ const NAV = [
   { to: '/alarm-notifications', icon: IconNotifications, label: 'Notifications' },
   { section: 'CONFIG' },
   { to: '/config/email-recipients', icon: IconMail, label: 'Email' },
+  { to: '/config/alarm-settings', icon: IconSettings, label: 'Alarm Settings' },
 ]
 
 const PAGE_TITLES = {
@@ -50,6 +51,7 @@ const PAGE_TITLES = {
   '/alarm-history': 'Alarm History',
   '/alarm-notifications': 'Notifications',
   '/config/email-recipients': 'Email Recipients',
+  '/config/alarm-settings': 'Alarm Settings',
 }
 
 export default function Layout() {

@@ -45,4 +45,9 @@ export const emailRecipientsApi = {
   remove: (id) => api.delete(`/emailrecipients/${id}`),
 }
 
+export const alarmSettingsApi = {
+  getAll: () => api.get('/alarmsettings').then(r => r.data),
+  upsert: (payload) => api.post('/alarmsettings', payload).then(r => r.data),
+}
+
 export default api
