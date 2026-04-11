@@ -57,4 +57,8 @@ export const reportSchedulesApi = {
   remove: (id) => api.delete(`/reportschedules/${id}`),
 }
 
+export const reportDispatchesApi = {
+  getRecent: (params = {}) => api.get('/reportdispatches', { params }).then(r => r.data),
+}
+
 export default api

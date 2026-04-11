@@ -23,6 +23,7 @@ public class EvoFlowDbContext(DbContextOptions<EvoFlowDbContext> options) : DbCo
     public DbSet<AlarmSettingRecipient> AlarmSettingRecipients => Set<AlarmSettingRecipient>();
     public DbSet<ReportSchedule> ReportSchedules => Set<ReportSchedule>();
     public DbSet<ReportScheduleRecipient> ReportScheduleRecipients => Set<ReportScheduleRecipient>();
+    public DbSet<ReportDispatch> ReportDispatches => Set<ReportDispatch>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -79,6 +80,11 @@ public class EvoFlowDbContext(DbContextOptions<EvoFlowDbContext> options) : DbCo
             e.HasOne(x => x.ReportSchedule).WithMany(x => x.Recipients).HasForeignKey(x => x.ReportScheduleId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(x => x.EmailRecipient).WithMany().HasForeignKey(x => x.EmailRecipientId).OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(x => new { x.ReportScheduleId, x.EmailRecipientId }).IsUnique();
+        });
+
+        modelBuilder.Entity<ReportDispatch>(e =>
+        {
+            e.HasOne(x => x.ReportSchedule).WithMany().HasForeignKey(x => x.ReportScheduleId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<AlarmType>().HasData(

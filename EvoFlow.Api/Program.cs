@@ -1,5 +1,6 @@
 using Dapper;
 using EvoFlow.Api.Data;
+using EvoFlow.Api.Services;
 using Microsoft.EntityFrameworkCore;
 
 SqlMapper.AddTypeHandler(new TimeOnlyTypeHandler());
@@ -23,6 +24,7 @@ builder.Services.AddDbContext<EvoFlowDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("EvoFlow")));
 
 builder.Services.AddScoped<IDapperConnectionFactory, DapperConnectionFactory>();
+builder.Services.AddHostedService<ReportDispatchService>();
 
 var app = builder.Build();
 

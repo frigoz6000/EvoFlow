@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { reportSchedulesApi, emailRecipientsApi } from '../api/client'
+import { reportSchedulesApi, emailRecipientsApi, reportDispatchesApi } from '../api/client'
 import ErrorBoundary from '../components/ErrorBoundary'
 
 const REPORT_TYPES = [
@@ -53,9 +53,12 @@ function describeSchedule(schedule) {
 }
 
 export default function ReportSchedules() {
+  const [tab, setTab] = useState('schedules') // 'schedules' | 'history'
   const [schedules, setSchedules] = useState([])
   const [recipients, setRecipients] = useState([])
+  const [dispatches, setDispatches] = useState([])
   const [loading, setLoading] = useState(true)
+  const [historyLoading, setHistoryLoading] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [editingId, setEditingId] = useState(null)
   const [showForm, setShowForm] = useState(false)
@@ -73,6 +76,19 @@ export default function ReportSchedules() {
   }
 
   useEffect(() => { load().catch(() => { setError('Failed to load data'); setLoading(false) }) }, [])
+
+  function loadHistory() {
+    setHistoryLoading(true)
+    reportDispatchesApi.getRecent()
+      .then(data => setDispatches(Array.isArray(data) ? data : []))
+      .catch(() => {})
+      .finally(() => setHistoryLoading(false))
+  }
+
+  function handleTabChange(t) {
+    setTab(t)
+    if (t === 'history' && dispatches.length === 0) loadHistory()
+  }
 
   function handleNew() {
     setForm(EMPTY_FORM)
@@ -171,10 +187,78 @@ export default function ReportSchedules() {
           <div className="page-title">Report Schedules</div>
           <div className="page-subtitle">Schedule automated reports to be sent to email recipients</div>
         </div>
-        <button className="btn btn-primary" onClick={handleNew}>+ Add Schedule</button>
+        {tab === 'schedules' && (
+          <button className="btn btn-primary" onClick={handleNew}>+ Add Schedule</button>
+        )}
+        {tab === 'history' && (
+          <button className="btn btn-secondary" onClick={loadHistory}>Refresh</button>
+        )}
       </div>
 
-      {showForm && (
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '1px solid var(--card-border)' }}>
+        {['schedules', 'history'].map(t => (
+          <button key={t} onClick={() => handleTabChange(t)} style={{
+            padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            background: 'none', border: 'none', borderBottom: `2px solid ${tab === t ? 'var(--accent)' : 'transparent'}`,
+            color: tab === t ? 'var(--accent)' : 'var(--text-secondary)',
+            marginBottom: -1, transition: 'color 0.15s',
+          }}>
+            {t === 'schedules' ? 'Schedules' : 'Dispatch History'}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'history' && (
+        <div className="card">
+          <div className="card-header">
+            <span className="card-title">Recent Dispatches — last 100</span>
+          </div>
+          <div className="table-responsive">
+            {historyLoading ? (
+              <div className="loading-state"><div className="spinner" />Loading history...</div>
+            ) : dispatches.length === 0 ? (
+              <div className="loading-state">No dispatches recorded yet. Reports will appear here once the background service fires them.</div>
+            ) : (
+              <table className="evo-table">
+                <thead>
+                  <tr>
+                    <th>Dispatched</th>
+                    <th>Schedule</th>
+                    <th>Report</th>
+                    <th>Recipients</th>
+                    <th>Status</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dispatches.map(d => (
+                    <tr key={d.id}>
+                      <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+                        {new Date(d.dispatchedAt).toLocaleString()}
+                      </td>
+                      <td style={{ fontWeight: 600 }}>{d.scheduleName}</td>
+                      <td style={{ fontSize: 12 }}>{d.reportType}</td>
+                      <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{d.recipients || '—'}</td>
+                      <td>
+                        <span style={{
+                          display: 'inline-block', padding: '2px 8px', borderRadius: 4,
+                          fontSize: 11, fontWeight: 600,
+                          background: d.status === 'Sent' ? 'var(--success-bg, #d1fae5)' : d.status === 'Failed' ? 'var(--red-light)' : 'var(--input-bg)',
+                          color: d.status === 'Sent' ? 'var(--success, #059669)' : d.status === 'Failed' ? 'var(--red)' : 'var(--text-secondary)',
+                        }}>{d.status}</span>
+                      </td>
+                      <td style={{ fontSize: 12, color: 'var(--text-secondary)', maxWidth: 300 }}>{d.notes || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      )}
+
+      {tab === 'schedules' && showForm && (
         <div className="card mb-4">
           <div className="card-header">
             <span className="card-title">{editingId ? 'Edit Schedule' : 'New Report Schedule'}</span>
@@ -304,7 +388,7 @@ export default function ReportSchedules() {
         </div>
       )}
 
-      <div className="card">
+      {tab === 'schedules' && <div className="card">
         <div className="card-header">
           <span className="card-title">Schedules — {schedules.length} configured</span>
         </div>
@@ -359,7 +443,7 @@ export default function ReportSchedules() {
             </table>
           )}
         </div>
-      </div>
+      </div>}
     </ErrorBoundary>
   )
 }
