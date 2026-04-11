@@ -50,4 +50,11 @@ export const alarmSettingsApi = {
   upsert: (payload) => api.post('/alarmsettings', payload).then(r => r.data),
 }
 
+export const reportSchedulesApi = {
+  getAll: () => api.get('/reportschedules').then(r => r.data),
+  create: (payload) => api.post('/reportschedules', payload).then(r => r.data),
+  update: (id, payload) => api.put(`/reportschedules/${id}`, payload).then(r => r.data),
+  remove: (id) => api.delete(`/reportschedules/${id}`),
+}
+
 export default api

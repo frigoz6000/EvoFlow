@@ -21,6 +21,8 @@ public class EvoFlowDbContext(DbContextOptions<EvoFlowDbContext> options) : DbCo
     public DbSet<AlarmType> AlarmTypes => Set<AlarmType>();
     public DbSet<AlarmSetting> AlarmSettings => Set<AlarmSetting>();
     public DbSet<AlarmSettingRecipient> AlarmSettingRecipients => Set<AlarmSettingRecipient>();
+    public DbSet<ReportSchedule> ReportSchedules => Set<ReportSchedule>();
+    public DbSet<ReportScheduleRecipient> ReportScheduleRecipients => Set<ReportScheduleRecipient>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -65,6 +67,18 @@ public class EvoFlowDbContext(DbContextOptions<EvoFlowDbContext> options) : DbCo
             e.HasOne(x => x.AlarmSetting).WithMany(x => x.Recipients).HasForeignKey(x => x.AlarmSettingId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(x => x.EmailRecipient).WithMany().HasForeignKey(x => x.EmailRecipientId).OnDelete(DeleteBehavior.Cascade);
             e.HasIndex(x => new { x.AlarmSettingId, x.EmailRecipientId }).IsUnique();
+        });
+
+        modelBuilder.Entity<ReportSchedule>(e =>
+        {
+            e.Property(x => x.TimeOfDay).HasColumnType("time");
+        });
+
+        modelBuilder.Entity<ReportScheduleRecipient>(e =>
+        {
+            e.HasOne(x => x.ReportSchedule).WithMany(x => x.Recipients).HasForeignKey(x => x.ReportScheduleId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.EmailRecipient).WithMany().HasForeignKey(x => x.EmailRecipientId).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => new { x.ReportScheduleId, x.EmailRecipientId }).IsUnique();
         });
 
         modelBuilder.Entity<AlarmType>().HasData(

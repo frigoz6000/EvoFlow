@@ -15,6 +15,7 @@ import AlarmNotifications from './pages/AlarmNotifications'
 import TankGauges from './pages/TankGauges'
 import EmailRecipients from './pages/EmailRecipients'
 import AlarmSettings from './pages/AlarmSettings'
+import ReportSchedules from './pages/ReportSchedules'
 
 export default function App() {
   return (
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="tank-gauges" element={<TankGauges />} />
           <Route path="config/email-recipients" element={<EmailRecipients />} />
           <Route path="config/alarm-settings" element={<AlarmSettings />} />
+          <Route path="config/report-schedules" element={<ReportSchedules />} />
         </Route>
       </Routes>
     </BrowserRouter>
