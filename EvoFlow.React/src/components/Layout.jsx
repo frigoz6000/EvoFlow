@@ -34,6 +34,7 @@ const NAV = [
   { to: '/config/email-recipients', icon: IconMail, label: 'Email' },
   { to: '/config/alarm-settings', icon: IconSettings, label: 'Alarm Settings' },
   { to: '/config/report-schedules', icon: IconCalendar, label: 'Report Schedules' },
+  { to: '/config/import-data', icon: IconTable, label: 'Import Data' },
 ]
 
 const PAGE_TITLES = {
@@ -54,6 +55,7 @@ const PAGE_TITLES = {
   '/config/email-recipients': 'Email Recipients',
   '/config/alarm-settings': 'Alarm Settings',
   '/config/report-schedules': 'Report Schedules',
+  '/config/import-data': 'Import Data',
 }
 
 export default function Layout() {
