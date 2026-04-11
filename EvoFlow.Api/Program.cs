@@ -24,6 +24,7 @@ builder.Services.AddDbContext<EvoFlowDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("EvoFlow")));
 
 builder.Services.AddScoped<IDapperConnectionFactory, DapperConnectionFactory>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddHostedService<ReportDispatchService>();
 
 var app = builder.Build();

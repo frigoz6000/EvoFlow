@@ -1,4 +1,3 @@
-using Dapper;
 using EvoFlow.Api.Data;
 using EvoFlow.Api.Models;
 using Microsoft.EntityFrameworkCore;
@@ -97,18 +96,32 @@ public class ReportDispatchService(IServiceScopeFactory scopeFactory, ILogger<Re
 
         try
         {
-            // TODO: wire up a real email provider (SMTP / SendGrid / etc.)
-            // For now, log the dispatch — the infrastructure for actual sending
-            // should be added when email credentials are configured.
-            logger.LogInformation(
-                "Report dispatch: schedule={ScheduleId} name={Name} report={Report} recipients={Recipients}",
-                schedule.Id, schedule.Name, schedule.ReportType,
-                string.Join(", ", recipientEmails));
+            using var scope = scopeFactory.CreateScope();
+            var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
 
-            status = "Sent";
-            notes = recipientEmails.Count > 0
-                ? $"Would send to: {string.Join(", ", recipientEmails)}"
-                : "No active recipients configured.";
+            if (recipientEmails.Count == 0)
+            {
+                status = "Skipped";
+                notes = "No active recipients configured for this schedule.";
+            }
+            else if (!emailService.IsConfigured)
+            {
+                logger.LogWarning("Email not configured — report dispatch logged only. Configure Email settings in appsettings.json.");
+                status = "Skipped";
+                notes = $"Email not configured. Would send to: {string.Join(", ", recipientEmails)}";
+            }
+            else
+            {
+                var subject = $"EvoFlow Report: {schedule.ReportType}";
+                var body = BuildEmailBody(schedule, nowUtc);
+                await emailService.SendAsync(recipientEmails, subject, body);
+                status = "Sent";
+                notes = $"Sent to: {string.Join(", ", recipientEmails)}";
+            }
+
+            logger.LogInformation(
+                "Report dispatch: schedule={ScheduleId} name={Name} status={Status}",
+                schedule.Id, schedule.Name, status);
         }
         catch (Exception ex)
         {
@@ -127,5 +140,33 @@ public class ReportDispatchService(IServiceScopeFactory scopeFactory, ILogger<Re
         });
 
         await db.SaveChangesAsync();
+    }
+
+    private static string BuildEmailBody(ReportSchedule schedule, DateTime nowUtc)
+    {
+        var localTime = nowUtc.ToLocalTime();
+        return $"""
+            <html><body style="font-family:Inter,sans-serif;color:#14172a;max-width:600px;margin:0 auto;padding:24px">
+            <div style="background:#1a1d35;border-radius:10px;padding:18px 24px;margin-bottom:24px">
+              <span style="color:#ffffff;font-size:18px;font-weight:700">EvoFlow</span>
+              <span style="color:#8b93bc;font-size:13px;margin-left:12px">Scheduled Report</span>
+            </div>
+            <h2 style="margin:0 0 8px;font-size:20px">{schedule.ReportType}</h2>
+            <p style="color:#5c6478;margin:0 0 24px;font-size:13px">
+              Schedule: <strong>{schedule.Name}</strong> &nbsp;·&nbsp;
+              Dispatched: <strong>{localTime:dd MMM yyyy HH:mm}</strong>
+            </p>
+            <div style="background:#f2f4f8;border-radius:8px;padding:20px;margin-bottom:24px">
+              <p style="margin:0;color:#5c6478;font-size:13px">
+                This is an automated report notification from EvoFlow.<br/>
+                Full report data will be available in the EvoFlow dashboard.
+              </p>
+            </div>
+            {(string.IsNullOrWhiteSpace(schedule.Notes) ? "" : $"<p style='font-size:12px;color:#9ca3af'>Note: {schedule.Notes}</p>")}
+            <p style="font-size:11px;color:#9ca3af;border-top:1px solid #e4e6ef;padding-top:16px;margin-top:24px">
+              Sent by EvoFlow Report Scheduler · <a href="http://localhost:5019/config/report-schedules" style="color:#e91e8c">Manage schedules</a>
+            </p>
+            </body></html>
+            """;
     }
 }
