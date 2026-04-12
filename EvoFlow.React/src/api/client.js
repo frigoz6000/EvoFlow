@@ -67,4 +67,8 @@ export const emailConfigApi = {
   upsert: (config) => api.post('/emailconfig', config).then(r => r.data),
 }
 
+export const emailLogApi = {
+  getAll: (params = {}) => api.get('/emaillog', { params }).then(r => r.data),
+}
+
 export default api

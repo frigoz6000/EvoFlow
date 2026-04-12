@@ -1,5 +1,7 @@
 using System.Net;
 using System.Net.Mail;
+using EvoFlow.Api.Data;
+using EvoFlow.Api.Models;
 
 namespace EvoFlow.Api.Services;
 
@@ -10,7 +12,7 @@ public interface IEmailService
     bool IsConfigured { get; }
 }
 
-public class EmailService(IConfiguration config, ILogger<EmailService> logger) : IEmailService
+public class EmailService(IConfiguration config, ILogger<EmailService> logger, EvoFlowDbContext db) : IEmailService
 {
     private readonly string _host = config["Email:SmtpHost"] ?? "";
     private readonly int _port = int.TryParse(config["Email:SmtpPort"], out var p) ? p : 587;
@@ -27,6 +29,9 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger) :
     public async Task SendAsync(IEnumerable<string> to, string subject, string body,
         IEnumerable<(byte[] Data, string FileName, string ContentType)>? attachments = null)
     {
+        var toList = to.ToList();
+        var recipientsCsv = string.Join(", ", toList);
+
         if (!IsConfigured)
         {
             logger.LogWarning("Email not configured — skipping send. Set Email:SmtpHost, Email:Username, Email:Password, Email:FromAddress in appsettings.");
@@ -48,7 +53,7 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger) :
             IsBodyHtml = true,
         };
 
-        foreach (var addr in to)
+        foreach (var addr in toList)
             message.To.Add(addr);
 
         var streams = new List<MemoryStream>();
@@ -65,9 +70,34 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger) :
         try
         {
             logger.LogInformation("Sending email: subject={Subject} to={To} attachments={Count}",
-                subject, string.Join(", ", to), message.Attachments.Count);
+                subject, recipientsCsv, message.Attachments.Count);
             await smtp.SendMailAsync(message);
             logger.LogInformation("Email sent successfully.");
+
+            db.EmailLogs.Add(new EmailLog
+            {
+                SentAtUtc = DateTime.UtcNow,
+                Recipients = recipientsCsv,
+                Subject = subject,
+                Status = "Sent",
+            });
+            await db.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to send email to {To}", recipientsCsv);
+
+            db.EmailLogs.Add(new EmailLog
+            {
+                SentAtUtc = DateTime.UtcNow,
+                Recipients = recipientsCsv,
+                Subject = subject,
+                Status = "Failed",
+                ErrorMessage = ex.Message,
+            });
+            await db.SaveChangesAsync();
+
+            throw;
         }
         finally
         {
