@@ -69,19 +69,21 @@ public class ImportController(IDapperConnectionFactory connectionFactory, ILogge
 
     /// <summary>
     /// Runs the XML import script then repopulates DomsInfoSnapshot.
+    /// Pass skipDelete=true to append without clearing existing data first.
     /// </summary>
     [HttpPost("doms-files")]
-    public async Task<IActionResult> ImportDomsFiles()
+    public async Task<IActionResult> ImportDomsFiles([FromQuery] bool skipDelete = false)
     {
         var started = DateTime.UtcNow;
 
         // Step 1: run Python import script
-        logger.LogInformation("Starting DOMS XML import. Script: {Path}", ScriptPath);
+        logger.LogInformation("Starting DOMS XML import (skipDelete={SkipDelete}). Script: {Path}", skipDelete, ScriptPath);
 
         if (!System.IO.File.Exists(ScriptPath))
             return StatusCode(500, new { error = $"Import script not found at: {ScriptPath}" });
 
-        var (exitCode, stdout, stderr) = await RunProcess("python", ScriptPath, TimeSpan.FromMinutes(10));
+        var scriptArgs = skipDelete ? $"{ScriptPath} --no-delete" : ScriptPath;
+        var (exitCode, stdout, stderr) = await RunProcess("python", scriptArgs, TimeSpan.FromMinutes(10));
 
         if (exitCode != 0)
         {

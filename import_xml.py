@@ -352,6 +352,9 @@ def import_xml(cursor, filepath: str):
 
 
 def main():
+    import sys
+    skip_delete = "--no-delete" in sys.argv
+
     xml_files = sorted(glob.glob(os.path.join(XML_DIR, "*.xml")))
     print(f"Found {len(xml_files)} XML files.")
 
@@ -359,29 +362,32 @@ def main():
     conn.autocommit = False
     cursor = conn.cursor()
 
-    # Step 1: Delete all data (in FK-safe order)
-    print("Deleting all existing data...")
-    tables = [
-        "PumpFlowInfo",
-        "PumpMonitoringGrade",
-        "PumpMonitoring",
-        "PumpTankConsumption",
-        "PumpGradeTotals",
-        "PumpTotals",
-        "PumpStatus",
-        "TankGauges",
-        "FuelRecords",
-        "PumpDevices",
-        "Sites",
-        "FuelTypes",
-        "Vehicles",
-        "DomsInfoSnapshot",
-    ]
-    for table in tables:
-        cursor.execute(f"DELETE FROM [{table}]")
-        print(f"  Cleared {table}")
-    conn.commit()
-    print("All tables cleared.")
+    if skip_delete:
+        print("Skipping delete step (append mode).")
+    else:
+        # Step 1: Delete all data (in FK-safe order)
+        print("Deleting all existing data...")
+        tables = [
+            "PumpFlowInfo",
+            "PumpMonitoringGrade",
+            "PumpMonitoring",
+            "PumpTankConsumption",
+            "PumpGradeTotals",
+            "PumpTotals",
+            "PumpStatus",
+            "TankGauges",
+            "FuelRecords",
+            "PumpDevices",
+            "Sites",
+            "FuelTypes",
+            "Vehicles",
+            "DomsInfoSnapshot",
+        ]
+        for table in tables:
+            cursor.execute(f"DELETE FROM [{table}]")
+            print(f"  Cleared {table}")
+        conn.commit()
+        print("All tables cleared.")
 
     # Step 2: Import each XML
     success = 0
