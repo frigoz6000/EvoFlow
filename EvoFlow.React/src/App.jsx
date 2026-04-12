@@ -5,7 +5,6 @@ import Sites from './pages/Sites'
 import SiteDetail from './pages/SiteDetail'
 import FuelRecords from './pages/FuelRecords'
 import PumpMonitoring from './pages/PumpMonitoring'
-import Alerts from './pages/Alerts'
 import DomsInfo from './pages/DomsInfo'
 import FlowRates from './pages/FlowRates'
 import DeviceAlerts from './pages/DeviceAlerts'
@@ -30,8 +29,7 @@ export default function App() {
           <Route path="sites/:siteId" element={<SiteDetail />} />
           <Route path="fuel-records" element={<FuelRecords />} />
           <Route path="pump-monitoring" element={<PumpMonitoring />} />
-          <Route path="alerts" element={<Alerts />} />
-          <Route path="doms-info" element={<DomsInfo />} />
+<Route path="doms-info" element={<DomsInfo />} />
           <Route path="flow-rates" element={<FlowRates />} />
           <Route path="device-alerts" element={<DeviceAlerts />} />
           <Route path="volume-revenue" element={<VolumeRevenue />} />
