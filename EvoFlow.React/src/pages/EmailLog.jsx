@@ -30,7 +30,13 @@ export default function EmailLog() {
   function load(p) {
     setLoading(true)
     emailLogApi.getAll({ page: p, pageSize: PAGE_SIZE })
-      .then(d => setData(d || { total: 0, rows: [] }))
+      .then(d => {
+        if (d && Array.isArray(d.rows)) {
+          setData(d)
+        } else {
+          setError('Failed to load email log — please restart the API server to activate the new endpoint.')
+        }
+      })
       .catch(() => setError('Failed to load email log'))
       .finally(() => setLoading(false))
   }
