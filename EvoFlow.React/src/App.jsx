@@ -17,6 +17,7 @@ import EmailRecipients from './pages/EmailRecipients'
 import AlarmSettings from './pages/AlarmSettings'
 import ReportSchedules from './pages/ReportSchedules'
 import ImportData from './pages/ImportData'
+import DataIntegrity from './pages/DataIntegrity'
 
 export default function App() {
   return (
@@ -40,6 +41,7 @@ export default function App() {
           <Route path="config/alarm-settings" element={<AlarmSettings />} />
           <Route path="config/report-schedules" element={<ReportSchedules />} />
           <Route path="config/import-data" element={<ImportData />} />
+          <Route path="data-integrity" element={<DataIntegrity />} />
         </Route>
       </Routes>
     </BrowserRouter>
