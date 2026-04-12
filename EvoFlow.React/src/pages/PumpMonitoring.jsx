@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { pumpDevicesApi, pumpStatusApi, pumpTotalsApi, sitesApi } from '../api/client'
-import { useOutletContext } from 'react-router-dom'
+import { useOutletContext, useNavigate } from 'react-router-dom'
 import ErrorBoundary from '../components/ErrorBoundary'
 
 export default function PumpMonitoring() {
+  const navigate = useNavigate()
   const [devices, setDevices] = useState([])
   const [statuses, setStatuses] = useState([])
   const [totals, setTotals] = useState([])
@@ -135,7 +136,7 @@ export default function PumpMonitoring() {
                     <tr key={d.pumpDeviceId}>
                       <td className="font-mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{d.pumpDeviceId}</td>
                       <td style={{ fontWeight: 700 }}><span className="site-id-link">{d.deviceId}</span></td>
-                      <td style={{ color: 'var(--text-secondary)' }}>{siteMap[d.siteId] || d.siteId}</td>
+                      <td style={{ color: 'var(--text-secondary)', cursor: 'pointer' }} onClick={() => navigate(`/sites/${d.siteId}`)} title={`View site ${d.siteId}`}>{siteMap[d.siteId] || d.siteId}</td>
                       <td style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{d.protocol || '—'}</td>
                       <td>
                         <span className={`badge ${d.online ? 'badge-green' : 'badge-red'}`}>

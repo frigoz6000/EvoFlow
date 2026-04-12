@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { sitesApi } from '../api/client'
 import api from '../api/client'
 import ErrorBoundary from '../components/ErrorBoundary'
@@ -50,6 +51,7 @@ function SortIcon({ col, sort }) {
 }
 
 export default function TankGauges() {
+  const navigate = useNavigate()
   const [rows, setRows] = useState([])
   const [sites, setSites] = useState([])
   const [loading, setLoading] = useState(false)
@@ -243,7 +245,7 @@ export default function TankGauges() {
                   return (
                     <tr key={i}>
                       <td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{r.businessDate}</td>
-                      <td><span className="badge badge-blue">{r.siteId}</span></td>
+                      <td><span className="badge badge-blue" style={{ cursor: 'pointer' }} onClick={() => navigate(`/sites/${r.siteId}`)}>{r.siteId}</span></td>
                       <td style={{ color: 'var(--text-secondary)' }}>{r.siteName}</td>
                       <td style={{ fontWeight: 700 }}><span className="site-id-link">{r.deviceId}</span></td>
                       <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{r.tankId}</td>

@@ -1,8 +1,9 @@
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
 import '../styles/theme.css'
 import ErrorBoundary from './ErrorBoundary'
 import api from '../api/client'
+import { sitesApi } from '../api/client'
 import {
   IconHome, IconBell, IconFuel, IconPump, IconMapPin,
   IconSearch, IconSun, IconMoon, IconTable,
@@ -62,13 +63,46 @@ const PAGE_TITLES = {
 
 export default function Layout() {
   const location = useLocation()
+  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [collapsed, setCollapsed] = useState(() => window.innerWidth < 768)
   const [hovered, setHovered] = useState(false)
   const [dark, setDark] = useState(() => localStorage.getItem('evoflow-theme') === 'dark')
   const [pushing, setPushing] = useState(false)
   const [pushMsg, setPushMsg] = useState('')
+  const [allSites, setAllSites] = useState([])
+  const [searchFocused, setSearchFocused] = useState(false)
+  const searchRef = useRef(null)
   const title = PAGE_TITLES[location.pathname] || 'EvoFlow'
+
+  useEffect(() => {
+    sitesApi.getAll().then(s => setAllSites(s || [])).catch(() => {})
+  }, [])
+
+  const siteSuggestions = search.trim().length >= 1
+    ? allSites.filter(s => {
+        const q = search.toLowerCase()
+        return (s.siteId || '').toLowerCase().includes(q) ||
+               (s.siteName || '').toLowerCase().includes(q)
+      }).slice(0, 8)
+    : []
+
+  function handleSiteSelect(site) {
+    setSearch('')
+    setSearchFocused(false)
+    navigate(`/sites/${site.siteId}`)
+  }
+
+  function handleSearchKeyDown(e) {
+    if (e.key === 'Enter' && siteSuggestions.length === 1) {
+      handleSiteSelect(siteSuggestions[0])
+    }
+    if (e.key === 'Escape') {
+      setSearch('')
+      setSearchFocused(false)
+      searchRef.current?.blur()
+    }
+  }
 
   // Sidebar visually expands on hover even when collapsed
   const effectiveCollapsed = collapsed && !hovered
@@ -147,14 +181,44 @@ export default function Layout() {
           >
             <IconMenu size={18} />
           </button>
-          <div className="topbar-search">
+          <div className="topbar-search" style={{ position: 'relative' }}>
             <span className="topbar-search-icon"><IconSearch size={13} /></span>
             <input
+              ref={searchRef}
               type="text"
               placeholder="Search site ID or name..."
               value={search}
               onChange={e => setSearch(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
+              onKeyDown={handleSearchKeyDown}
             />
+            {searchFocused && siteSuggestions.length > 0 && (
+              <div style={{
+                position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 9999,
+                background: 'var(--card-bg)', border: '1px solid var(--card-border)',
+                borderRadius: 8, boxShadow: 'var(--card-shadow)',
+                marginTop: 4, overflow: 'hidden'
+              }}>
+                {siteSuggestions.map(site => (
+                  <div
+                    key={site.siteId}
+                    onMouseDown={() => handleSiteSelect(site)}
+                    style={{
+                      padding: '8px 12px', cursor: 'pointer', display: 'flex',
+                      alignItems: 'center', gap: 10, fontSize: 13,
+                      borderBottom: '1px solid var(--table-border)'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg, rgba(0,0,0,0.04))'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <span style={{ fontWeight: 700, color: 'var(--accent)', fontFamily: 'monospace', fontSize: 12, minWidth: 44 }}>{site.siteId}</span>
+                    <span style={{ color: 'var(--text-primary)', flex: 1 }}>{site.siteName}</span>
+                    {site.city && <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{site.city}</span>}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <div className="topbar-spacer" />
           <div className="topbar-actions">

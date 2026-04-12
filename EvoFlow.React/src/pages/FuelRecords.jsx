@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { fuelRecordsApi, sitesApi, fuelTypesApi } from '../api/client'
 import ErrorBoundary from '../components/ErrorBoundary'
 
 export default function FuelRecords() {
+  const navigate = useNavigate()
   const [records, setRecords] = useState([])
   const [sites, setSites] = useState([])
   const [fuelTypes, setFuelTypes] = useState([])
@@ -115,7 +117,7 @@ export default function FuelRecords() {
                     <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                       {r.transactionUtc ? new Date(r.transactionUtc).toLocaleTimeString() : '—'}
                     </td>
-                    <td><span className="badge badge-blue">{r.siteId}</span></td>
+                    <td><span className="badge badge-blue" style={{ cursor: 'pointer' }} onClick={() => navigate(`/sites/${r.siteId}`)}>{r.siteId}</span></td>
                     <td><span className="badge badge-gray">{fuelTypeMap[r.fuelTypeId] || r.fuelTypeId}</span></td>
                     <td style={{ fontWeight: 600, color: 'var(--green)' }}>
                       {(Number(r.volumeL) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

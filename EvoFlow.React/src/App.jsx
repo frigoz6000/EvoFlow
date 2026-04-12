@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
 import Sites from './pages/Sites'
+import SiteDetail from './pages/SiteDetail'
 import FuelRecords from './pages/FuelRecords'
 import PumpMonitoring from './pages/PumpMonitoring'
 import Alerts from './pages/Alerts'
@@ -26,6 +27,7 @@ export default function App() {
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="sites" element={<Sites />} />
+          <Route path="sites/:siteId" element={<SiteDetail />} />
           <Route path="fuel-records" element={<FuelRecords />} />
           <Route path="pump-monitoring" element={<PumpMonitoring />} />
           <Route path="alerts" element={<Alerts />} />

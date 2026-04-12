@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useOutletContext } from 'react-router-dom'
+import { useOutletContext, useNavigate } from 'react-router-dom'
 import { sitesApi } from '../api/client'
 import ErrorBoundary from '../components/ErrorBoundary'
 
@@ -7,6 +7,7 @@ export default function Sites() {
   const [sites, setSites] = useState([])
   const [loading, setLoading] = useState(true)
   const { globalSearch = '' } = useOutletContext() || {}
+  const navigate = useNavigate()
 
   useEffect(() => {
     sitesApi.getAll()
@@ -60,7 +61,13 @@ export default function Sites() {
                   <tr><td colSpan={9}><div className="empty-state">No sites found</div></td></tr>
                 ) : filtered.map(site => (
                   <tr key={site.siteId}>
-                    <td><span className="site-id-link">{site.siteId}</span></td>
+                    <td>
+                      <span
+                        className="site-id-link"
+                        style={{ cursor: 'pointer', color: 'var(--accent)', fontWeight: 700 }}
+                        onClick={() => navigate(`/sites/${site.siteId}`)}
+                      >{site.siteId}</span>
+                    </td>
                     <td style={{ fontWeight: 600 }}>{site.siteName}</td>
                     <td style={{ color: 'var(--text-secondary)', fontSize: 12 }}>
                       {[site.address1, site.address2].filter(Boolean).join(', ') || '—'}

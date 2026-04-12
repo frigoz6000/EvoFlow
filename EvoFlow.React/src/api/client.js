@@ -8,6 +8,7 @@ const api = axios.create({
 export const sitesApi = {
   getAll: () => api.get('/sites').then(r => r.data),
   getById: (id) => api.get(`/sites/${id}`).then(r => r.data),
+  getDetail: (id) => api.get(`/sites/${id}/detail`).then(r => r.data),
 }
 
 export const fuelRecordsApi = {

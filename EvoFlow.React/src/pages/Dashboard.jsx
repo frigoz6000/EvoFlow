@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
-import { useOutletContext, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
   PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid,
@@ -78,6 +78,7 @@ export default function Dashboard() {
   const [totals, setTotals] = useState([])
   const [loading, setLoading] = useState(true)
   const [apiError, setApiError] = useState(null)
+  const navigate = useNavigate()
 
   useEffect(() => {
     Promise.allSettled([
@@ -430,7 +431,12 @@ export default function Dashboard() {
                   const rev = siteRevMap[site.siteId] || 0
                   return (
                     <tr key={site.siteId}>
-                      <td className="font-mono" style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 600 }}>{site.siteId}</td>
+                      <td
+                        className="font-mono"
+                        style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 600, cursor: 'pointer' }}
+                        onClick={() => navigate(`/sites/${site.siteId}`)}
+                        title={`View ${site.siteName}`}
+                      >{site.siteId}</td>
                       <td style={{ fontWeight: 600 }}>{site.siteName}</td>
                       <td style={{ color: 'var(--text-secondary)' }}>{site.city || '—'}</td>
                       <td className="font-mono" style={{ fontSize: 12 }}>{site.postCode || '—'}</td>
