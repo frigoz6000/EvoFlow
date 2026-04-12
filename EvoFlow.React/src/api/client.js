@@ -62,4 +62,9 @@ export const reportDispatchesApi = {
   getRecent: (params = {}) => api.get('/reportdispatches', { params }).then(r => r.data),
 }
 
+export const emailConfigApi = {
+  get: () => api.get('/emailconfig').then(r => r.data),
+  upsert: (config) => api.post('/emailconfig', config).then(r => r.data),
+}
+
 export default api

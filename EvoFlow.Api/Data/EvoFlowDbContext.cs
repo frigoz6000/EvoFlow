@@ -24,6 +24,7 @@ public class EvoFlowDbContext(DbContextOptions<EvoFlowDbContext> options) : DbCo
     public DbSet<ReportSchedule> ReportSchedules => Set<ReportSchedule>();
     public DbSet<ReportScheduleRecipient> ReportScheduleRecipients => Set<ReportScheduleRecipient>();
     public DbSet<ReportDispatch> ReportDispatches => Set<ReportDispatch>();
+    public DbSet<EmailConfig> EmailConfig => Set<EmailConfig>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

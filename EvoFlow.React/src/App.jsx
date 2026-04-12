@@ -14,6 +14,7 @@ import AlarmHistory from './pages/AlarmHistory'
 import AlarmNotifications from './pages/AlarmNotifications'
 import TankGauges from './pages/TankGauges'
 import EmailRecipients from './pages/EmailRecipients'
+import EmailConfig from './pages/EmailConfig'
 import AlarmSettings from './pages/AlarmSettings'
 import ReportSchedules from './pages/ReportSchedules'
 import ImportData from './pages/ImportData'
@@ -38,6 +39,7 @@ export default function App() {
           <Route path="alarm-notifications" element={<AlarmNotifications />} />
           <Route path="tank-gauges" element={<TankGauges />} />
           <Route path="config/email-recipients" element={<EmailRecipients />} />
+          <Route path="config/email-config" element={<EmailConfig />} />
           <Route path="config/alarm-settings" element={<AlarmSettings />} />
           <Route path="config/report-schedules" element={<ReportSchedules />} />
           <Route path="config/import-data" element={<ImportData />} />
