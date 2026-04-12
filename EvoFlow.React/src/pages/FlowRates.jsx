@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { sitesApi } from '../api/client'
 import api from '../api/client'
 import ErrorBoundary from '../components/ErrorBoundary'
@@ -73,12 +74,21 @@ const QUICK_FILTERS = [
   },
 ]
 
+function SortIcon({ col, sortCol, sortDir }) {
+  if (sortCol !== col) return <span style={{ color: 'var(--text-muted)', marginLeft: 3, fontSize: 10 }}>⇅</span>
+  return <span style={{ marginLeft: 3, fontSize: 10 }}>{sortDir === 'asc' ? '↑' : '↓'}</span>
+}
+
 export default function FlowRates() {
+  const navigate = useNavigate()
   const [rows, setRows] = useState([])
   const [sites, setSites] = useState([])
   const [loading, setLoading] = useState(false)
   const [filters, setFilters] = useState({ siteId: '', dateFrom: defaultDate, dateTo: defaultDate })
   const [activeQuickFilter, setActiveQuickFilter] = useState(null)
+  const [siteSearch, setSiteSearch] = useState('')
+  const [sortCol, setSortCol] = useState(null)
+  const [sortDir, setSortDir] = useState('asc')
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 100
 
@@ -112,11 +122,35 @@ export default function FlowRates() {
     setPage(1)
   }
 
+  function handleSort(col) {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortCol(col); setSortDir('asc') }
+    setPage(1)
+  }
+
   const displayRows = useMemo(() => {
-    if (!activeQuickFilter) return rows
-    const qf = QUICK_FILTERS.find(f => f.key === activeQuickFilter)
-    return qf ? rows.filter(qf.fn) : rows
-  }, [rows, activeQuickFilter])
+    let result = rows
+    if (activeQuickFilter) {
+      const qf = QUICK_FILTERS.find(f => f.key === activeQuickFilter)
+      if (qf) result = result.filter(qf.fn)
+    }
+    if (siteSearch.trim()) {
+      const q = siteSearch.trim().toLowerCase()
+      result = result.filter(r =>
+        (r.siteId || '').toLowerCase().includes(q) ||
+        (r.siteName || '').toLowerCase().includes(q)
+      )
+    }
+    if (sortCol) {
+      result = [...result].sort((a, b) => {
+        const av = a[sortCol] ?? '', bv = b[sortCol] ?? ''
+        const cmp = typeof av === 'number' && typeof bv === 'number'
+          ? av - bv : String(av).localeCompare(String(bv), undefined, { numeric: true })
+        return sortDir === 'asc' ? cmp : -cmp
+      })
+    }
+    return result
+  }, [rows, activeQuickFilter, siteSearch, sortCol, sortDir])
 
   const withData = rows.filter(r => r.peakFlowRate != null)
   const avgPeak = withData.length ? (withData.reduce((s, r) => s + r.peakFlowRate, 0) / withData.length).toFixed(2) : '—'
@@ -250,6 +284,14 @@ export default function FlowRates() {
             onChange={e => setFilters(f => ({ ...f, dateTo: e.target.value }))} />
           <button className="btn btn-primary btn-sm" onClick={handleSearch}>Search</button>
           <button className="btn btn-outline btn-sm" onClick={handleClear}>Clear</button>
+          <input
+            type="text"
+            className="filter-search"
+            placeholder="Filter site ID / name…"
+            value={siteSearch}
+            onChange={e => { setSiteSearch(e.target.value); setPage(1) }}
+            style={{ minWidth: 160 }}
+          />
         </div>
 
         <div className="table-responsive">
@@ -259,21 +301,11 @@ export default function FlowRates() {
             <table className="evo-table">
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Site ID</th>
-                  <th>Site Name</th>
-                  <th>Device</th>
-                  <th>Grade</th>
-                  <th>Fuel</th>
-                  <th>Flow Type</th>
-                  <th>Transactions</th>
-                  <th>Nominal (L/min)</th>
-                  <th>Avg (L/min)</th>
-                  <th>Peak (L/min)</th>
-                  <th>Avg Time to Flow (s)</th>
-                  <th>Max Time to Flow (s)</th>
-                  <th>Avg Time to Peak (s)</th>
-                  <th>Max Time to Peak (s)</th>
+                  {[['businessDate','Date'],['siteId','Site ID'],['siteName','Site Name'],['deviceId','Device'],['gradeOption','Grade'],['gradeId','Fuel'],['flowType','Flow Type'],['totalPumpTrans','Transactions'],['nominalFlowRate','Nominal (L/min)'],['avgFlowRate','Avg (L/min)'],['peakFlowRate','Peak (L/min)'],['avgTimeToFlow','Avg Time to Flow (s)'],['maxTimeToFlow','Max Time to Flow (s)'],['avgTimeToPeakFlow','Avg Time to Peak (s)'],['maxTimeToPeakFlow','Max Time to Peak (s)']].map(([col, label]) => (
+                    <th key={col} onClick={() => handleSort(col)} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                      {label}<SortIcon col={col} sortCol={sortCol} sortDir={sortDir} />
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
@@ -285,7 +317,7 @@ export default function FlowRates() {
                   return (
                     <tr key={i}>
                       <td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{r.businessDate}</td>
-                      <td><span className="badge badge-blue">{r.siteId}</span></td>
+                      <td><span className="badge badge-blue" style={{ cursor: 'pointer' }} onClick={() => navigate(`/sites/${r.siteId}`)}>{r.siteId}</span></td>
                       <td style={{ color: 'var(--text-secondary)' }}>{r.siteName}</td>
                       <td style={{ fontWeight: 700 }}><span className="site-id-link">{r.deviceId}</span></td>
                       <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{r.gradeOption}</td>

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { sitesApi } from '../api/client'
 import api from '../api/client'
 import ErrorBoundary from '../components/ErrorBoundary'
@@ -9,11 +10,20 @@ const deviceAlertsApi = {
 
 const defaultDate = '2026-04-10'
 
+function SortIcon({ col, sortCol, sortDir }) {
+  if (sortCol !== col) return <span style={{ color: 'var(--text-muted)', marginLeft: 3, fontSize: 10 }}>⇅</span>
+  return <span style={{ marginLeft: 3, fontSize: 10 }}>{sortDir === 'asc' ? '↑' : '↓'}</span>
+}
+
 export default function DeviceAlerts() {
+  const navigate = useNavigate()
   const [rows, setRows] = useState([])
   const [sites, setSites] = useState([])
   const [loading, setLoading] = useState(false)
   const [filters, setFilters] = useState({ siteId: '', dateFrom: defaultDate, dateTo: defaultDate, stateFilter: '' })
+  const [siteSearch, setSiteSearch] = useState('')
+  const [sortCol, setSortCol] = useState(null)
+  const [sortDir, setSortDir] = useState('asc')
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 100
 
@@ -43,14 +53,41 @@ export default function DeviceAlerts() {
   function handleClear() {
     const reset = { siteId: '', dateFrom: defaultDate, dateTo: defaultDate, stateFilter: '' }
     setFilters(reset)
+    setSiteSearch('')
     loadData(reset)
+  }
+
+  function handleSort(col) {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortCol(col); setSortDir('asc') }
+    setPage(1)
   }
 
   const offlineCount = rows.filter(r => !r.online).length
   const uniqueStates = [...new Set(rows.map(r => r.state))].sort()
 
-  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
-  const pageRows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const displayRows = useMemo(() => {
+    let result = rows
+    if (siteSearch.trim()) {
+      const q = siteSearch.trim().toLowerCase()
+      result = result.filter(r =>
+        (r.siteId || '').toLowerCase().includes(q) ||
+        (r.siteName || '').toLowerCase().includes(q)
+      )
+    }
+    if (sortCol) {
+      result = [...result].sort((a, b) => {
+        const av = a[sortCol] ?? '', bv = b[sortCol] ?? ''
+        const cmp = typeof av === 'number' && typeof bv === 'number'
+          ? av - bv : String(av).localeCompare(String(bv), undefined, { numeric: true })
+        return sortDir === 'asc' ? cmp : -cmp
+      })
+    }
+    return result
+  }, [rows, siteSearch, sortCol, sortDir])
+
+  const totalPages = Math.max(1, Math.ceil(displayRows.length / PAGE_SIZE))
+  const pageRows = displayRows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   return (
     <ErrorBoundary fallback="Device Alerts page error.">
@@ -80,7 +117,7 @@ export default function DeviceAlerts() {
 
       <div className="card">
         <div className="card-header">
-          <span className="card-title">Device Alerts — {rows.length.toLocaleString()} rows (page {page} of {totalPages})</span>
+          <span className="card-title">Device Alerts — {displayRows.length.toLocaleString()} rows (page {page} of {totalPages})</span>
         </div>
 
         <div className="filters-bar">
@@ -102,6 +139,14 @@ export default function DeviceAlerts() {
           </select>
           <button className="btn btn-primary btn-sm" onClick={handleSearch}>Search</button>
           <button className="btn btn-outline btn-sm" onClick={handleClear}>Clear</button>
+          <input
+            type="text"
+            className="filter-search"
+            placeholder="Filter site ID / name…"
+            value={siteSearch}
+            onChange={e => { setSiteSearch(e.target.value); setPage(1) }}
+            style={{ minWidth: 160 }}
+          />
         </div>
 
         <div className="table-responsive">
@@ -111,16 +156,11 @@ export default function DeviceAlerts() {
             <table className="evo-table">
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Site ID</th>
-                  <th>Site Name</th>
-                  <th>Device</th>
-                  <th>Online</th>
-                  <th>Offline Count</th>
-                  <th>Snapshot UTC</th>
-                  <th>State</th>
-                  <th>Sub State Bits</th>
-                  <th>Sub State 2 Bits</th>
+                  {[['businessDate','Date'],['siteId','Site ID'],['siteName','Site Name'],['deviceId','Device'],['online','Online'],['offlineCount','Offline Count'],['snapshotUtc','Snapshot UTC'],['state','State'],['subStateBits','Sub State Bits'],['subState2Bits','Sub State 2 Bits']].map(([col, label]) => (
+                    <th key={col} onClick={() => handleSort(col)} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                      {label}<SortIcon col={col} sortCol={sortCol} sortDir={sortDir} />
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
@@ -129,7 +169,7 @@ export default function DeviceAlerts() {
                 ) : pageRows.map((r, i) => (
                   <tr key={i}>
                     <td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{r.businessDate}</td>
-                    <td><span className="badge badge-blue">{r.siteId}</span></td>
+                    <td><span className="badge badge-blue" style={{ cursor: 'pointer' }} onClick={() => navigate(`/sites/${r.siteId}`)}>{r.siteId}</span></td>
                     <td style={{ color: 'var(--text-secondary)' }}>{r.siteName}</td>
                     <td style={{ fontWeight: 700 }}><span className="site-id-link">{r.deviceId}</span></td>
                     <td>
@@ -165,7 +205,7 @@ export default function DeviceAlerts() {
 
         <div className="pagination">
           <span className="pagination-info">
-            {rows.length.toLocaleString()} total rows · showing {Math.min((page - 1) * PAGE_SIZE + 1, rows.length)}–{Math.min(page * PAGE_SIZE, rows.length)}
+            {displayRows.length.toLocaleString()} total rows · showing {Math.min((page - 1) * PAGE_SIZE + 1, displayRows.length)}–{Math.min(page * PAGE_SIZE, displayRows.length)}
           </span>
           <button className="page-btn" disabled={page <= 1} onClick={() => setPage(1)}>«</button>
           <button className="page-btn" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>‹</button>
