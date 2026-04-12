@@ -8,7 +8,7 @@ const flowRatesApi = {
   getAll: (params = {}) => api.get('/flowrates', { params }).then(r => r.data),
 }
 
-const defaultDate = '2026-04-10'
+const defaultDate = new Date().toISOString().slice(0, 10)
 
 // Outlier thresholds (L/min)
 const AVG_HIGH_THRESHOLD = 30

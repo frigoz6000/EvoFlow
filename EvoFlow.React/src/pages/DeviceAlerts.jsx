@@ -8,7 +8,7 @@ const deviceAlertsApi = {
   getAll: (params = {}) => api.get('/devicealerts', { params }).then(r => r.data),
 }
 
-const defaultDate = '2026-04-10'
+const defaultDate = new Date().toISOString().slice(0, 10)
 
 function SortIcon({ col, sortCol, sortDir }) {
   if (sortCol !== col) return <span style={{ color: 'var(--text-muted)', marginLeft: 3, fontSize: 10 }}>⇅</span>

@@ -43,7 +43,7 @@ function TankGaugeVisual({ fillPct, uid }) {
   )
 }
 
-const defaultDate = '2026-04-09'
+const defaultDate = new Date().toISOString().slice(0, 10)
 
 function SortIcon({ col, sort }) {
   if (sort.col !== col) return <span style={{ opacity: 0.3, marginLeft: 4, fontSize: 10 }}>↕</span>
