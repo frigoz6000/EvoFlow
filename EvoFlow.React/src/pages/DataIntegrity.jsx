@@ -1,9 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import api from '../api/client'
 import ErrorBoundary from '../components/ErrorBoundary'
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell
-} from 'recharts'
 
 const dataIntegrityApi = {
   getSummary: (params = {}) => api.get('/dataintegrity/summary', { params }).then(r => r.data),
@@ -117,13 +114,6 @@ export default function DataIntegrity() {
   const totalPresent   = summary.reduce((s, r) => s + r.sitesWithData, 0)
   const coveragePct    = totalExpected > 0 ? ((totalPresent / totalExpected) * 100).toFixed(1) : '—'
 
-  // Chart data
-  const chartData = summary.map(r => ({
-    date: r.checkDate,
-    Present: r.sitesWithData,
-    Missing: r.missingSites,
-  }))
-
   return (
     <ErrorBoundary fallback="Data Integrity page error.">
       <div className="page-header mb-4">
@@ -183,35 +173,6 @@ export default function DataIntegrity() {
               </div>
             </div>
           </div>
-
-          {/* Chart */}
-          {chartData.length > 0 && (
-            <div className="card mb-5">
-              <div className="card-header">
-                <span className="card-title">Site Coverage per Date</span>
-              </div>
-              <div style={{ padding: '16px 16px 8px' }}>
-                <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={chartData} margin={{ top: 4, right: 24, left: 0, bottom: 4 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                    <XAxis dataKey="date" tick={{ fontSize: 12, fill: 'var(--text-secondary)' }} />
-                    <YAxis tick={{ fontSize: 12, fill: 'var(--text-secondary)' }} />
-                    <Tooltip
-                      contentStyle={{
-                        background: 'var(--bg-card)',
-                        border: '1px solid var(--border)',
-                        borderRadius: 8,
-                        fontSize: 13,
-                      }}
-                    />
-                    <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <Bar dataKey="Present" stackId="a" fill="#22c55e" radius={[0, 0, 0, 0]} />
-                    <Bar dataKey="Missing" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          )}
 
           {/* Date filter buttons */}
           {dates.length > 0 && missingSites.length > 0 && (
