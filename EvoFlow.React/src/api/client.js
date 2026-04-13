@@ -71,4 +71,16 @@ export const emailLogApi = {
   getAll: (params = {}) => api.get('/emaillog', { params }).then(r => r.data),
 }
 
+export const whatsAppContactsApi = {
+  getAll: () => api.get('/whatsappcontacts').then(r => r.data),
+  create: (contact) => api.post('/whatsappcontacts', contact).then(r => r.data),
+  update: (id, contact) => api.put(`/whatsappcontacts/${id}`, contact).then(r => r.data),
+  remove: (id) => api.delete(`/whatsappcontacts/${id}`),
+}
+
+export const whatsAppConfigApi = {
+  get: () => api.get('/whatsappconfig').then(r => r.data),
+  upsert: (config) => api.post('/whatsappconfig', config).then(r => r.data),
+}
+
 export default api
