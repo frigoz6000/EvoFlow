@@ -13,8 +13,10 @@
     "@popperjs/core": "^2.11.8",
     "axios": "^1.14.0",
     "bootstrap": "^5.3.8",
+    "leaflet": "^1.9.4",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.13.2",
     "recharts": "^3.8.1",
     "xlsx": "^0.18.5"

@@ -20,6 +20,7 @@ import ReportSchedules from './pages/ReportSchedules'
 import ImportData from './pages/ImportData'
 import DataIntegrity from './pages/DataIntegrity'
 import WhatsAppContacts from './pages/WhatsAppContacts'
+import SiteMap from './pages/SiteMap'
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
           <Route index element={<Dashboard />} />
           <Route path="sites" element={<Sites />} />
           <Route path="sites/:siteId" element={<SiteDetail />} />
+          <Route path="site-map" element={<SiteMap />} />
           <Route path="pump-monitoring" element={<PumpMonitoring />} />
 <Route path="doms-info" element={<DomsInfo />} />
           <Route path="flow-rates" element={<FlowRates />} />

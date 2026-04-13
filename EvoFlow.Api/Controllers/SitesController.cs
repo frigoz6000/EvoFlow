@@ -116,6 +116,48 @@ public class SitesController(EvoFlowDbContext db, IDapperConnectionFactory conne
         });
     }
 
+    [HttpGet("map-data")]
+    public async Task<IActionResult> GetMapData()
+    {
+        using var conn = connectionFactory.CreateConnection();
+        var sites = await conn.QueryAsync<Site>("SELECT * FROM Sites ORDER BY SiteId");
+
+        var fuelSummary = await conn.QueryAsync<dynamic>(
+            @"SELECT fr.SiteId, fr.FuelTypeId,
+                     ROUND(AVG(fr.AmountGBP / NULLIF(fr.VolumeL, 0) * 100), 1) AS avgPpl,
+                     MAX(fr.BusinessDate) AS latestDate
+              FROM FuelRecords fr
+              WHERE fr.VolumeL > 0
+              GROUP BY fr.SiteId, fr.FuelTypeId");
+
+        var fuelBySite = fuelSummary
+            .GroupBy(f => (string)f.SiteId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(f => new
+                {
+                    fuelTypeId = (string)f.FuelTypeId,
+                    avgPpl = (decimal?)f.avgPpl,
+                    latestDate = (DateTime?)f.latestDate
+                }).ToList()
+            );
+
+        var result = sites.Select(s => new
+        {
+            s.SiteId,
+            s.SiteName,
+            s.Address1,
+            s.Address2,
+            s.City,
+            s.County,
+            s.PostCode,
+            s.PoleSign,
+            fuels = fuelBySite.TryGetValue(s.SiteId, out var f) ? f : []
+        });
+
+        return Ok(result);
+    }
+
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] Site site)
     {
