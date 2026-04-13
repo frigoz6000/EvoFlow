@@ -30,7 +30,7 @@ export default function WhatsAppContacts() {
   function loadContacts() {
     setLoadingContacts(true)
     whatsAppContactsApi.getAll()
-      .then(d => setContacts(d || []))
+      .then(d => setContacts(Array.isArray(d) ? d : []))
       .catch(() => setContactError('Failed to load contacts'))
       .finally(() => setLoadingContacts(false))
   }
