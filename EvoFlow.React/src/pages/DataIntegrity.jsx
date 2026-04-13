@@ -12,16 +12,22 @@ const dataIntegrityApi = {
 
 const PAGE_SIZE = 50
 
-export default function DataIntegrity() {
-  const defaultFrom = '2026-04-08'
-  const defaultTo   = '2026-04-11'
+function getLast7Days() {
+  const to = new Date()
+  const from = new Date()
+  from.setDate(to.getDate() - 6)
+  const fmt = d => d.toISOString().slice(0, 10)
+  return { dateFrom: fmt(from), dateTo: fmt(to) }
+}
 
-  const [filters, setFilters]     = useState({ dateFrom: defaultFrom, dateTo: defaultTo })
-  const [summary, setSummary]     = useState([])
-  const [missing, setMissing]     = useState([])
-  const [loading, setLoading]     = useState(false)
+export default function DataIntegrity() {
+  const [filters, setFilters]       = useState(getLast7Days)
+  const [summary, setSummary]       = useState([])
+  const [missing, setMissing]       = useState([])
+  const [loading, setLoading]       = useState(false)
   const [siteFilter, setSiteFilter] = useState('')
-  const [page, setPage]           = useState(1)
+  const [dateFilter, setDateFilter] = useState(null)  // null = all dates
+  const [page, setPage]             = useState(1)
 
   useEffect(() => { loadData(filters) }, [])
 
@@ -38,16 +44,18 @@ export default function DataIntegrity() {
         setSummary(s || [])
         setMissing(m || [])
         setSiteFilter('')
+        setDateFilter(null)
         setPage(1)
       })
       .catch(console.error)
       .finally(() => setLoading(false))
   }
 
-  function handleSearch() { setPage(1); loadData(filters) }
+  function handleSearch() { setPage(1); setDateFilter(null); loadData(filters) }
   function handleClear() {
-    const reset = { dateFrom: defaultFrom, dateTo: defaultTo }
+    const reset = getLast7Days()
     setFilters(reset)
+    setDateFilter(null)
     loadData(reset)
   }
 
@@ -76,14 +84,29 @@ export default function DataIntegrity() {
     return sites
   }, [missingBySite])
 
-  // Apply site filter
+  // Missing count per date (for filter button badges)
+  const missingCountByDate = useMemo(() => {
+    const counts = {}
+    for (const r of missing) {
+      counts[r.missingDate] = (counts[r.missingDate] || 0) + 1
+    }
+    return counts
+  }, [missing])
+
+  // Apply site text filter + date filter
   const filteredSites = useMemo(() => {
-    if (!siteFilter.trim()) return missingSites
-    const q = siteFilter.trim().toLowerCase()
-    return missingSites.filter(s =>
-      s.siteId.toLowerCase().includes(q) || s.siteName.toLowerCase().includes(q)
-    )
-  }, [missingSites, siteFilter])
+    let result = missingSites
+    if (dateFilter) {
+      result = result.filter(s => s.missingDates.has(dateFilter))
+    }
+    if (siteFilter.trim()) {
+      const q = siteFilter.trim().toLowerCase()
+      result = result.filter(s =>
+        s.siteId.toLowerCase().includes(q) || s.siteName.toLowerCase().includes(q)
+      )
+    }
+    return result
+  }, [missingSites, siteFilter, dateFilter])
 
   const totalPages = Math.max(1, Math.ceil(filteredSites.length / PAGE_SIZE))
   const pageRows   = filteredSites.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
@@ -190,11 +213,77 @@ export default function DataIntegrity() {
             </div>
           )}
 
+          {/* Date filter buttons */}
+          {dates.length > 0 && missingSites.length > 0 && (
+            <div className="card mb-4">
+              <div className="card-header">
+                <span className="card-title">Filter by Date</span>
+                <span style={{ fontSize: 12, color: 'var(--text-secondary)', marginLeft: 8 }}>
+                  Click a date to show only sites missing on that day
+                </span>
+              </div>
+              <div style={{ padding: '12px 16px', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                <button
+                  onClick={() => { setDateFilter(null); setPage(1) }}
+                  style={{
+                    padding: '5px 14px',
+                    borderRadius: 6,
+                    border: '1px solid var(--border)',
+                    background: dateFilter === null ? 'var(--accent)' : 'var(--bg-card)',
+                    color: dateFilter === null ? '#fff' : 'var(--text-primary)',
+                    cursor: 'pointer',
+                    fontSize: 13,
+                    fontWeight: 500,
+                  }}
+                >
+                  All dates
+                </button>
+                {dates.map(d => {
+                  const count = missingCountByDate[d] || 0
+                  const isActive = dateFilter === d
+                  return (
+                    <button
+                      key={d}
+                      onClick={() => { setDateFilter(isActive ? null : d); setPage(1) }}
+                      style={{
+                        padding: '5px 14px',
+                        borderRadius: 6,
+                        border: `1px solid ${count > 0 ? '#ef4444' : 'var(--border)'}`,
+                        background: isActive ? '#ef4444' : 'var(--bg-card)',
+                        color: isActive ? '#fff' : count > 0 ? '#ef4444' : 'var(--text-muted)',
+                        cursor: 'pointer',
+                        fontSize: 13,
+                        fontWeight: 500,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                      }}
+                    >
+                      {d}
+                      {count > 0 && (
+                        <span style={{
+                          background: isActive ? 'rgba(255,255,255,0.3)' : '#fef2f2',
+                          color: isActive ? '#fff' : '#ef4444',
+                          borderRadius: 10,
+                          padding: '1px 6px',
+                          fontSize: 11,
+                          fontWeight: 700,
+                        }}>
+                          {count}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Missing sites grid */}
           <div className="card">
             <div className="card-header" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <span className="card-title">
-                Missing Data — {filteredSites.length} site{filteredSites.length !== 1 ? 's' : ''} affected
+                Missing Data{dateFilter ? ` — ${dateFilter}` : ''} — {filteredSites.length} site{filteredSites.length !== 1 ? 's' : ''} affected
               </span>
               {missingSites.length === 0 && (
                 <span style={{ fontSize: 12, color: 'var(--green)', fontWeight: 600 }}>
