@@ -3,7 +3,6 @@ import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
 import Sites from './pages/Sites'
 import SiteDetail from './pages/SiteDetail'
-import FuelRecords from './pages/FuelRecords'
 import PumpMonitoring from './pages/PumpMonitoring'
 import DomsInfo from './pages/DomsInfo'
 import FlowRates from './pages/FlowRates'
@@ -29,7 +28,6 @@ export default function App() {
           <Route index element={<Dashboard />} />
           <Route path="sites" element={<Sites />} />
           <Route path="sites/:siteId" element={<SiteDetail />} />
-          <Route path="fuel-records" element={<FuelRecords />} />
           <Route path="pump-monitoring" element={<PumpMonitoring />} />
 <Route path="doms-info" element={<DomsInfo />} />
           <Route path="flow-rates" element={<FlowRates />} />

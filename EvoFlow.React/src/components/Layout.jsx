@@ -5,7 +5,7 @@ import ErrorBoundary from './ErrorBoundary'
 import api from '../api/client'
 import { sitesApi } from '../api/client'
 import {
-  IconHome, IconFuel, IconPump, IconMapPin,
+  IconHome, IconPump, IconMapPin,
   IconSearch, IconSun, IconMoon, IconTable,
   IconActivity, IconAlertTriangle, IconBarChart, IconDroplets,
   IconAlarmActive, IconAlarmHistory, IconNotifications,
@@ -16,7 +16,6 @@ const NAV = [
   { section: 'MAIN' },
   { to: '/', icon: IconHome, label: 'Home', exact: true },
   { section: 'MONITORING' },
-  { to: '/fuel-records', icon: IconFuel, label: 'Fuel Records' },
   { to: '/pump-monitoring', icon: IconPump, label: 'Pump Monitor' },
   { section: 'SITES' },
   { to: '/sites', icon: IconMapPin, label: 'All Sites' },
@@ -44,7 +43,6 @@ const NAV = [
 const PAGE_TITLES = {
   '/': 'Site Listing',
   '/sites': 'All Sites',
-  '/fuel-records': 'Fuel Records',
   '/vehicles': 'Vehicles',
   '/pump-monitoring': 'Pump Monitoring',
   '/doms-info': 'Doms Info',
