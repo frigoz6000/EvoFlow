@@ -38,17 +38,19 @@ public class VolumeRevenueController(IDapperConnectionFactory connectionFactory)
         WHERE (@SiteId   IS NULL OR s.SiteId        = @SiteId)
           AND (@DateFrom IS NULL OR pt.BusinessDate >= @DateFrom)
           AND (@DateTo   IS NULL OR pt.BusinessDate <= @DateTo)
+          AND (@TotType  IS NULL OR pt.TotType       = @TotType)
         ORDER BY pt.BusinessDate DESC, s.SiteId, pd.DeviceId, pt.TotType";
 
     [HttpGet]
     public async Task<IActionResult> GetAll(
         [FromQuery] string? siteId = null,
         [FromQuery] DateOnly? dateFrom = null,
-        [FromQuery] DateOnly? dateTo = null)
+        [FromQuery] DateOnly? dateTo = null,
+        [FromQuery] string? totType = null)
     {
         using var conn = connectionFactory.CreateConnection();
         var rows = await conn.QueryAsync<VolumeRevenueRow>(
-            new CommandDefinition(Sql, new { SiteId = siteId, DateFrom = dateFrom, DateTo = dateTo }, commandTimeout: 120));
+            new CommandDefinition(Sql, new { SiteId = siteId, DateFrom = dateFrom, DateTo = dateTo, TotType = totType }, commandTimeout: 120));
         return Ok(rows);
     }
 }

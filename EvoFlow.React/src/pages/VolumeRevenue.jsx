@@ -20,7 +20,7 @@ export default function VolumeRevenue() {
   const [rows, setRows] = useState([])
   const [sites, setSites] = useState([])
   const [loading, setLoading] = useState(false)
-  const [filters, setFilters] = useState({ siteId: '', dateFrom: defaultDate, dateTo: defaultDate })
+  const [filters, setFilters] = useState({ siteId: '', dateFrom: defaultDate, dateTo: defaultDate, totType: '' })
   const [siteSearch, setSiteSearch] = useState('')
   const [sortCol, setSortCol] = useState(null)
   const [sortDir, setSortDir] = useState('asc')
@@ -29,7 +29,7 @@ export default function VolumeRevenue() {
 
   useEffect(() => {
     sitesApi.getAll().then(s => setSites(s || [])).catch(console.error)
-    loadData({ siteId: '', dateFrom: defaultDate, dateTo: defaultDate })
+    loadData({ siteId: '', dateFrom: defaultDate, dateTo: defaultDate, totType: '' })
   }, [])
 
   function loadData(f) {
@@ -38,6 +38,7 @@ export default function VolumeRevenue() {
     if (f.siteId) params.siteId = f.siteId
     if (f.dateFrom) params.dateFrom = f.dateFrom
     if (f.dateTo) params.dateTo = f.dateTo
+    if (f.totType) params.totType = f.totType
     volumeRevenueApi.getAll(params)
       .then(r => { setRows(r || []); setPage(1) })
       .catch(console.error)
@@ -46,7 +47,7 @@ export default function VolumeRevenue() {
 
   function handleSearch() { loadData(filters) }
   function handleClear() {
-    const reset = { siteId: '', dateFrom: defaultDate, dateTo: defaultDate }
+    const reset = { siteId: '', dateFrom: defaultDate, dateTo: defaultDate, totType: '' }
     setFilters(reset)
     setSiteSearch('')
     loadData(reset)
@@ -123,6 +124,12 @@ export default function VolumeRevenue() {
             onChange={e => setFilters(f => ({ ...f, siteId: e.target.value }))}>
             <option value="">All Sites</option>
             {sites.map(s => <option key={s.siteId} value={s.siteId}>{s.siteName}</option>)}
+          </select>
+          <select className="filter-select" value={filters.totType}
+            onChange={e => setFilters(f => ({ ...f, totType: e.target.value }))}>
+            <option value="">Both</option>
+            <option value="fp">FP</option>
+            <option value="pump">Pump</option>
           </select>
           <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>From</label>
           <input type="date" className="filter-search" style={{ minWidth: 130 }} value={filters.dateFrom}
