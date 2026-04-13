@@ -57,26 +57,27 @@ public class DomsInfoSnapshotController(IDapperConnectionFactory connectionFacto
 
     private const string InsertSql = @"
         INSERT INTO DomsInfoSnapshot
-            (DomsDate, SiteId, [Name], Device, DeviceStatus, DeviceOfflineCount,
+            (DomsDate, SiteId, Device, DeviceStatus, DeviceOfflineCount,
              DeviceErrorType, DeviceErrorText, DeviceErrorDate, DeviceLifetimeVolume,
              GradeOption, GradeId, GradeDescription, Transactions, PeakFlow, Uptime,
              NumberZeroTransactions, TankId, CreatedUtc)
         VALUES
-            (@DomsDate, @SiteId, @Name, @Device, @DeviceStatus, @DeviceOfflineCount,
+            (@DomsDate, @SiteId, @Device, @DeviceStatus, @DeviceOfflineCount,
              @DeviceErrorType, @DeviceErrorText, @DeviceErrorDate, @DeviceLifetimeVolume,
              @GradeOption, @GradeId, @GradeDescription, @Transactions, @PeakFlow, @Uptime,
              @NumberZeroTransactions, @TankId, @CreatedUtc)";
 
     private const string ReadSql = @"
-        SELECT Id, DomsDate, SiteId, [Name], Device, DeviceStatus, DeviceOfflineCount,
-               DeviceErrorType, DeviceErrorText, DeviceErrorDate, DeviceLifetimeVolume,
-               GradeOption, GradeId, GradeDescription, Transactions, PeakFlow, Uptime,
-               NumberZeroTransactions, TankId, CreatedUtc
-        FROM DomsInfoSnapshot
-        WHERE (@SiteId   IS NULL OR SiteId   = @SiteId)
-          AND (@DateFrom IS NULL OR DomsDate >= @DateFrom)
-          AND (@DateTo   IS NULL OR DomsDate <= @DateTo)
-        ORDER BY DomsDate DESC, SiteId, Device, GradeOption";
+        SELECT d.Id, d.DomsDate, d.SiteId, s.SiteName AS [Name], d.Device, d.DeviceStatus,
+               d.DeviceOfflineCount, d.DeviceErrorType, d.DeviceErrorText, d.DeviceErrorDate,
+               d.DeviceLifetimeVolume, d.GradeOption, d.GradeId, d.GradeDescription,
+               d.Transactions, d.PeakFlow, d.Uptime, d.NumberZeroTransactions, d.TankId, d.CreatedUtc
+        FROM DomsInfoSnapshot d
+        JOIN Sites s ON s.SiteId = d.SiteId
+        WHERE (@SiteId   IS NULL OR d.SiteId   = @SiteId)
+          AND (@DateFrom IS NULL OR d.DomsDate >= @DateFrom)
+          AND (@DateTo   IS NULL OR d.DomsDate <= @DateTo)
+        ORDER BY d.DomsDate DESC, d.SiteId, d.Device, d.GradeOption";
 
     /// <summary>
     /// Truncates DomsInfoSnapshot and repopulates it from the live source tables.
@@ -96,7 +97,6 @@ public class DomsInfoSnapshotController(IDapperConnectionFactory connectionFacto
         {
             r.DomsDate,
             r.SiteId,
-            r.Name,
             r.Device,
             r.DeviceStatus,
             r.DeviceOfflineCount,
