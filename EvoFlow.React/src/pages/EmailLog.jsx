@@ -4,6 +4,19 @@ import ErrorBoundary from '../components/ErrorBoundary'
 
 const PAGE_SIZE = 50
 
+function defaultFilters() {
+  const today = new Date()
+  const sevenDaysAgo = new Date(today)
+  sevenDaysAgo.setDate(today.getDate() - 7)
+  return {
+    status: '',
+    subject: '',
+    recipients: '',
+    dateFrom: sevenDaysAgo.toISOString().slice(0, 10),
+    dateTo: today.toISOString().slice(0, 10),
+  }
+}
+
 const EMPTY_FILTERS = {
   status: '',
   subject: '',
@@ -36,8 +49,8 @@ function StatusBadge({ status }) {
 }
 
 export default function EmailLog() {
-  const [filters, setFilters] = useState(EMPTY_FILTERS)
-  const [pending, setPending] = useState(EMPTY_FILTERS)
+  const [filters, setFilters] = useState(defaultFilters)
+  const [pending, setPending] = useState(defaultFilters)
   const [page, setPage] = useState(1)
   const [sortBy, setSortBy] = useState('sentAtUtc')
   const [sortDir, setSortDir] = useState('desc')

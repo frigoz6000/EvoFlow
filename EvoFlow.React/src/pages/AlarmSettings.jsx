@@ -162,57 +162,68 @@ export default function AlarmSettings() {
       {loading ? (
         <div className="loading-state"><div className="spinner" />Loading alarm settings...</div>
       ) : (
-        Object.entries(grouped).map(([category, items]) => (
-          <div key={category} className="card mb-4">
-            <div className="card-header">
-              <span className="card-title">{category}</span>
-            </div>
-            <div className="table-responsive">
-              <table className="evo-table">
-                <thead>
-                  <tr>
-                    <th>Alarm</th>
-                    <th>Description</th>
-                    <th>Status</th>
-                    <th>Recipients</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map(alarm => (
-                    <tr key={alarm.alarmType.id}>
-                      <td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{alarm.alarmType.name}</td>
-                      <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{alarm.alarmType.description}</td>
-                      <td>
-                        <span style={{
-                          display: 'inline-block', padding: '2px 8px', borderRadius: 4,
-                          fontSize: 11, fontWeight: 600,
-                          background: alarm.setting?.isEnabled
-                            ? 'var(--success-bg, #d1fae5)' : 'var(--muted-bg, #f3f4f6)',
-                          color: alarm.setting?.isEnabled
-                            ? 'var(--success, #059669)' : 'var(--text-secondary)',
-                        }}>
-                          {alarm.setting?.isEnabled ? 'Enabled' : 'Disabled'}
-                        </span>
-                      </td>
-                      <td style={{ fontSize: 12 }}>
-                        {alarm.recipients.length === 0
-                          ? <span style={{ color: 'var(--text-secondary)' }}>—</span>
-                          : alarm.recipients.map(r => r.name || r.email).join(', ')}
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <button
-                          className="btn btn-secondary btn-sm"
-                          onClick={() => handleEdit(alarm)}
-                        >Configure</button>
-                      </td>
+        <div className="card">
+          <div className="table-responsive">
+            <table className="evo-table">
+              <thead>
+                <tr>
+                  <th style={{ width: 180 }}>Alarm</th>
+                  <th>Description</th>
+                  <th style={{ width: 100 }}>Status</th>
+                  <th style={{ width: 220 }}>Recipients</th>
+                  <th style={{ width: 100 }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(grouped).map(([category, items]) => (
+                  <>
+                    <tr key={`cat-${category}`}>
+                      <td colSpan={5} style={{
+                        background: 'var(--surface-2, #f8fafc)',
+                        fontWeight: 700,
+                        fontSize: 12,
+                        color: 'var(--text-secondary)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        padding: '8px 14px',
+                        borderTop: '1px solid var(--border)',
+                      }}>{category}</td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                    {items.map(alarm => (
+                      <tr key={alarm.alarmType.id}>
+                        <td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{alarm.alarmType.name}</td>
+                        <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{alarm.alarmType.description}</td>
+                        <td>
+                          <span style={{
+                            display: 'inline-block', padding: '2px 8px', borderRadius: 4,
+                            fontSize: 11, fontWeight: 600,
+                            background: alarm.setting?.isEnabled
+                              ? 'var(--success-bg, #d1fae5)' : 'var(--muted-bg, #f3f4f6)',
+                            color: alarm.setting?.isEnabled
+                              ? 'var(--success, #059669)' : 'var(--text-secondary)',
+                          }}>
+                            {alarm.setting?.isEnabled ? 'Enabled' : 'Disabled'}
+                          </span>
+                        </td>
+                        <td style={{ fontSize: 12 }}>
+                          {alarm.recipients.length === 0
+                            ? <span style={{ color: 'var(--text-secondary)' }}>—</span>
+                            : alarm.recipients.map(r => r.name || r.email).join(', ')}
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => handleEdit(alarm)}
+                          >Configure</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </>
+                ))}
+              </tbody>
+            </table>
           </div>
-        ))
+        </div>
       )}
     </ErrorBoundary>
   )
