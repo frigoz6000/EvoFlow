@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Popup, useMap, Circle } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -305,6 +305,7 @@ function FilterBar({ filters, setFilters, allBrands, onSearch, onNearMe, searchi
 export default function SiteMap() {
   const [searchParams] = useSearchParams()
   const focusSiteId = searchParams.get('siteId')
+  const navigate = useNavigate()
 
   const [sites, setSites] = useState([])
   const [loading, setLoading] = useState(true)
@@ -496,7 +497,18 @@ export default function SiteMap() {
               >
                 <Popup minWidth={240} maxWidth={320}>
                   <div style={{ fontFamily: 'sans-serif', fontSize: 13, lineHeight: 1.5 }}>
-                    <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 3 }}>{site.siteName}</div>
+                    <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>{site.siteName}</div>
+                    <button
+                      onClick={() => navigate(`/sites/${site.siteId}`)}
+                      style={{
+                        display: 'block', width: '100%', marginBottom: 8,
+                        padding: '5px 0', borderRadius: 5, fontSize: 12,
+                        background: 'var(--accent, #4f8ef7)', color: '#fff',
+                        border: 'none', cursor: 'pointer', fontWeight: 600
+                      }}
+                    >
+                      Open Site →
+                    </button>
                     {site.poleSign && (
                       <div style={{ marginBottom: 6 }}>
                         <span style={{
