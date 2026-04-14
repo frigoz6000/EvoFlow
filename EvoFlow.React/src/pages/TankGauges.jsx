@@ -57,6 +57,7 @@ export default function TankGauges() {
   const [loading, setLoading] = useState(false)
   const [filters, setFilters] = useState({ siteId: '', dateFrom: defaultDate, dateTo: defaultDate })
   const [showLowOnly, setShowLowOnly] = useState(false)
+  const [showHighTempOnly, setShowHighTempOnly] = useState(false)
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState({ col: null, dir: 'asc' })
   const [page, setPage] = useState(1)
@@ -84,6 +85,7 @@ export default function TankGauges() {
     const reset = { siteId: '', dateFrom: defaultDate, dateTo: defaultDate }
     setFilters(reset)
     setShowLowOnly(false)
+    setShowHighTempOnly(false)
     setSearch('')
     setSort({ col: null, dir: 'asc' })
     loadData(reset)
@@ -110,6 +112,7 @@ export default function TankGauges() {
     }))
 
     if (showLowOnly) result = result.filter(r => r._fillPct !== null && r._fillPct < 25)
+    if (showHighTempOnly) result = result.filter(r => r.temp !== null && r.temp !== undefined && parseFloat(r.temp) > 25)
 
     if (search.trim()) {
       const q = search.trim().toLowerCase()
@@ -130,7 +133,7 @@ export default function TankGauges() {
     }
 
     return result
-  }, [rows, showLowOnly, search, sort])
+  }, [rows, showLowOnly, showHighTempOnly, search, sort])
 
   const totalPages = Math.max(1, Math.ceil(displayRows.length / PAGE_SIZE))
   const pageRows = displayRows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
@@ -201,6 +204,18 @@ export default function TankGauges() {
             onClick={() => { setShowLowOnly(v => !v); setPage(1) }}
           >
             Low Tank
+          </button>
+          <button
+            className="btn btn-sm"
+            style={{
+              background: showHighTempOnly ? '#f97316' : 'transparent',
+              color: showHighTempOnly ? '#fff' : '#f97316',
+              border: '2px solid #f97316',
+              fontWeight: 700,
+            }}
+            onClick={() => { setShowHighTempOnly(v => !v); setPage(1) }}
+          >
+            High Temp (&gt;25°C)
           </button>
         </div>
 
