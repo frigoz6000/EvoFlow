@@ -346,7 +346,12 @@ export default function SiteDetail() {
         <div className="card">
           <div className="card-header">
             <span className="card-title">Tank Gauge Readings</span>
-            <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>Latest per tank</span>
+            <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>
+              Latest reading per tank
+              {tankReadings?.length > 0 && tankReadings[0].businessDate && (
+                <span style={{ marginLeft: 6 }}>· {fmtDate(tankReadings[0].businessDate)}</span>
+              )}
+            </span>
           </div>
           <div className="table-responsive">
             {!tankReadings?.length ? (
@@ -355,9 +360,12 @@ export default function SiteDetail() {
               <table className="evo-table">
                 <thead>
                   <tr>
-                    <th>Tank ID</th>
-                    <th>Date</th>
+                    <th>Tank</th>
+                    <th>Status</th>
+                    <th>Time</th>
+                    <th>Fill Level</th>
                     <th>Gauged (L)</th>
+                    <th>Daily Diff (L)</th>
                     <th>Ullage (L)</th>
                     <th>Capacity (L)</th>
                     <th>Temp (°C)</th>
@@ -368,23 +376,35 @@ export default function SiteDetail() {
                   {tankReadings.map((t, i) => {
                     const pct = t.capacity > 0 ? (t.gauged / t.capacity) * 100 : 0
                     const barColor = pct > 50 ? GREEN : pct > 20 ? ORANGE : RED
+                    const dailyDiff = Number(t.gaugedDif || 0)
                     return (
                       <tr key={i}>
-                        <td className="font-mono" style={{ fontSize: 12, fontWeight: 600 }}>{t.tankId || '—'}</td>
-                        <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{fmtDate(t.businessDate)}</td>
+                        <td className="font-mono" style={{ fontSize: 12, fontWeight: 700 }}>{t.tankId || '—'}</td>
+                        <td>
+                          <span className={`badge ${t.online ? 'badge-green' : 'badge-red'}`}>
+                            {t.online ? 'Online' : 'Offline'}
+                          </span>
+                        </td>
+                        <td style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                          {(t.dataTime || '').substring(0, 5)}
+                        </td>
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <div style={{ width: 36, height: 4, background: 'var(--table-border)', borderRadius: 2, overflow: 'hidden' }}>
-                              <div style={{ width: `${Math.min(100, pct)}%`, height: '100%', background: barColor, borderRadius: 2 }} />
+                            <div style={{ width: 56, height: 6, background: 'var(--table-border)', borderRadius: 3, overflow: 'hidden' }}>
+                              <div style={{ width: `${Math.min(100, pct)}%`, height: '100%', background: barColor, borderRadius: 3 }} />
                             </div>
-                            <span style={{ fontSize: 12 }}>{fmt(t.gauged)}</span>
+                            <span style={{ fontSize: 11, color: 'var(--text-muted)', minWidth: 30 }}>{pct.toFixed(0)}%</span>
                           </div>
+                        </td>
+                        <td style={{ fontWeight: 600, fontSize: 12 }}>{fmt(t.gauged)}</td>
+                        <td style={{ fontSize: 12, color: dailyDiff < 0 ? RED : dailyDiff > 0 ? GREEN : 'var(--text-muted)', fontWeight: dailyDiff !== 0 ? 600 : undefined }}>
+                          {dailyDiff !== 0 ? `${dailyDiff > 0 ? '+' : ''}${fmt(dailyDiff)}` : '—'}
                         </td>
                         <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{fmt(t.ullage)}</td>
                         <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{fmt(t.capacity)}</td>
                         <td style={{ fontSize: 12 }}>{t.temp != null ? `${Number(t.temp).toFixed(1)}°` : '—'}</td>
                         <td style={{ fontSize: 12, color: Number(t.waterVol) > 0 ? RED : 'var(--text-muted)' }}>
-                          {t.waterVol != null ? fmt(t.waterVol, 1) : '—'}
+                          {t.waterVol != null && Number(t.waterVol) > 0 ? fmt(t.waterVol, 1) : '—'}
                         </td>
                       </tr>
                     )

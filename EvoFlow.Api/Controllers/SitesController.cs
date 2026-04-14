@@ -78,15 +78,15 @@ public class SitesController(EvoFlowDbContext db, IDapperConnectionFactory conne
               ORDER BY fr.TransactionUtc DESC",
             new { SiteId = id })).ToList();
 
-        var tankReadings = (await conn.QueryAsync<object>(
+        var tankReadings = (await conn.QueryAsync<TankGaugeRow>(
             @"SELECT tg.*
               FROM TankGauges tg
               INNER JOIN (
-                  SELECT TankId, MAX(BusinessDate) AS MaxDate
+                  SELECT SiteId, TankId, MAX(BusinessDate) AS MaxDate
                   FROM TankGauges
                   WHERE SiteId = @SiteId
-                  GROUP BY TankId
-              ) latest ON tg.TankId = latest.TankId AND tg.BusinessDate = latest.MaxDate
+                  GROUP BY SiteId, TankId
+              ) latest ON tg.SiteId = latest.SiteId AND tg.TankId = latest.TankId AND tg.BusinessDate = latest.MaxDate
               WHERE tg.SiteId = @SiteId
               ORDER BY tg.TankId",
             new { SiteId = id })).ToList();
