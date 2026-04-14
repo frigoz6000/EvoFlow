@@ -124,28 +124,28 @@ public class SitesController(EvoFlowDbContext db, IDapperConnectionFactory conne
 
         var sites = (await conn.QueryAsync<dynamic>(
             @"SELECT SiteId, SiteName, Address1, Address2, City, County, PostCode, PoleSign, Country,
+                     CONVERT(varchar(5), OpeningHour, 108) AS OpeningHour,
+                     CONVERT(varchar(5), ClosingHour, 108) AS ClosingHour,
                      CASE WHEN Location IS NOT NULL THEN Location.Lat ELSE NULL END AS Lat,
                      CASE WHEN Location IS NOT NULL THEN Location.Long ELSE NULL END AS Lng
               FROM Sites
               ORDER BY SiteId")).ToList();
 
-        var fuelSummary = await conn.QueryAsync<dynamic>(
-            @"SELECT fr.SiteId, fr.FuelTypeId,
-                     ROUND(AVG(fr.AmountGBP / NULLIF(fr.VolumeL, 0) * 100), 1) AS avgPpl,
-                     MAX(fr.BusinessDate) AS latestDate
-              FROM FuelRecords fr
-              WHERE fr.VolumeL > 0
-              GROUP BY fr.SiteId, fr.FuelTypeId");
+        var fuelPrices = (await conn.QueryAsync<dynamic>(
+            @"SELECT SiteId, GradeDescription, GradeShortCode, GradeUnitPrice, DtFuelChange
+              FROM FuelGradePrices
+              ORDER BY SiteId, GradeDescription")).ToList();
 
-        var fuelBySite = fuelSummary
+        var fuelBySite = fuelPrices
             .GroupBy(f => (string)f.SiteId)
             .ToDictionary(
                 g => g.Key,
                 g => g.Select(f => new
                 {
-                    fuelTypeId = (string)f.FuelTypeId,
-                    avgPpl = (decimal?)f.avgPpl,
-                    latestDate = (DateTime?)f.latestDate
+                    grade = (string)f.GradeDescription,
+                    shortCode = (string)f.GradeShortCode,
+                    unitPrice = (decimal)f.GradeUnitPrice,
+                    lastChanged = (DateTime?)f.DtFuelChange
                 }).ToList()
             );
 
@@ -163,6 +163,8 @@ public class SitesController(EvoFlowDbContext db, IDapperConnectionFactory conne
                 postCode = (string?)s.PostCode,
                 poleSign = (string?)s.PoleSign,
                 country = (string?)s.Country,
+                openingHour = (string?)s.OpeningHour,
+                closingHour = (string?)s.ClosingHour,
                 lat = (double?)s.Lat,
                 lng = (double?)s.Lng,
                 fuels = fuelBySite.TryGetValue(siteId, out var f) ? f : []

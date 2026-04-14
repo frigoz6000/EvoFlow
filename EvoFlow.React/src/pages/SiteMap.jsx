@@ -176,9 +176,10 @@ export default function SiteMap() {
                 position={[site.lat, site.lng]}
                 icon={makeIcon(site.poleSign)}
               >
-                <Popup minWidth={220} maxWidth={300}>
+                <Popup minWidth={240} maxWidth={320}>
                   <div style={{ fontFamily: 'sans-serif', fontSize: 13, lineHeight: 1.5 }}>
-                    <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
+                    {/* Site name + brand */}
+                    <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 3 }}>
                       {site.siteName}
                     </div>
                     {site.poleSign && (
@@ -191,29 +192,52 @@ export default function SiteMap() {
                         </span>
                       </div>
                     )}
-                    <div style={{ color: '#555', marginBottom: 4 }}>
-                      {[site.address1, site.address2, site.city, site.county]
-                        .filter(Boolean).join(', ')}
+
+                    {/* Address */}
+                    <div style={{ color: '#444', marginBottom: 2, fontSize: 12 }}>
+                      {[site.address1, site.address2].filter(Boolean).join(', ')}
                     </div>
-                    <div style={{ fontFamily: 'monospace', fontSize: 12, color: '#333', fontWeight: 600 }}>
+                    <div style={{ color: '#444', fontSize: 12 }}>
+                      {[site.city, site.county].filter(Boolean).join(', ')}
+                    </div>
+                    <div style={{ fontFamily: 'monospace', fontSize: 12, color: '#222', fontWeight: 600, marginTop: 2 }}>
                       {site.postCode}
                     </div>
-                    <div style={{ fontSize: 11, color: '#aaa', marginTop: 4 }}>
-                      Site ID: {site.siteId}
-                    </div>
+
+                    {/* Opening hours */}
+                    {(site.openingHour || site.closingHour) && (
+                      <div style={{ fontSize: 11, color: '#666', marginTop: 4 }}>
+                        Hours: {site.openingHour || '—'} – {site.closingHour || '—'}
+                      </div>
+                    )}
+
+                    {/* Fuel prices */}
                     {site.fuels && site.fuels.length > 0 && (
-                      <div style={{ marginTop: 8, borderTop: '1px solid #eee', paddingTop: 8 }}>
-                        <div style={{ fontWeight: 600, fontSize: 11, marginBottom: 4, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                          Fuel Prices
+                      <div style={{ marginTop: 8, borderTop: '1px solid #e5e5e5', paddingTop: 8 }}>
+                        <div style={{
+                          fontWeight: 700, fontSize: 11, marginBottom: 5,
+                          color: '#444', textTransform: 'uppercase', letterSpacing: '0.5px'
+                        }}>
+                          Current Fuel Prices
                         </div>
-                        {site.fuels.map(f => (
-                          <div key={f.fuelTypeId} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 2 }}>
-                            <span style={{ color: '#555' }}>{f.fuelTypeId}</span>
-                            <span style={{ fontWeight: 600 }}>
-                              {f.avgPpl != null ? `${f.avgPpl}p/l` : '—'}
-                            </span>
-                          </div>
-                        ))}
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                          <thead>
+                            <tr style={{ color: '#888', fontSize: 10 }}>
+                              <th style={{ textAlign: 'left', fontWeight: 600, paddingBottom: 3 }}>Grade</th>
+                              <th style={{ textAlign: 'right', fontWeight: 600, paddingBottom: 3 }}>Price/L</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {site.fuels.map(f => (
+                              <tr key={f.shortCode}>
+                                <td style={{ color: '#333', paddingBottom: 2 }}>{f.grade}</td>
+                                <td style={{ textAlign: 'right', fontWeight: 700, color: '#111', paddingBottom: 2 }}>
+                                  £{Number(f.unitPrice).toFixed(4)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     )}
                   </div>
