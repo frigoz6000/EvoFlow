@@ -5,6 +5,19 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EvoFlow.Api.Controllers;
 
+public class FuelGradePriceDto
+{
+    public string SiteId { get; set; } = null!;
+    public string SiteName { get; set; } = null!;
+    public string GradeId { get; set; } = null!;
+    public string GradeDescription { get; set; } = null!;
+    public string GradeShortCode { get; set; } = null!;
+    public decimal GradeUnitPrice { get; set; }
+    public DateTime? DtFuelChange { get; set; }
+    public DateTime? DtSentToGov { get; set; }
+    public DateTime? DtLastReceived { get; set; }
+}
+
 [ApiController]
 [Route("api/[controller]")]
 public class FuelGradePricesController(EvoFlowDbContext db, IDapperConnectionFactory connectionFactory) : ControllerBase
@@ -21,7 +34,7 @@ public class FuelGradePricesController(EvoFlowDbContext db, IDapperConnectionFac
             WHERE (@SiteId IS NULL OR f.SiteId LIKE '%' + @SiteId + '%')
               AND (@SiteName IS NULL OR s.SiteName LIKE '%' + @SiteName + '%')
             ORDER BY f.SiteId, f.GradeId";
-        var rows = await conn.QueryAsync(sql, new { SiteId = siteId, SiteName = siteName });
+        var rows = await conn.QueryAsync<FuelGradePriceDto>(sql, new { SiteId = siteId, SiteName = siteName });
         return Ok(rows);
     }
 
