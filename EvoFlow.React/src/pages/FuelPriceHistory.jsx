@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { fuelGradePriceHistoryApi } from '../api/client'
 import ErrorBoundary from '../components/ErrorBoundary'
 
@@ -7,54 +7,67 @@ function fmt(dt) {
   return new Date(dt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-function toInputDate(d) {
-  return d.toISOString().slice(0, 10)
+// YYYY-MM-DD in local timezone — avoids UTC-edge-of-day issues
+function localDateStr(d) {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+function defaultFrom() {
+  const d = new Date()
+  d.setDate(d.getDate() - 6)
+  return localDateStr(d)
+}
+
+function defaultTo() {
+  return localDateStr(new Date())
 }
 
 export default function FuelPriceHistory() {
-  const today = new Date()
-  const sevenDaysAgo = new Date(today)
-  sevenDaysAgo.setDate(today.getDate() - 6)
-
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [siteIdFilter, setSiteIdFilter] = useState('')
   const [siteNameFilter, setSiteNameFilter] = useState('')
-  const [fromDate, setFromDate] = useState(toInputDate(sevenDaysAgo))
-  const [toDate, setToDate] = useState(toInputDate(today))
+  const [fromDate, setFromDate] = useState(defaultFrom)
+  const [toDate, setToDate] = useState(defaultTo)
 
-  function load() {
+  const load = useCallback((params) => {
     setLoading(true)
-    const params = {
-      fromDate: fromDate || undefined,
-      toDate: toDate ? toInputDate(new Date(new Date(toDate).getTime() + 86400000)) : undefined,
-    }
-    if (siteIdFilter.trim()) params.siteId = siteIdFilter.trim()
-    if (siteNameFilter.trim()) params.siteName = siteNameFilter.trim()
     fuelGradePriceHistoryApi.getAll(params)
       .then(d => setRows(d || []))
       .catch(console.error)
       .finally(() => setLoading(false))
-  }
+  }, [])
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load({ fromDate: defaultFrom(), toDate: defaultTo() })
+  }, [load])
+
+  function buildParams(from, to, sid, sname) {
+    // toDate is inclusive — pass next day so SQL < comparison includes the selected day
+    const nextDay = new Date(to + 'T00:00:00')
+    nextDay.setDate(nextDay.getDate() + 1)
+    const params = { fromDate: from, toDate: localDateStr(nextDay) }
+    if (sid.trim()) params.siteId = sid.trim()
+    if (sname.trim()) params.siteName = sname.trim()
+    return params
+  }
 
   function handleSearch(e) {
     e.preventDefault()
-    load()
+    load(buildParams(fromDate, toDate, siteIdFilter, siteNameFilter))
   }
 
   function handleClear() {
+    const from = defaultFrom()
+    const to = defaultTo()
     setSiteIdFilter('')
     setSiteNameFilter('')
-    setFromDate(toInputDate(sevenDaysAgo))
-    setToDate(toInputDate(today))
-    setTimeout(() => {
-      fuelGradePriceHistoryApi.getAll({
-        fromDate: toInputDate(sevenDaysAgo),
-        toDate: toInputDate(new Date(today.getTime() + 86400000)),
-      }).then(d => setRows(d || [])).catch(console.error).finally(() => setLoading(false))
-    }, 0)
+    setFromDate(from)
+    setToDate(to)
+    load(buildParams(from, to, '', ''))
   }
 
   return (
