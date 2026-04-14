@@ -16,9 +16,7 @@ function localDateStr(d) {
 }
 
 function defaultFrom() {
-  const d = new Date()
-  d.setDate(d.getDate() - 6)
-  return localDateStr(d)
+  return localDateStr(new Date())
 }
 
 function defaultTo() {
