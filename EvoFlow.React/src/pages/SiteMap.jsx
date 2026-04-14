@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Popup, useMap, Circle } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -32,6 +33,20 @@ function FlyTo({ target }) {
   useEffect(() => {
     if (target) map.flyTo([target.lat, target.lng], target.zoom ?? 12, { duration: 1.2 })
   }, [target, map])
+  return null
+}
+
+// Opens the popup on a specific marker after the map finishes flying
+function FocusSite({ site, markerRefs }) {
+  const map = useMap()
+  useEffect(() => {
+    if (!site) return
+    map.once('moveend', () => {
+      const ref = markerRefs.current[site.siteId]
+      if (ref) ref.openPopup()
+    })
+    map.flyTo([site.lat, site.lng], 15, { duration: 1.4 })
+  }, [site, map, markerRefs])
   return null
 }
 
@@ -288,6 +303,9 @@ function FilterBar({ filters, setFilters, allBrands, onSearch, onNearMe, searchi
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function SiteMap() {
+  const [searchParams] = useSearchParams()
+  const focusSiteId = searchParams.get('siteId')
+
   const [sites, setSites] = useState([])
   const [loading, setLoading] = useState(true)
   const [geocodeStatus, setGeocodeStatus] = useState(null)
@@ -297,6 +315,7 @@ export default function SiteMap() {
   const [nearMeLoading, setNearMeLoading] = useState(false)
   const [searchError, setSearchError] = useState('')
   const pollRef = useRef(null)
+  const markerRefs = useRef({})
 
   useEffect(() => {
     sitesApi.getMapData()
@@ -388,6 +407,9 @@ export default function SiteMap() {
   const unplotted = sites.filter(s => !s.lat || !s.lng)
   const activeFilters = filters.grade || filters.brand || filters.openNow || filters.centre
 
+  // Site to focus on when navigated from All Sites
+  const focusSite = focusSiteId ? sites.find(s => s.siteId === focusSiteId) : null
+
   return (
     <ErrorBoundary fallback="Map page error.">
       <div className="page-header mb-4">
@@ -452,8 +474,9 @@ export default function SiteMap() {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            {positions.length > 0 && !flyTarget && <FitBounds positions={positions} />}
+            {positions.length > 0 && !flyTarget && !focusSite && <FitBounds positions={positions} />}
             {flyTarget && <FlyTo target={flyTarget} />}
+            {focusSite && <FocusSite site={focusSite} markerRefs={markerRefs} />}
 
             {/* Radius circle around search centre */}
             {filters.centre && (
@@ -468,7 +491,8 @@ export default function SiteMap() {
               <Marker
                 key={site.siteId}
                 position={[site.lat, site.lng]}
-                icon={makeIcon(site.poleSign)}
+                icon={makeIcon(site.poleSign, site.siteId === focusSiteId)}
+                ref={el => { if (el) markerRefs.current[site.siteId] = el }}
               >
                 <Popup minWidth={240} maxWidth={320}>
                   <div style={{ fontFamily: 'sans-serif', fontSize: 13, lineHeight: 1.5 }}>

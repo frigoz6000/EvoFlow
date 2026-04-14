@@ -54,11 +54,12 @@ export default function Sites() {
                   <th>Pole Sign</th>
                   <th>Opening</th>
                   <th>Closing</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
-                  <tr><td colSpan={9}><div className="empty-state">No sites found</div></td></tr>
+                  <tr><td colSpan={10}><div className="empty-state">No sites found</div></td></tr>
                 ) : filtered.map(site => (
                   <tr key={site.siteId}>
                     <td>
@@ -78,6 +79,18 @@ export default function Sites() {
                     <td style={{ color: 'var(--text-secondary)' }}>{site.poleSign || '—'}</td>
                     <td style={{ fontSize: 12 }}>{(site.openingHour || '—').substring(0, 5)}</td>
                     <td style={{ fontSize: 12 }}>{(site.closingHour || '—').substring(0, 5)}</td>
+                    <td>
+                      <button
+                        onClick={() => navigate(`/site-map?siteId=${site.siteId}`)}
+                        style={{
+                          background: 'var(--accent)', color: '#fff', border: 'none',
+                          padding: '3px 10px', borderRadius: 4, fontSize: 11,
+                          cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap'
+                        }}
+                      >
+                        View on Map
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
