@@ -72,6 +72,21 @@ const PAGE_TITLES = {
   '/fuel-price-history': 'Fuel Price History',
 }
 
+// Group NAV items into sections for accordion rendering
+const NAV_SECTIONS = (() => {
+  const sections = []
+  let current = null
+  for (const item of NAV) {
+    if (item.section) {
+      current = { label: item.section, items: [] }
+      sections.push(current)
+    } else if (current) {
+      current.items.push(item)
+    }
+  }
+  return sections
+})()
+
 export default function Layout() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -83,8 +98,13 @@ export default function Layout() {
   const [pushMsg, setPushMsg] = useState('')
   const [allSites, setAllSites] = useState([])
   const [searchFocused, setSearchFocused] = useState(false)
+  const [openSection, setOpenSection] = useState(null)
   const searchRef = useRef(null)
   const title = PAGE_TITLES[location.pathname] || 'EvoFlow'
+
+  function toggleSection(label) {
+    setOpenSection(prev => prev === label ? null : label)
+  }
 
   useEffect(() => {
     sitesApi.getAll().then(s => setAllSites(s || [])).catch(() => {})
@@ -153,27 +173,41 @@ export default function Layout() {
           {!effectiveCollapsed && <span className="sidebar-brand-name">EvoFlow</span>}
         </div>
         <div className="sidebar-nav">
-          {NAV.map((item, i) => {
-            if (item.section) {
-              return effectiveCollapsed ? null : (
-                <div key={i} className="sidebar-section-label">{item.section}</div>
-              )
-            }
-            const Icon = item.icon
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.exact}
-                className={({ isActive }) => isActive ? 'active' : ''}
-                title={effectiveCollapsed ? item.label : undefined}
-                onClick={() => { if (window.innerWidth < 768) { setCollapsed(true); setHovered(false) } }}
-              >
-                <span className="nav-icon"><Icon size={15} /></span>
-                {!effectiveCollapsed && item.label}
-              </NavLink>
-            )
-          })}
+          {NAV_SECTIONS.map(sec => (
+            <div key={sec.label}>
+              {!effectiveCollapsed && (
+                <button
+                  className="sidebar-section-toggle"
+                  onClick={() => toggleSection(sec.label)}
+                >
+                  <span>{sec.label}</span>
+                  <svg
+                    width="10" height="10" viewBox="0 0 10 10"
+                    fill="none" stroke="currentColor" strokeWidth="1.8"
+                    style={{ transition: 'transform 0.2s', transform: openSection === sec.label ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink: 0 }}
+                  >
+                    <polyline points="1,3 5,7 9,3" />
+                  </svg>
+                </button>
+              )}
+              {(effectiveCollapsed || openSection === sec.label) && sec.items.map(item => {
+                const Icon = item.icon
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.exact}
+                    className={({ isActive }) => isActive ? 'active' : ''}
+                    title={effectiveCollapsed ? item.label : undefined}
+                    onClick={() => { if (window.innerWidth < 768) { setCollapsed(true); setHovered(false) } }}
+                  >
+                    <span className="nav-icon"><Icon size={15} /></span>
+                    {!effectiveCollapsed && item.label}
+                  </NavLink>
+                )
+              })}
+            </div>
+          ))}
         </div>
       </nav>
 
