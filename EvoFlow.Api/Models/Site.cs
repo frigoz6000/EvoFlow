@@ -35,6 +35,9 @@ public class Site
     [MaxLength(20)]
     public string? PoleSign { get; set; }
 
+    [MaxLength(100)]
+    public string? Country { get; set; }
+
     public DateTime CreatedUtc { get; set; }
 
     public ICollection<PumpDevice> PumpDevices { get; set; } = [];

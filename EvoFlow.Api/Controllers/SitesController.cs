@@ -152,6 +152,7 @@ public class SitesController(EvoFlowDbContext db, IDapperConnectionFactory conne
             s.County,
             s.PostCode,
             s.PoleSign,
+            s.Country,
             fuels = fuelBySite.TryGetValue(s.SiteId, out var f) ? f : []
         });
 

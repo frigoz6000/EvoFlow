@@ -15,11 +15,13 @@ L.Icon.Default.mergeOptions({
 
 const NOMINATIM_DELAY_MS = 1100 // Respect Nominatim 1 req/sec policy
 
-async function geocodePostcode(postcode) {
+async function geocodePostcode(postcode, country) {
   try {
-    const encoded = encodeURIComponent(postcode + ', UK')
+    // Derive countrycode: UK/GB → gb, default to gb
+    const cc = (country || 'UK').trim().toUpperCase() === 'UK' ? 'gb' : (country || 'gb').toLowerCase().slice(0, 2)
+    const encoded = encodeURIComponent(postcode)
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${encoded}&format=json&limit=1`,
+      `https://nominatim.openstreetmap.org/search?q=${encoded}&format=json&limit=1&countrycode=${cc}`,
       { headers: { 'Accept-Language': 'en', 'User-Agent': 'EvoFlow/1.0' } }
     )
     const data = await res.json()
@@ -72,8 +74,8 @@ export default function SiteMap() {
   useEffect(() => {
     if (sites.length === 0) return
 
-    // Check sessionStorage cache first
-    const cacheKey = 'evoflow-geocache-v1'
+    // Check sessionStorage cache first — v2 forces re-geocode with countrycode fix
+    const cacheKey = 'evoflow-geocache-v2'
     let cache = {}
     try { cache = JSON.parse(sessionStorage.getItem(cacheKey) || '{}') } catch { cache = {} }
 
@@ -98,7 +100,7 @@ export default function SiteMap() {
       for (let i = 0; i < toFetch.length; i++) {
         if (cancelled.current) break
         const site = toFetch[i]
-        const coords = await geocodePostcode(site.postCode)
+        const coords = await geocodePostcode(site.postCode, site.country)
         if (coords) {
           newCache[site.postCode] = coords
           setGeocoded(prev => [...prev, { site, ...coords }])
@@ -169,7 +171,7 @@ export default function SiteMap() {
             </div>
           )}
           <MapContainer
-            center={[52.5, -1.5]}
+            center={[54.0, -2.5]}
             zoom={6}
             style={{ height: geocoding ? 'calc(100vh - 280px)' : 'calc(100vh - 250px)', minHeight: 460 }}
           >
