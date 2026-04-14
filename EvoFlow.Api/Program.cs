@@ -26,6 +26,7 @@ builder.Services.AddDbContext<EvoFlowDbContext>(options =>
 builder.Services.AddScoped<IDapperConnectionFactory, DapperConnectionFactory>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IExcelReportService, ExcelReportService>();
+builder.Services.AddSingleton<GeocodingService>();
 builder.Services.AddHostedService<ReportDispatchService>();
 
 var app = builder.Build();

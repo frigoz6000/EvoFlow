@@ -1,13 +1,14 @@
 using Dapper;
 using EvoFlow.Api.Data;
 using EvoFlow.Api.Models;
+using EvoFlow.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EvoFlow.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class SitesController(EvoFlowDbContext db, IDapperConnectionFactory connectionFactory) : ControllerBase
+public class SitesController(EvoFlowDbContext db, IDapperConnectionFactory connectionFactory, GeocodingService geocodingService) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetAll()
@@ -120,7 +121,13 @@ public class SitesController(EvoFlowDbContext db, IDapperConnectionFactory conne
     public async Task<IActionResult> GetMapData()
     {
         using var conn = connectionFactory.CreateConnection();
-        var sites = await conn.QueryAsync<Site>("SELECT * FROM Sites ORDER BY SiteId");
+
+        var sites = (await conn.QueryAsync<dynamic>(
+            @"SELECT SiteId, SiteName, Address1, Address2, City, County, PostCode, PoleSign, Country,
+                     CASE WHEN Location IS NOT NULL THEN Location.Lat ELSE NULL END AS Lat,
+                     CASE WHEN Location IS NOT NULL THEN Location.Long ELSE NULL END AS Lng
+              FROM Sites
+              ORDER BY SiteId")).ToList();
 
         var fuelSummary = await conn.QueryAsync<dynamic>(
             @"SELECT fr.SiteId, fr.FuelTypeId,
@@ -142,21 +149,49 @@ public class SitesController(EvoFlowDbContext db, IDapperConnectionFactory conne
                 }).ToList()
             );
 
-        var result = sites.Select(s => new
+        var result = sites.Select(s =>
         {
-            s.SiteId,
-            s.SiteName,
-            s.Address1,
-            s.Address2,
-            s.City,
-            s.County,
-            s.PostCode,
-            s.PoleSign,
-            s.Country,
-            fuels = fuelBySite.TryGetValue(s.SiteId, out var f) ? f : []
+            string siteId = s.SiteId;
+            return new
+            {
+                siteId = (string)s.SiteId,
+                siteName = (string)s.SiteName,
+                address1 = (string?)s.Address1,
+                address2 = (string?)s.Address2,
+                city = (string?)s.City,
+                county = (string?)s.County,
+                postCode = (string?)s.PostCode,
+                poleSign = (string?)s.PoleSign,
+                country = (string?)s.Country,
+                lat = (double?)s.Lat,
+                lng = (double?)s.Lng,
+                fuels = fuelBySite.TryGetValue(siteId, out var f) ? f : []
+            };
         });
 
         return Ok(result);
+    }
+
+    [HttpPost("geocode")]
+    public IActionResult StartGeocoding()
+    {
+        var started = geocodingService.StartAsync().GetAwaiter().GetResult();
+        if (!started)
+            return Conflict(new { message = "Geocoding is already running." });
+        return Accepted(new { message = "Geocoding started in background." });
+    }
+
+    [HttpDelete("geocode")]
+    public IActionResult CancelGeocoding()
+    {
+        geocodingService.Cancel();
+        return Ok(new { message = "Geocoding cancelled." });
+    }
+
+    [HttpGet("geocode/status")]
+    public IActionResult GetGeocodingStatus()
+    {
+        return Ok(geocodingService.GetProgress());
     }
 
     [HttpPost]

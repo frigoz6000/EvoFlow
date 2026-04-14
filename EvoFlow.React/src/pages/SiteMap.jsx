@@ -1,8 +1,9 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { sitesApi } from '../api/client'
+import api from '../api/client'
 import ErrorBoundary from '../components/ErrorBoundary'
 
 // Fix Leaflet default icon paths broken by bundlers
@@ -13,32 +14,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 })
 
-const NOMINATIM_DELAY_MS = 1100 // Respect Nominatim 1 req/sec policy
-
-async function geocodePostcode(postcode, country) {
-  try {
-    // Derive countrycode: UK/GB → gb, default to gb
-    const cc = (country || 'UK').trim().toUpperCase() === 'UK' ? 'gb' : (country || 'gb').toLowerCase().slice(0, 2)
-    const encoded = encodeURIComponent(postcode)
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${encoded}&format=json&limit=1&countrycode=${cc}`,
-      { headers: { 'Accept-Language': 'en', 'User-Agent': 'EvoFlow/1.0' } }
-    )
-    const data = await res.json()
-    if (data && data.length > 0) {
-      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
-    }
-  } catch {
-    // ignore geocode failures
-  }
-  return null
-}
-
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms))
-}
-
-// Auto-fit map bounds when markers change
+// Auto-fit map bounds when markers are first loaded
 function FitBounds({ positions }) {
   const map = useMap()
   const fitted = useRef(false)
@@ -52,94 +28,92 @@ function FitBounds({ positions }) {
   return null
 }
 
+const POLE_COLOURS = {
+  bp: '#007a33',
+  shell: '#fbce07',
+  texaco: '#c8102e',
+  esso: '#003087',
+  jet: '#e55b10',
+  gulf: '#f79400',
+}
+
+function poleSignColour(poleSign) {
+  const s = (poleSign || '').toLowerCase()
+  for (const [brand, colour] of Object.entries(POLE_COLOURS)) {
+    if (s.includes(brand)) return colour
+  }
+  return '#4f8ef7'
+}
+
+function makeIcon(poleSign) {
+  const colour = poleSignColour(poleSign)
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="36" viewBox="0 0 28 36">
+    <path d="M14 0C6.268 0 0 6.268 0 14c0 9.956 14 22 14 22S28 23.956 28 14C28 6.268 21.732 0 14 0z" fill="${colour}" stroke="white" stroke-width="1.5"/>
+    <circle cx="14" cy="14" r="6" fill="white" opacity="0.9"/>
+  </svg>`
+  return L.divIcon({
+    html: svg,
+    iconSize: [28, 36],
+    iconAnchor: [14, 36],
+    popupAnchor: [0, -36],
+    className: ''
+  })
+}
+
 export default function SiteMap() {
   const [sites, setSites] = useState([])
-  const [geocoded, setGeocoded] = useState([]) // { site, lat, lng }
   const [loading, setLoading] = useState(true)
-  const [geocoding, setGeocoding] = useState(false)
-  const [progress, setProgress] = useState({ done: 0, total: 0 })
-  const cancelled = useRef(false)
+  const [geocodeStatus, setGeocodeStatus] = useState(null)
+  const pollRef = useRef(null)
 
-  useEffect(() => {
-    cancelled.current = false
+  const fetchSites = useCallback(() => {
     sitesApi.getMapData()
-      .then(data => {
-        setSites(data || [])
-        setLoading(false)
-      })
-      .catch(() => setLoading(false))
-    return () => { cancelled.current = true }
+      .then(data => setSites(data || []))
+      .catch(console.error)
+      .finally(() => setLoading(false))
   }, [])
 
-  useEffect(() => {
-    if (sites.length === 0) return
-
-    // Check sessionStorage cache first — v2 forces re-geocode with countrycode fix
-    const cacheKey = 'evoflow-geocache-v2'
-    let cache = {}
-    try { cache = JSON.parse(sessionStorage.getItem(cacheKey) || '{}') } catch { cache = {} }
-
-    const cached = []
-    const toFetch = []
-    for (const site of sites) {
-      if (site.postCode && cache[site.postCode]) {
-        cached.push({ site, ...cache[site.postCode] })
-      } else if (site.postCode) {
-        toFetch.push(site)
-      }
-    }
-
-    setGeocoded(cached)
-    setProgress({ done: cached.length, total: sites.length })
-
-    if (toFetch.length === 0) return
-
-    setGeocoding(true)
-    ;(async () => {
-      const newCache = { ...cache }
-      for (let i = 0; i < toFetch.length; i++) {
-        if (cancelled.current) break
-        const site = toFetch[i]
-        const coords = await geocodePostcode(site.postCode, site.country)
-        if (coords) {
-          newCache[site.postCode] = coords
-          setGeocoded(prev => [...prev, { site, ...coords }])
+  const fetchStatus = useCallback(() => {
+    api.get('/sites/geocode/status')
+      .then(r => {
+        setGeocodeStatus(r.data)
+        if (r.data.isRunning) {
+          // Refresh site data periodically while running to show new pins
+          fetchSites()
+        } else if (pollRef.current) {
+          clearInterval(pollRef.current)
+          pollRef.current = null
+          fetchSites() // final refresh
         }
-        setProgress({ done: cached.length + i + 1, total: sites.length })
-        if (i < toFetch.length - 1) await sleep(NOMINATIM_DELAY_MS)
-      }
-      try { sessionStorage.setItem(cacheKey, JSON.stringify(newCache)) } catch { /* quota */ }
-      setGeocoding(false)
-    })()
-  }, [sites])
+      })
+      .catch(console.error)
+  }, [fetchSites])
 
-  const positions = geocoded.map(g => [g.lat, g.lng])
+  useEffect(() => {
+    fetchSites()
+    fetchStatus()
+    return () => { if (pollRef.current) clearInterval(pollRef.current) }
+  }, [fetchSites, fetchStatus])
 
-  const poleSignColour = (poleSign) => {
-    const s = (poleSign || '').toLowerCase()
-    if (s.includes('bp')) return '#007a33'
-    if (s.includes('shell')) return '#fbce07'
-    if (s.includes('texaco')) return '#c8102e'
-    if (s.includes('esso')) return '#003087'
-    if (s.includes('jet')) return '#e55b10'
-    if (s.includes('gulf')) return '#f79400'
-    return '#4f8ef7'
+  function startGeocoding() {
+    api.post('/sites/geocode')
+      .then(() => {
+        fetchStatus()
+        pollRef.current = setInterval(fetchStatus, 3000)
+      })
+      .catch(e => {
+        if (e.response?.status === 409) {
+          // already running — just start polling
+          pollRef.current = setInterval(fetchStatus, 3000)
+        }
+      })
   }
 
-  function makeIcon(poleSign) {
-    const colour = poleSignColour(poleSign)
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="36" viewBox="0 0 28 36">
-      <path d="M14 0C6.268 0 0 6.268 0 14c0 9.956 14 22 14 22S28 23.956 28 14C28 6.268 21.732 0 14 0z" fill="${colour}" stroke="white" stroke-width="1.5"/>
-      <circle cx="14" cy="14" r="6" fill="white" opacity="0.9"/>
-    </svg>`
-    return L.divIcon({
-      html: svg,
-      iconSize: [28, 36],
-      iconAnchor: [14, 36],
-      popupAnchor: [0, -36],
-      className: ''
-    })
-  }
+  const plotted = sites.filter(s => s.lat != null && s.lng != null)
+  const unplotted = sites.filter(s => s.lat == null || s.lng == null)
+  const positions = plotted.map(s => [s.lat, s.lng])
+
+  const isGeocoding = geocodeStatus?.isRunning === true
 
   return (
     <ErrorBoundary fallback="Map page error.">
@@ -147,10 +121,22 @@ export default function SiteMap() {
         <div>
           <div className="page-title">Site Map</div>
           <div className="page-subtitle">
-            {loading ? 'Loading sites…' : geocoding
-              ? `Geocoding postcodes — ${progress.done} / ${progress.total}`
-              : `${geocoded.length} of ${sites.length} sites plotted`}
+            {loading ? 'Loading…' : `${plotted.length} of ${sites.length} sites plotted`}
           </div>
+        </div>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
+          {!isGeocoding && unplotted.length > 0 && (
+            <button
+              className="btn btn-primary"
+              onClick={startGeocoding}
+              style={{
+                background: 'var(--accent)', color: '#fff', border: 'none',
+                padding: '8px 16px', borderRadius: 6, cursor: 'pointer', fontSize: 13
+              }}
+            >
+              Geocode {unplotted.length} missing sites
+            </button>
+          )}
         </div>
       </div>
 
@@ -160,30 +146,31 @@ export default function SiteMap() {
         </div>
       ) : (
         <div className="card" style={{ padding: 0, overflow: 'hidden', minHeight: 520 }}>
-          {geocoding && (
+          {isGeocoding && (
             <div style={{
               padding: '8px 16px', background: 'var(--accent)', color: '#fff',
               fontSize: 12, display: 'flex', alignItems: 'center', gap: 8
             }}>
               <div className="spinner" style={{ width: 14, height: 14, borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff' }} />
-              Geocoding postcodes via OpenStreetMap ({progress.done}/{progress.total})…
-              &nbsp;Cached results load instantly on next visit.
+              Geocoding postcodes and saving to database — {geocodeStatus.done}/{geocodeStatus.total} done
+              {geocodeStatus.currentPostcode && <span style={{ opacity: 0.8 }}> · {geocodeStatus.currentPostcode}</span>}
             </div>
           )}
+
           <MapContainer
             center={[54.0, -2.5]}
             zoom={6}
-            style={{ height: geocoding ? 'calc(100vh - 280px)' : 'calc(100vh - 250px)', minHeight: 460 }}
+            style={{ height: 'calc(100vh - 240px)', minHeight: 460 }}
           >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             {positions.length > 1 && <FitBounds positions={positions} />}
-            {geocoded.map(({ site, lat, lng }) => (
+            {plotted.map(site => (
               <Marker
                 key={site.siteId}
-                position={[lat, lng]}
+                position={[site.lat, site.lng]}
                 icon={makeIcon(site.poleSign)}
               >
                 <Popup minWidth={220} maxWidth={300}>
@@ -202,7 +189,7 @@ export default function SiteMap() {
                       </div>
                     )}
                     <div style={{ color: '#555', lineHeight: 1.6, marginBottom: 6 }}>
-                      {[site.address1, site.address2, site.city, site.county, site.postCode]
+                      {[site.address1, site.address2, site.city, site.county, site.postCode, site.country]
                         .filter(Boolean).join(', ')}
                     </div>
                     <div style={{ fontSize: 11, color: '#888', fontFamily: 'monospace' }}>
