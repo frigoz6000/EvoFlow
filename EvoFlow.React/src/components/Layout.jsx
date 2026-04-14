@@ -20,6 +20,9 @@ const NAV = [
   { section: 'SITES' },
   { to: '/sites', icon: IconMapPin, label: 'All Sites' },
   { to: '/site-map', icon: IconMap, label: 'Site Map' },
+  { section: 'FUEL PRICES' },
+  { to: '/fuel-prices', icon: IconDroplets, label: 'Fuel Prices' },
+  { to: '/fuel-price-history', icon: IconDroplets, label: 'Price History' },
   { section: 'REPORTS' },
   { to: '/doms-info', icon: IconTable, label: 'Doms Info' },
   { to: '/flow-rates', icon: IconActivity, label: 'Flow Rates' },
@@ -65,6 +68,8 @@ const PAGE_TITLES = {
   '/config/report-schedules': 'Report Schedules',
   '/config/import-data': 'Import Data',
   '/data-integrity': 'Data Integrity',
+  '/fuel-prices': 'Fuel Prices',
+  '/fuel-price-history': 'Fuel Price History',
 }
 
 export default function Layout() {

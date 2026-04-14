@@ -84,4 +84,13 @@ export const whatsAppConfigApi = {
   upsert: (config) => api.post('/whatsappconfig', config).then(r => r.data),
 }
 
+export const fuelGradePricesApi = {
+  getAll: (params = {}) => api.get('/fuelgradeprices', { params }).then(r => r.data),
+  upsert: (price) => api.post('/fuelgradeprices', price).then(r => r.data),
+}
+
+export const fuelGradePriceHistoryApi = {
+  getAll: (params = {}) => api.get('/fuelgradepricehistory', { params }).then(r => r.data),
+}
+
 export default api

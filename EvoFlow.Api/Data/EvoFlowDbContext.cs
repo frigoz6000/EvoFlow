@@ -28,6 +28,8 @@ public class EvoFlowDbContext(DbContextOptions<EvoFlowDbContext> options) : DbCo
     public DbSet<EmailLog> EmailLogs => Set<EmailLog>();
     public DbSet<WhatsAppContact> WhatsAppContacts => Set<WhatsAppContact>();
     public DbSet<WhatsAppConfig> WhatsAppConfig => Set<WhatsAppConfig>();
+    public DbSet<FuelGradePrice> FuelGradePrices => Set<FuelGradePrice>();
+    public DbSet<FuelGradePriceHistory> FuelGradePriceHistory => Set<FuelGradePriceHistory>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -89,6 +91,17 @@ public class EvoFlowDbContext(DbContextOptions<EvoFlowDbContext> options) : DbCo
         modelBuilder.Entity<ReportDispatch>(e =>
         {
             e.HasOne(x => x.ReportSchedule).WithMany().HasForeignKey(x => x.ReportScheduleId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<FuelGradePrice>(e =>
+        {
+            e.HasKey(x => new { x.SiteId, x.GradeId });
+            e.Property(x => x.GradeUnitPrice).HasColumnType("decimal(18,4)");
+        });
+
+        modelBuilder.Entity<FuelGradePriceHistory>(e =>
+        {
+            e.Property(x => x.GradeUnitPrice).HasColumnType("decimal(18,4)");
         });
 
         modelBuilder.Entity<AlarmType>().HasData(

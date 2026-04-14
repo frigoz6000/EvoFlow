@@ -21,6 +21,8 @@ import ImportData from './pages/ImportData'
 import DataIntegrity from './pages/DataIntegrity'
 import WhatsAppContacts from './pages/WhatsAppContacts'
 import SiteMap from './pages/SiteMap'
+import FuelPrices from './pages/FuelPrices'
+import FuelPriceHistory from './pages/FuelPriceHistory'
 
 export default function App() {
   return (
@@ -48,6 +50,8 @@ export default function App() {
           <Route path="config/import-data" element={<ImportData />} />
           <Route path="data-integrity" element={<DataIntegrity />} />
           <Route path="config/whatsapp" element={<WhatsAppContacts />} />
+          <Route path="fuel-prices" element={<FuelPrices />} />
+          <Route path="fuel-price-history" element={<FuelPriceHistory />} />
         </Route>
       </Routes>
     </BrowserRouter>
