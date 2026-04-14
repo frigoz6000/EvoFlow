@@ -15,6 +15,34 @@ const ORANGE = '#f59e0b'
 const RED    = '#ef4444'
 const PIE_COLORS = [PINK, PURPLE, BLUE, GREEN, ORANGE, RED, '#8b5cf6', '#06b6d4']
 
+function TankGaugeVisual({ fillPct, uid }) {
+  const pct = parseFloat(fillPct)
+  if (isNaN(pct)) return null
+  const color = pct > 55 ? '#22c55e' : pct >= 25 ? '#f59e0b' : '#ef4444'
+  const fillRatio = Math.min(100, Math.max(0, pct)) / 100
+  const w = 42, h = 52
+  const capW = 12, capH = 7, bodyY = capH, bodyH = h - capH - 2
+  const fillH = Math.round(bodyH * fillRatio)
+  const fillY = bodyY + bodyH - fillH
+  const clipId = `sd-tg-clip-${uid}`
+  const rx = 9
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ display: 'block' }}>
+      <defs>
+        <clipPath id={clipId}>
+          <rect x={2} y={bodyY} width={w - 4} height={bodyH} rx={rx} />
+        </clipPath>
+      </defs>
+      <rect x={(w - capW) / 2} y={1} width={capW} height={capH} rx={2} style={{ fill: 'var(--tank-cap-color)' }} stroke="#475569" strokeWidth={1} />
+      <rect x={2} y={bodyY} width={w - 4} height={bodyH} rx={rx} style={{ fill: 'var(--tank-body-bg)' }} stroke="#475569" strokeWidth={1.5} />
+      {fillH > 0 && (
+        <rect x={2} y={fillY} width={w - 4} height={fillH} fill={color} opacity={0.88} clipPath={`url(#${clipId})`} />
+      )}
+      <rect x={2} y={bodyY} width={w - 4} height={bodyH} rx={rx} fill="none" stroke="#475569" strokeWidth={1.5} />
+    </svg>
+  )
+}
+
 function fmt(n, decimals = 0) {
   if (n === null || n === undefined || isNaN(n)) return '—'
   if (Math.abs(n) >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
@@ -390,10 +418,8 @@ export default function SiteDetail() {
                         </td>
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <div style={{ width: 56, height: 6, background: 'var(--table-border)', borderRadius: 3, overflow: 'hidden' }}>
-                              <div style={{ width: `${Math.min(100, pct)}%`, height: '100%', background: barColor, borderRadius: 3 }} />
-                            </div>
-                            <span style={{ fontSize: 11, color: 'var(--text-muted)', minWidth: 30 }}>{pct.toFixed(0)}%</span>
+                            <TankGaugeVisual fillPct={pct} uid={i} />
+                            <span style={{ fontSize: 11, color: barColor, fontWeight: 600, minWidth: 30 }}>{pct.toFixed(0)}%</span>
                           </div>
                         </td>
                         <td style={{ fontWeight: 600, fontSize: 12 }}>{fmt(t.gauged)}</td>
