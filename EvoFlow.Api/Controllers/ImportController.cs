@@ -15,14 +15,13 @@ public class ImportController(IDapperConnectionFactory connectionFactory, ILogge
         TRUNCATE TABLE DomsInfoSnapshot;
 
         INSERT INTO DomsInfoSnapshot
-            (DomsDate, SiteId, [Name], Device, DeviceStatus, DeviceOfflineCount,
+            (DomsDate, SiteId, Device, DeviceStatus, DeviceOfflineCount,
              DeviceErrorType, DeviceErrorText, DeviceErrorDate, DeviceLifetimeVolume,
              GradeOption, GradeId, GradeDescription, Transactions, PeakFlow, Uptime,
              NumberZeroTransactions, TankId, CreatedUtc)
         SELECT
             pm.BusinessDate,
             s.SiteId,
-            s.SiteName,
             pd.DeviceId,
             CASE WHEN pd.Online = 1 THEN 'Online' ELSE 'Offline' END,
             pd.OfflineCount,
@@ -60,7 +59,7 @@ public class ImportController(IDapperConnectionFactory connectionFactory, ILogge
             ON ptc.PumpGradeTotalsId = pgt.PumpGradeTotalsId
         LEFT JOIN FuelTypes ft ON ft.FuelTypeId = pgt.GradeId
         GROUP BY
-            pm.BusinessDate, s.SiteId, s.SiteName, pd.DeviceId, pd.Online, pd.OfflineCount,
+            pm.BusinessDate, s.SiteId, pd.DeviceId, pd.Online, pd.OfflineCount,
             ps.SubStateBits, ps.State, ps.SnapshotUtc, pt.VolumeTotal,
             pmg.GradeOption, pgt.GradeId, ft.Name, pmg.TotalPumpTrans,
             pfi.PeakFlowRate, pmg.UptimeMinutes, pmg.ZeroTrans;

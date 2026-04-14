@@ -378,6 +378,8 @@ def main():
             "TankGauges",
             "FuelRecords",
             "PumpDevices",
+            "FuelGradePriceHistory",
+            "FuelGradePrices",
             "Sites",
             "FuelTypes",
             "Vehicles",
