@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -14,14 +14,14 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 })
 
-// Auto-fit map bounds when markers are first loaded
+// Fit map to the bounds of all plotted markers once on first load
 function FitBounds({ positions }) {
   const map = useMap()
   const fitted = useRef(false)
   useEffect(() => {
     if (!fitted.current && positions.length > 0) {
       const bounds = L.latLngBounds(positions)
-      map.fitBounds(bounds, { padding: [40, 40] })
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 10 })
       fitted.current = true
     }
   }, [positions, map])
@@ -47,15 +47,15 @@ function poleSignColour(poleSign) {
 
 function makeIcon(poleSign) {
   const colour = poleSignColour(poleSign)
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="36" viewBox="0 0 28 36">
-    <path d="M14 0C6.268 0 0 6.268 0 14c0 9.956 14 22 14 22S28 23.956 28 14C28 6.268 21.732 0 14 0z" fill="${colour}" stroke="white" stroke-width="1.5"/>
-    <circle cx="14" cy="14" r="6" fill="white" opacity="0.9"/>
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="34" viewBox="0 0 26 34">
+    <path d="M13 0C5.82 0 0 5.82 0 13c0 9.2 13 21 13 21S26 22.2 26 13C26 5.82 20.18 0 13 0z" fill="${colour}" stroke="white" stroke-width="1.5"/>
+    <circle cx="13" cy="13" r="5.5" fill="white" opacity="0.9"/>
   </svg>`
   return L.divIcon({
     html: svg,
-    iconSize: [28, 36],
-    iconAnchor: [14, 36],
-    popupAnchor: [0, -36],
+    iconSize: [26, 34],
+    iconAnchor: [13, 34],
+    popupAnchor: [0, -34],
     className: ''
   })
 }
@@ -66,53 +66,47 @@ export default function SiteMap() {
   const [geocodeStatus, setGeocodeStatus] = useState(null)
   const pollRef = useRef(null)
 
-  const fetchSites = useCallback(() => {
+  useEffect(() => {
     sitesApi.getMapData()
       .then(data => setSites(data || []))
       .catch(console.error)
       .finally(() => setLoading(false))
-  }, [])
 
-  const fetchStatus = useCallback(() => {
+    // Check if a geocode run is already in progress
     api.get('/sites/geocode/status')
       .then(r => {
         setGeocodeStatus(r.data)
-        if (r.data.isRunning) {
-          // Refresh site data periodically while running to show new pins
-          fetchSites()
-        } else if (pollRef.current) {
+        if (r.data.isRunning) startPolling()
+      })
+      .catch(() => {})
+
+    return () => { if (pollRef.current) clearInterval(pollRef.current) }
+  }, [])
+
+  function startPolling() {
+    if (pollRef.current) return
+    pollRef.current = setInterval(() => {
+      api.get('/sites/geocode/status').then(r => {
+        setGeocodeStatus(r.data)
+        if (!r.data.isRunning) {
           clearInterval(pollRef.current)
           pollRef.current = null
-          fetchSites() // final refresh
+          // Refresh site data to pick up newly geocoded sites
+          sitesApi.getMapData().then(data => setSites(data || [])).catch(() => {})
         }
-      })
-      .catch(console.error)
-  }, [fetchSites])
+      }).catch(() => {})
+    }, 3000)
+  }
 
-  useEffect(() => {
-    fetchSites()
-    fetchStatus()
-    return () => { if (pollRef.current) clearInterval(pollRef.current) }
-  }, [fetchSites, fetchStatus])
-
-  function startGeocoding() {
+  function triggerGeocoding() {
     api.post('/sites/geocode')
-      .then(() => {
-        fetchStatus()
-        pollRef.current = setInterval(fetchStatus, 3000)
-      })
-      .catch(e => {
-        if (e.response?.status === 409) {
-          // already running — just start polling
-          pollRef.current = setInterval(fetchStatus, 3000)
-        }
-      })
+      .then(() => startPolling())
+      .catch(e => { if (e.response?.status === 409) startPolling() })
   }
 
   const plotted = sites.filter(s => s.lat != null && s.lng != null)
   const unplotted = sites.filter(s => s.lat == null || s.lng == null)
   const positions = plotted.map(s => [s.lat, s.lng])
-
   const isGeocoding = geocodeStatus?.isRunning === true
 
   return (
@@ -121,52 +115,61 @@ export default function SiteMap() {
         <div>
           <div className="page-title">Site Map</div>
           <div className="page-subtitle">
-            {loading ? 'Loading…' : `${plotted.length} of ${sites.length} sites plotted`}
+            {loading
+              ? 'Loading…'
+              : `${plotted.length} site${plotted.length !== 1 ? 's' : ''} plotted across the UK`}
           </div>
         </div>
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
-          {!isGeocoding && unplotted.length > 0 && (
+        {!isGeocoding && unplotted.length > 0 && (
+          <div style={{ marginLeft: 'auto' }}>
             <button
-              className="btn btn-primary"
-              onClick={startGeocoding}
+              onClick={triggerGeocoding}
               style={{
                 background: 'var(--accent)', color: '#fff', border: 'none',
-                padding: '8px 16px', borderRadius: 6, cursor: 'pointer', fontSize: 13
+                padding: '8px 16px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600
               }}
             >
               Geocode {unplotted.length} missing sites
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {loading ? (
         <div className="card">
-          <div className="loading-state"><div className="spinner" />Loading sites...</div>
+          <div className="loading-state"><div className="spinner" />Loading sites…</div>
         </div>
       ) : (
-        <div className="card" style={{ padding: 0, overflow: 'hidden', minHeight: 520 }}>
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           {isGeocoding && (
             <div style={{
               padding: '8px 16px', background: 'var(--accent)', color: '#fff',
               fontSize: 12, display: 'flex', alignItems: 'center', gap: 8
             }}>
-              <div className="spinner" style={{ width: 14, height: 14, borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff' }} />
-              Geocoding postcodes and saving to database — {geocodeStatus.done}/{geocodeStatus.total} done
-              {geocodeStatus.currentPostcode && <span style={{ opacity: 0.8 }}> · {geocodeStatus.currentPostcode}</span>}
+              <div className="spinner" style={{
+                width: 13, height: 13,
+                borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff'
+              }} />
+              Validating &amp; geocoding postcodes — {geocodeStatus.done}/{geocodeStatus.total}
+              {geocodeStatus.currentPostcode && (
+                <span style={{ opacity: 0.75 }}>&nbsp;· {geocodeStatus.currentPostcode}</span>
+              )}
             </div>
           )}
 
           <MapContainer
-            center={[54.0, -2.5]}
-            zoom={6}
-            style={{ height: 'calc(100vh - 240px)', minHeight: 460 }}
+            center={[52.8, -1.6]}
+            zoom={7}
+            style={{ height: 'calc(100vh - 230px)', minHeight: 500 }}
           >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            {positions.length > 1 && <FitBounds positions={positions} />}
+
+            {/* Auto-fit to all site markers once loaded */}
+            {positions.length > 0 && <FitBounds positions={positions} />}
+
             {plotted.map(site => (
               <Marker
                 key={site.siteId}
@@ -174,35 +177,40 @@ export default function SiteMap() {
                 icon={makeIcon(site.poleSign)}
               >
                 <Popup minWidth={220} maxWidth={300}>
-                  <div style={{ fontFamily: 'sans-serif', fontSize: 13 }}>
-                    <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>
+                  <div style={{ fontFamily: 'sans-serif', fontSize: 13, lineHeight: 1.5 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
                       {site.siteName}
                     </div>
                     {site.poleSign && (
                       <div style={{ marginBottom: 6 }}>
                         <span style={{
                           background: poleSignColour(site.poleSign), color: '#fff',
-                          padding: '1px 8px', borderRadius: 10, fontSize: 11, fontWeight: 600
+                          padding: '2px 10px', borderRadius: 12, fontSize: 11, fontWeight: 600
                         }}>
                           {site.poleSign}
                         </span>
                       </div>
                     )}
-                    <div style={{ color: '#555', lineHeight: 1.6, marginBottom: 6 }}>
-                      {[site.address1, site.address2, site.city, site.county, site.postCode, site.country]
+                    <div style={{ color: '#555', marginBottom: 4 }}>
+                      {[site.address1, site.address2, site.city, site.county]
                         .filter(Boolean).join(', ')}
                     </div>
-                    <div style={{ fontSize: 11, color: '#888', fontFamily: 'monospace' }}>
-                      ID: {site.siteId}
+                    <div style={{ fontFamily: 'monospace', fontSize: 12, color: '#333', fontWeight: 600 }}>
+                      {site.postCode}
+                    </div>
+                    <div style={{ fontSize: 11, color: '#aaa', marginTop: 4 }}>
+                      Site ID: {site.siteId}
                     </div>
                     {site.fuels && site.fuels.length > 0 && (
                       <div style={{ marginTop: 8, borderTop: '1px solid #eee', paddingTop: 8 }}>
-                        <div style={{ fontWeight: 600, fontSize: 12, marginBottom: 4 }}>Fuel Prices (avg ppl)</div>
+                        <div style={{ fontWeight: 600, fontSize: 11, marginBottom: 4, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          Fuel Prices
+                        </div>
                         {site.fuels.map(f => (
                           <div key={f.fuelTypeId} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 2 }}>
-                            <span>{f.fuelTypeId}</span>
+                            <span style={{ color: '#555' }}>{f.fuelTypeId}</span>
                             <span style={{ fontWeight: 600 }}>
-                              {f.avgPpl != null ? `${f.avgPpl}p` : '—'}
+                              {f.avgPpl != null ? `${f.avgPpl}p/l` : '—'}
                             </span>
                           </div>
                         ))}
