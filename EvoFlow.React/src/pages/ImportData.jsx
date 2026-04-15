@@ -51,14 +51,14 @@ function ResultPanel({ result }) {
   )
 }
 
-function ErrorPanel({ error }) {
+function ErrorPanel({ error, title = 'Import failed' }) {
   return (
     <div style={{ background: 'rgba(220,38,38,0.08)', border: '1px solid #dc2626', borderRadius: 8, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 6 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#dc2626', fontWeight: 700, fontSize: 15 }}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
         </svg>
-        Import failed
+        {title}
       </div>
       <div style={{ fontSize: 13, color: '#dc2626', fontFamily: 'monospace' }}>{error}</div>
     </div>
@@ -239,7 +239,7 @@ export default function ImportData() {
             {anonStatus === 'running' ? <><SpinnerIcon /> Anonymizing…</> : <><ShieldIcon /> Anonymize Site Names</>}
           </button>
           {anonStatus === 'done' && anonResult && <AnonymizeResultPanel result={anonResult} />}
-          {anonStatus === 'error' && <ErrorPanel error={anonError} />}
+          {anonStatus === 'error' && <ErrorPanel error={anonError} title="Anonymization failed" />}
         </div>
       </div>
     </ErrorBoundary>
