@@ -108,6 +108,149 @@ public class ImportController(IDapperConnectionFactory connectionFactory, ILogge
         });
     }
 
+    private const string AnonymizeSitesSql = @"
+        -- Step 1: rename sites sequentially
+        WITH NumberedSites AS (
+            SELECT SiteId, ROW_NUMBER() OVER (ORDER BY SiteId) AS RowNum
+            FROM Sites
+        )
+        UPDATE s
+        SET s.SiteName = 'Site ' + RIGHT('000' + CAST(n.RowNum AS VARCHAR(3)), 3)
+        FROM Sites s
+        INNER JOIN NumberedSites n ON s.SiteId = n.SiteId;
+
+        -- Step 2: assign random UK addresses, pole signs, country and geography locations
+        WITH StreetNames AS (
+            SELECT 1 AS id, 'High Street' AS name UNION ALL SELECT 2,'Victoria Road' UNION ALL
+            SELECT 3,'Church Lane' UNION ALL SELECT 4,'Station Road' UNION ALL SELECT 5,'Park Road' UNION ALL
+            SELECT 6,'London Road' UNION ALL SELECT 7,'Manor Road' UNION ALL SELECT 8,'Kings Road' UNION ALL
+            SELECT 9,'Queens Avenue' UNION ALL SELECT 10,'Mill Lane' UNION ALL SELECT 11,'George Street' UNION ALL
+            SELECT 12,'New Road' UNION ALL SELECT 13,'Main Street' UNION ALL SELECT 14,'Green Lane' UNION ALL
+            SELECT 15,'Springfield Road' UNION ALL SELECT 16,'Chestnut Avenue' UNION ALL
+            SELECT 17,'Richmond Road' UNION ALL SELECT 18,'Clifton Road' UNION ALL
+            SELECT 19,'West Street' UNION ALL SELECT 20,'Elm Street'
+        ),
+        Cities AS (
+            SELECT  1 AS id,'London' AS city,'Greater London' AS county,'SW' AS pcPrefix,51.5074 AS lat,-0.1278 AS lon UNION ALL
+            SELECT  2,'Birmingham','West Midlands','B',52.4862,-1.8904 UNION ALL
+            SELECT  3,'Leeds','West Yorkshire','LS',53.8008,-1.5491 UNION ALL
+            SELECT  4,'Sheffield','South Yorkshire','S',53.3811,-1.4701 UNION ALL
+            SELECT  5,'Bristol','Avon','BS',51.4545,-2.5879 UNION ALL
+            SELECT  6,'Manchester','Greater Manchester','M',53.4808,-2.2426 UNION ALL
+            SELECT  7,'Liverpool','Merseyside','L',53.4084,-2.9916 UNION ALL
+            SELECT  8,'Leicester','Leicestershire','LE',52.6369,-1.1398 UNION ALL
+            SELECT  9,'Coventry','West Midlands','CV',52.4068,-1.5197 UNION ALL
+            SELECT 10,'Nottingham','Nottinghamshire','NG',52.9548,-1.1581 UNION ALL
+            SELECT 11,'Newcastle upon Tyne','Tyne and Wear','NE',54.9783,-1.6178 UNION ALL
+            SELECT 12,'Sunderland','Tyne and Wear','SR',54.9069,-1.3838 UNION ALL
+            SELECT 13,'Brighton','East Sussex','BN',50.8229,-0.1363 UNION ALL
+            SELECT 14,'Plymouth','Devon','PL',50.3755,-4.1427 UNION ALL
+            SELECT 15,'Stoke-on-Trent','Staffordshire','ST',53.0027,-2.1794 UNION ALL
+            SELECT 16,'Wolverhampton','West Midlands','WV',52.5862,-2.1285 UNION ALL
+            SELECT 17,'Derby','Derbyshire','DE',52.9225,-1.4746 UNION ALL
+            SELECT 18,'Southampton','Hampshire','SO',50.9097,-1.4044 UNION ALL
+            SELECT 19,'Portsmouth','Hampshire','PO',50.8198,-1.0880 UNION ALL
+            SELECT 20,'York','North Yorkshire','YO',53.9590,-1.0815 UNION ALL
+            SELECT 21,'Oxford','Oxfordshire','OX',51.7520,-1.2577 UNION ALL
+            SELECT 22,'Cambridge','Cambridgeshire','CB',52.2053,0.1218 UNION ALL
+            SELECT 23,'Exeter','Devon','EX',50.7184,-3.5339 UNION ALL
+            SELECT 24,'Norwich','Norfolk','NR',52.6309,1.2974 UNION ALL
+            SELECT 25,'Ipswich','Suffolk','IP',52.0567,1.1482 UNION ALL
+            SELECT 26,'Swansea','West Glamorgan','SA',51.6214,-3.9436 UNION ALL
+            SELECT 27,'Cardiff','South Glamorgan','CF',51.4816,-3.1791 UNION ALL
+            SELECT 28,'Hull','East Yorkshire','HU',53.7457,-0.3367 UNION ALL
+            SELECT 29,'Bradford','West Yorkshire','BD',53.7960,-1.7594 UNION ALL
+            SELECT 30,'Peterborough','Cambridgeshire','PE',52.5695,-0.2405 UNION ALL
+            SELECT 31,'Gloucester','Gloucestershire','GL',51.8642,-2.2382 UNION ALL
+            SELECT 32,'Edinburgh','Midlothian','EH',55.9533,-3.1883 UNION ALL
+            SELECT 33,'Glasgow','Lanarkshire','G',55.8642,-4.2518 UNION ALL
+            SELECT 34,'Aberdeen','Aberdeenshire','AB',57.1497,-2.0943 UNION ALL
+            SELECT 35,'Dundee','Angus','DD',56.4620,-2.9707 UNION ALL
+            SELECT 36,'Inverness','Inverness-shire','IV',57.4778,-4.2247 UNION ALL
+            SELECT 37,'Belfast','County Antrim','BT',54.5973,-5.9301 UNION ALL
+            SELECT 38,'Londonderry','County Londonderry','BT',54.9966,-7.3086 UNION ALL
+            SELECT 39,'Newport','Gwent','NP',51.5842,-2.9977 UNION ALL
+            SELECT 40,'Wrexham','Clwyd','LL',53.0428,-2.9923 UNION ALL
+            SELECT 41,'Middlesbrough','Cleveland','TS',54.5742,-1.2350 UNION ALL
+            SELECT 42,'Blackpool','Lancashire','FY',53.8142,-3.0503 UNION ALL
+            SELECT 43,'Preston','Lancashire','PR',53.7632,-2.7031 UNION ALL
+            SELECT 44,'Luton','Bedfordshire','LU',51.8787,-0.4200 UNION ALL
+            SELECT 45,'Reading','Berkshire','RG',51.4543,-0.9781 UNION ALL
+            SELECT 46,'Northampton','Northamptonshire','NN',52.2405,-0.9027 UNION ALL
+            SELECT 47,'Milton Keynes','Buckinghamshire','MK',52.0406,-0.7594 UNION ALL
+            SELECT 48,'Swindon','Wiltshire','SN',51.5558,-1.7797 UNION ALL
+            SELECT 49,'Huddersfield','West Yorkshire','HD',53.6458,-1.7850 UNION ALL
+            SELECT 50,'Wakefield','West Yorkshire','WF',53.6830,-1.4977
+        ),
+        Poles AS (
+            SELECT 1 AS id,'BP' AS brand UNION ALL SELECT 2,'Shell' UNION ALL
+            SELECT 3,'Esso' UNION ALL SELECT 4,'Texaco' UNION ALL SELECT 5,'JET'
+        ),
+        SiteRows AS (
+            SELECT SiteId,
+                ABS(CHECKSUM(SiteId,'addr2')) AS rAddr,
+                ABS(CHECKSUM(SiteId,'city2')) AS rCity,
+                ABS(CHECKSUM(SiteId,'post2')) AS rPost,
+                ABS(CHECKSUM(SiteId,'sign2')) AS rSign,
+                ABS(CHECKSUM(SiteId,'lat2'))  AS rLat,
+                ABS(CHECKSUM(SiteId,'lon2'))  AS rLon
+            FROM Sites
+        ),
+        Assigned AS (
+            SELECT sr.SiteId,
+                sn.name AS Street, ct.city AS City, ct.county AS County, ct.pcPrefix AS PCPrefix,
+                p.brand AS Brand,
+                (sr.rAddr % 300) + 1 AS HouseNum,
+                (sr.rPost % 99) + 1 AS PCNum1,
+                (sr.rPost % 9) + 1 AS PCNum2,
+                CHAR(65 + (sr.rPost % 26)) AS PCLet1,
+                CHAR(65 + ((sr.rPost / 26) % 26)) AS PCLet2,
+                ct.lat + ((sr.rLat % 400) - 200) * 0.0001 AS Lat,
+                ct.lon + ((sr.rLon % 400) - 200) * 0.0001 AS Lon
+            FROM SiteRows sr
+            INNER JOIN StreetNames sn ON (sr.rAddr % 20) + 1 = sn.id
+            INNER JOIN Cities ct ON (sr.rCity % 50) + 1 = ct.id
+            INNER JOIN Poles p ON (sr.rSign % 5) + 1 = p.id
+        )
+        UPDATE s
+        SET
+            s.Address1 = CAST(a.HouseNum AS VARCHAR(5)) + ' ' + a.Street,
+            s.Address2 = '',
+            s.City     = a.City,
+            s.County   = a.County,
+            s.PostCode = a.PCPrefix + CAST(a.PCNum1 AS VARCHAR(2)) + ' ' + CAST(a.PCNum2 AS VARCHAR(1)) + a.PCLet1 + a.PCLet2,
+            s.PoleSign = a.Brand,
+            s.Country  = 'United Kingdom',
+            s.Location = geography::Point(a.Lat, a.Lon, 4326)
+        FROM Sites s
+        INNER JOIN Assigned a ON s.SiteId = a.SiteId;
+
+        SELECT COUNT(*) FROM Sites;";
+
+    /// <summary>
+    /// Anonymizes all site names in the Sites table (Site 001, Site 002, …) and
+    /// assigns random UK addresses, pole signs, country and geography locations.
+    /// </summary>
+    [HttpPost("anonymize-sites")]
+    public async Task<IActionResult> AnonymizeSites()
+    {
+        var started = DateTime.UtcNow;
+        logger.LogInformation("Anonymizing site names");
+
+        using var conn = connectionFactory.CreateConnection();
+        var sitesUpdated = await conn.ExecuteScalarAsync<int>(AnonymizeSitesSql, commandTimeout: 120);
+
+        var elapsed = (DateTime.UtcNow - started).TotalSeconds;
+        logger.LogInformation("Anonymization complete. Sites updated: {Count}", sitesUpdated);
+
+        return Ok(new
+        {
+            message = "Anonymization complete",
+            sitesUpdated,
+            elapsedSeconds = Math.Round(elapsed, 1)
+        });
+    }
+
     private const string ImportLogInsertSql = @"
         INSERT INTO ImportLog (FileName, Status, Message, ImportedAtUtc)
         VALUES (@FileName, @Status, @Message, @ImportedAtUtc)";

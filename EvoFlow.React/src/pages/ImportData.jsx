@@ -65,6 +65,29 @@ function ErrorPanel({ error }) {
   )
 }
 
+const ShieldIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+  </svg>
+)
+
+function AnonymizeResultPanel({ result }) {
+  return (
+    <div style={{ background: 'rgba(124,58,237,0.08)', border: '1px solid #7c3aed', borderRadius: 8, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#7c3aed', fontWeight: 700, fontSize: 15 }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        Anonymization complete
+      </div>
+      <div style={{ fontSize: 13, color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <span>Sites updated: <strong>{result.sitesUpdated?.toLocaleString()}</strong></span>
+        <span>Time taken: <strong>{result.elapsedSeconds}s</strong></span>
+      </div>
+    </div>
+  )
+}
+
 export default function ImportData() {
   const [fullStatus, setFullStatus] = useState('idle')   // idle | running | done | error
   const [fullResult, setFullResult] = useState(null)
@@ -74,7 +97,11 @@ export default function ImportData() {
   const [appendResult, setAppendResult] = useState(null)
   const [appendError, setAppendError] = useState(null)
 
-  const anyRunning = fullStatus === 'running' || appendStatus === 'running'
+  const [anonStatus, setAnonStatus] = useState('idle')
+  const [anonResult, setAnonResult] = useState(null)
+  const [anonError, setAnonError] = useState(null)
+
+  const anyRunning = fullStatus === 'running' || appendStatus === 'running' || anonStatus === 'running'
 
   function handleImport(skipDelete) {
     if (skipDelete) {
@@ -97,6 +124,18 @@ export default function ImportData() {
         const msg = e.response?.data?.error || e.message || 'Import failed'
         if (skipDelete) { setAppendError(msg); setAppendStatus('error') }
         else { setFullError(msg); setFullStatus('error') }
+      })
+  }
+
+  function handleAnonymize() {
+    setAnonStatus('running')
+    setAnonResult(null)
+    setAnonError(null)
+    api.post('/import/anonymize-sites', null, { timeout: 60000 })
+      .then(r => { setAnonResult(r.data); setAnonStatus('done') })
+      .catch(e => {
+        const msg = e.response?.data?.error || e.message || 'Anonymization failed'
+        setAnonError(msg); setAnonStatus('error')
       })
   }
 
@@ -169,6 +208,38 @@ export default function ImportData() {
           </button>
           {appendStatus === 'done' && appendResult && <ResultPanel result={appendResult} />}
           {appendStatus === 'error' && <ErrorPanel error={appendError} />}
+        </div>
+      </div>
+
+      {/* Anonymize site names */}
+      <div className="card mt-4" style={{ maxWidth: 600 }}>
+        <div className="card-header">
+          <span className="card-title">Anonymize Site Names</span>
+        </div>
+        <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6 }}>
+            Replaces all site names with anonymous identifiers (<code style={{ background: 'var(--surface)', padding: '2px 6px', borderRadius: 4, fontSize: 12 }}>Site 001</code>,{' '}
+            <code style={{ background: 'var(--surface)', padding: '2px 6px', borderRadius: 4, fontSize: 12 }}>Site 002</code>, …) and assigns random UK addresses,
+            pole signs and geography locations across 50 UK cities.
+          </p>
+          <button
+            onClick={handleAnonymize}
+            disabled={anyRunning}
+            style={{
+              background: anonStatus === 'running' ? 'var(--surface)' : '#7c3aed',
+              border: '1px solid ' + (anonStatus === 'running' ? 'var(--border)' : '#7c3aed'),
+              borderRadius: 8, padding: '12px 28px',
+              cursor: anyRunning ? 'not-allowed' : 'pointer',
+              color: anonStatus === 'running' ? 'var(--text-muted)' : '#fff',
+              fontSize: 15, fontWeight: 700,
+              display: 'flex', alignItems: 'center', gap: 10, alignSelf: 'flex-start',
+              opacity: anyRunning ? 0.7 : 1, transition: 'background 0.15s',
+            }}
+          >
+            {anonStatus === 'running' ? <><SpinnerIcon /> Anonymizing…</> : <><ShieldIcon /> Anonymize Site Names</>}
+          </button>
+          {anonStatus === 'done' && anonResult && <AnonymizeResultPanel result={anonResult} />}
+          {anonStatus === 'error' && <ErrorPanel error={anonError} />}
         </div>
       </div>
     </ErrorBoundary>
