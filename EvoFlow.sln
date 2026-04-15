@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EvoFlow.Api", "EvoFlow.Api\EvoFlow.Api.csproj", "{C2E27A0C-49F8-44B0-BA79-ACAE43C92C67}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EvoFlow.DomsService", "EvoFlow.DomsService\EvoFlow.DomsService.csproj", "{1ADEB067-46D9-4DB9-AB0A-C6B54DB9C2FB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -22,5 +24,9 @@ Global
 		{C2DC9716-8B5A-4476-91D5-E51CA17F9420}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C2DC9716-8B5A-4476-91D5-E51CA17F9420}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C2DC9716-8B5A-4476-91D5-E51CA17F9420}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1ADEB067-46D9-4DB9-AB0A-C6B54DB9C2FB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1ADEB067-46D9-4DB9-AB0A-C6B54DB9C2FB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1ADEB067-46D9-4DB9-AB0A-C6B54DB9C2FB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1ADEB067-46D9-4DB9-AB0A-C6B54DB9C2FB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
