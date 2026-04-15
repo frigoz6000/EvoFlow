@@ -6,6 +6,7 @@ import ErrorBoundary from '../components/ErrorBoundary'
 export default function Sites() {
   const [sites, setSites] = useState([])
   const [loading, setLoading] = useState(true)
+  const [localFilter, setLocalFilter] = useState('')
   const { globalSearch = '' } = useOutletContext() || {}
   const navigate = useNavigate()
 
@@ -17,12 +18,22 @@ export default function Sites() {
   }, [])
 
   const filtered = sites.filter(s => {
-    const q = globalSearch.toLowerCase()
-    return !q ||
-      (s.siteId || '').toLowerCase().includes(q) ||
-      (s.siteName || '').toLowerCase().includes(q) ||
-      (s.city || '').toLowerCase().includes(q) ||
-      (s.postCode || '').toLowerCase().includes(q)
+    const global = globalSearch.toLowerCase()
+    const local = localFilter.toLowerCase()
+    const matchesGlobal = !global ||
+      (s.siteId || '').toLowerCase().includes(global) ||
+      (s.siteName || '').toLowerCase().includes(global) ||
+      (s.city || '').toLowerCase().includes(global) ||
+      (s.postCode || '').toLowerCase().includes(global)
+    const matchesLocal = !local ||
+      (s.siteId || '').toLowerCase().includes(local) ||
+      (s.siteName || '').toLowerCase().includes(local) ||
+      (s.address1 || '').toLowerCase().includes(local) ||
+      (s.address2 || '').toLowerCase().includes(local) ||
+      (s.city || '').toLowerCase().includes(local) ||
+      (s.county || '').toLowerCase().includes(local) ||
+      (s.postCode || '').toLowerCase().includes(local)
+    return matchesGlobal && matchesLocal
   })
 
   return (
@@ -37,6 +48,28 @@ export default function Sites() {
       <div className="card">
         <div className="card-header">
           <span className="card-title">Site Directory — {filtered.length} site{filtered.length !== 1 ? 's' : ''}</span>
+        </div>
+        <div className="filters-bar">
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" style={{ color: 'var(--text-muted)', flexShrink: 0 }}>
+            <path d="M9 17A8 8 0 1 0 9 1a8 8 0 0 0 0 16zM19 19l-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <input
+            type="text"
+            className="filter-search"
+            placeholder="Filter by Site ID, name, or address..."
+            value={localFilter}
+            onChange={e => setLocalFilter(e.target.value)}
+            style={{ flex: 1, maxWidth: 380 }}
+          />
+          {localFilter && (
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => setLocalFilter('')}
+              style={{ padding: '3px 8px', fontSize: 11 }}
+            >
+              Clear
+            </button>
+          )}
         </div>
         <div className="table-responsive">
           {loading ? (
