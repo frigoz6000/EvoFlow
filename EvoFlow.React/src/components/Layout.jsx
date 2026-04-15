@@ -10,7 +10,7 @@ import {
   IconActivity, IconAlertTriangle, IconBarChart, IconDroplets,
   IconAlarmActive, IconAlarmHistory, IconNotifications,
   IconMenu, IconMail, IconSettings, IconCalendar, IconShieldCheck,
-  IconMessageCircle
+  IconMessageCircle, IconUsers, IconSliders, IconClipboardList
 } from './Icons'
 
 const NAV = [
@@ -35,9 +35,9 @@ const NAV = [
   { to: '/alarm-history', icon: IconAlarmHistory, label: 'Alarm History' },
   { to: '/alarm-notifications', icon: IconNotifications, label: 'Notifications' },
   { section: 'EMAIL', sectionIcon: IconMail },
-  { to: '/config/email-recipients', icon: IconMail, label: 'Recipients' },
-  { to: '/config/email-config', icon: IconMail, label: 'Settings' },
-  { to: '/config/email-log', icon: IconMail, label: 'Email Log' },
+  { to: '/config/email-recipients', icon: IconUsers, label: 'Recipients' },
+  { to: '/config/email-config', icon: IconSliders, label: 'Settings' },
+  { to: '/config/email-log', icon: IconClipboardList, label: 'Email Log' },
   { section: 'WHATSAPP', sectionIcon: IconMessageCircle },
   { to: '/config/whatsapp', icon: IconNotifications, label: 'WhatsApp Alerts' },
   { section: 'CONFIG', sectionIcon: IconSettings },
