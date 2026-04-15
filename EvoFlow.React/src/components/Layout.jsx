@@ -9,37 +9,38 @@ import {
   IconSearch, IconSun, IconMoon, IconTable,
   IconActivity, IconAlertTriangle, IconBarChart, IconDroplets,
   IconAlarmActive, IconAlarmHistory, IconNotifications,
-  IconMenu, IconMail, IconSettings, IconCalendar, IconShieldCheck
+  IconMenu, IconMail, IconSettings, IconCalendar, IconShieldCheck,
+  IconMessageCircle
 } from './Icons'
 
 const NAV = [
-  { section: 'MAIN' },
+  { section: 'MAIN', sectionIcon: IconHome },
   { to: '/', icon: IconHome, label: 'Home', exact: true },
-  { section: 'MONITORING' },
+  { section: 'MONITORING', sectionIcon: IconPump },
   { to: '/pump-monitoring', icon: IconPump, label: 'Pump Monitor' },
-  { section: 'SITES' },
+  { section: 'SITES', sectionIcon: IconMapPin },
   { to: '/sites', icon: IconMapPin, label: 'All Sites' },
   { to: '/site-map', icon: IconMap, label: 'Site Map' },
-  { section: 'FUEL PRICES' },
+  { section: 'FUEL PRICES', sectionIcon: IconDroplets },
   { to: '/fuel-prices', icon: IconDroplets, label: 'Fuel Prices' },
   { to: '/fuel-price-history', icon: IconDroplets, label: 'Price History' },
-  { section: 'REPORTS' },
+  { section: 'REPORTS', sectionIcon: IconBarChart },
   { to: '/doms-info', icon: IconTable, label: 'Doms Info' },
   { to: '/flow-rates', icon: IconActivity, label: 'Flow Rates' },
   { to: '/device-alerts', icon: IconAlertTriangle, label: 'Device Alerts' },
   { to: '/volume-revenue', icon: IconBarChart, label: 'Volume & Revenue' },
   { to: '/tank-gauges', icon: IconDroplets, label: 'Tank Gauges' },
-  { section: 'ALARMS' },
+  { section: 'ALARMS', sectionIcon: IconAlarmActive },
   { to: '/active-alarms', icon: IconAlarmActive, label: 'Active Alarms' },
   { to: '/alarm-history', icon: IconAlarmHistory, label: 'Alarm History' },
   { to: '/alarm-notifications', icon: IconNotifications, label: 'Notifications' },
-  { section: 'EMAIL' },
+  { section: 'EMAIL', sectionIcon: IconMail },
   { to: '/config/email-recipients', icon: IconMail, label: 'Recipients' },
   { to: '/config/email-config', icon: IconMail, label: 'Settings' },
   { to: '/config/email-log', icon: IconMail, label: 'Email Log' },
-  { section: 'WHATSAPP' },
+  { section: 'WHATSAPP', sectionIcon: IconMessageCircle },
   { to: '/config/whatsapp', icon: IconNotifications, label: 'WhatsApp Alerts' },
-  { section: 'CONFIG' },
+  { section: 'CONFIG', sectionIcon: IconSettings },
   { to: '/config/alarm-settings', icon: IconSettings, label: 'Alarm Settings' },
   { to: '/config/report-schedules', icon: IconCalendar, label: 'Report Schedules' },
   { to: '/config/import-data', icon: IconTable, label: 'Import Data' },
@@ -78,7 +79,7 @@ const NAV_SECTIONS = (() => {
   let current = null
   for (const item of NAV) {
     if (item.section) {
-      current = { label: item.section, items: [] }
+      current = { label: item.section, icon: item.sectionIcon, items: [] }
       sections.push(current)
     } else if (current) {
       current.items.push(item)
@@ -173,14 +174,19 @@ export default function Layout() {
           {!effectiveCollapsed && <span className="sidebar-brand-name">EvoFlow</span>}
         </div>
         <div className="sidebar-nav">
-          {NAV_SECTIONS.map(sec => (
+          {NAV_SECTIONS.map(sec => {
+            const SectionIcon = sec.icon
+            return (
             <div key={sec.label}>
               {!effectiveCollapsed && (
                 <button
                   className="sidebar-section-toggle"
                   onClick={() => toggleSection(sec.label)}
                 >
-                  <span>{sec.label}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {SectionIcon && <SectionIcon size={13} />}
+                    {sec.label}
+                  </span>
                   <svg
                     width="10" height="10" viewBox="0 0 10 10"
                     fill="none" stroke="currentColor" strokeWidth="1.8"
@@ -207,7 +213,7 @@ export default function Layout() {
                 )
               })}
             </div>
-          ))}
+          )})}
         </div>
       </nav>
 
