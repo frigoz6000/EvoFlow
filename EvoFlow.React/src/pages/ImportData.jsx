@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useLanguage } from '../i18n/LanguageContext'
 import api from '../api/client'
 import ErrorBoundary from '../components/ErrorBoundary'
 
@@ -89,6 +90,7 @@ function AnonymizeResultPanel({ result }) {
 }
 
 export default function ImportData() {
+  const { t } = useLanguage()
   const [fullStatus, setFullStatus] = useState('idle')   // idle | running | done | error
   const [fullResult, setFullResult] = useState(null)
   const [fullError, setFullError] = useState(null)
@@ -142,14 +144,14 @@ export default function ImportData() {
   return (
     <ErrorBoundary fallback="Import Data page error.">
       <div className="page-header mb-4">
-        <div className="page-title">Import Data</div>
+        <div className="page-title">{t('page_title_import_data')}</div>
         <div className="page-subtitle">Import XML site reports into the EvoFlow database</div>
       </div>
 
       {/* Full import — deletes first */}
       <div className="card mb-4" style={{ maxWidth: 600 }}>
         <div className="card-header">
-          <span className="card-title">Import Doms Files</span>
+          <span className="card-title">{t('card_import_doms')}</span>
         </div>
         <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
           <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6 }}>
@@ -181,7 +183,7 @@ export default function ImportData() {
       {/* Append import — no delete */}
       <div className="card" style={{ maxWidth: 600 }}>
         <div className="card-header">
-          <span className="card-title">Append Doms Files</span>
+          <span className="card-title">{t('card_append_doms')}</span>
         </div>
         <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
           <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6 }}>
@@ -214,7 +216,7 @@ export default function ImportData() {
       {/* Anonymize site names */}
       <div className="card mt-4" style={{ maxWidth: 600 }}>
         <div className="card-header">
-          <span className="card-title">Anonymize Site Names</span>
+          <span className="card-title">{t('card_anonymize')}</span>
         </div>
         <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
           <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6 }}>

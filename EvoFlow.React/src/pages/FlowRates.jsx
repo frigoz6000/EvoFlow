@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
+import { useLanguage } from '../i18n/LanguageContext'
 import { useNavigate } from 'react-router-dom'
 import { sitesApi } from '../api/client'
 import api from '../api/client'
@@ -81,6 +82,7 @@ function SortIcon({ col, sortCol, sortDir }) {
 
 export default function FlowRates() {
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const [rows, setRows] = useState([])
   const [sites, setSites] = useState([])
   const [loading, setLoading] = useState(false)
@@ -167,26 +169,26 @@ export default function FlowRates() {
     <ErrorBoundary fallback="Flow Rates page error.">
       <div className="page-header mb-4">
         <div>
-          <div className="page-title">Flow Rates</div>
-          <div className="page-subtitle">Pump flow metrics — nominal, average and peak rates</div>
+          <div className="page-title">{t('page_title_flow_rates')}</div>
+          <div className="page-subtitle">{t('page_subtitle_flow_rates')}</div>
         </div>
       </div>
 
       <div className="stat-cards-row mb-5" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
         <div className="stat-card">
-          <div className="stat-card-label">Rows</div>
+          <div className="stat-card-label">{t('stat_rows')}</div>
           <div className="stat-card-value">{rows.length.toLocaleString()}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-label">Avg Peak Flow (L/min)</div>
+          <div className="stat-card-label">{t('stat_avg_peak_flow')}</div>
           <div className="stat-card-value" style={{ color: 'var(--accent)' }}>{avgPeak}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-label">Max Peak Flow (L/min)</div>
+          <div className="stat-card-label">{t('stat_max_peak_flow')}</div>
           <div className="stat-card-value" style={{ color: 'var(--green)' }}>{maxPeak}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-label">Flow Outliers</div>
+          <div className="stat-card-label">{t('stat_flow_outliers')}</div>
           <div className="stat-card-value" style={{ color: outlierCount > 0 ? 'var(--orange)' : 'var(--text-secondary)' }}>
             {outlierCount.toLocaleString()}
           </div>
@@ -296,7 +298,7 @@ export default function FlowRates() {
 
         <div className="table-responsive">
           {loading ? (
-            <div className="loading-state"><div className="spinner" />Loading Flow Rates...</div>
+            <div className="loading-state"><div className="spinner" />{t('loading_flow_rates')}</div>
           ) : (
             <table className="evo-table">
               <thead>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useLanguage } from '../i18n/LanguageContext'
 import { fuelGradePricesApi } from '../api/client'
 import ErrorBoundary from '../components/ErrorBoundary'
 
@@ -15,6 +16,7 @@ function isNonCompliant(r) {
 }
 
 export default function FuelPrices() {
+  const { t } = useLanguage()
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [siteIdFilter, setSiteIdFilter] = useState('')
@@ -53,8 +55,8 @@ export default function FuelPrices() {
     <ErrorBoundary fallback="Fuel Prices page error.">
       <div className="page-header mb-4">
         <div>
-          <div className="page-title">Fuel Prices</div>
-          <div className="page-subtitle">Current fuel grade prices by site</div>
+          <div className="page-title">{t('page_title_fuel_prices')}</div>
+          <div className="page-subtitle">{t('page_subtitle_fuel_prices')}</div>
         </div>
       </div>
 
@@ -141,7 +143,7 @@ export default function FuelPrices() {
         </div>
         <div className="table-responsive">
           {loading ? (
-            <div className="loading-state"><div className="spinner" />Loading fuel prices...</div>
+            <div className="loading-state"><div className="spinner" />{t('loading_fuel_prices')}</div>
           ) : (
             <table className="evo-table">
               <thead>

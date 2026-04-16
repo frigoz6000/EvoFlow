@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useOutletContext, useNavigate } from 'react-router-dom'
 import { sitesApi } from '../api/client'
 import ErrorBoundary from '../components/ErrorBoundary'
+import { useLanguage } from '../i18n/LanguageContext'
 
 export default function Sites() {
   const [sites, setSites] = useState([])
@@ -9,6 +10,7 @@ export default function Sites() {
   const [localFilter, setLocalFilter] = useState('')
   const { globalSearch = '' } = useOutletContext() || {}
   const navigate = useNavigate()
+  const { t } = useLanguage()
 
   useEffect(() => {
     sitesApi.getAll()
@@ -40,7 +42,7 @@ export default function Sites() {
     <ErrorBoundary fallback="Sites page error.">
       <div className="page-header mb-4">
         <div>
-          <div className="page-title">All Sites</div>
+          <div className="page-title">{t('page_title_sites')}</div>
           <div className="page-subtitle">{sites.length} registered locations</div>
         </div>
       </div>
@@ -67,32 +69,32 @@ export default function Sites() {
               onClick={() => setLocalFilter('')}
               style={{ padding: '3px 8px', fontSize: 11 }}
             >
-              Clear
+              {t('btn_clear')}
             </button>
           )}
         </div>
         <div className="table-responsive">
           {loading ? (
-            <div className="loading-state"><div className="spinner" />Loading sites...</div>
+            <div className="loading-state"><div className="spinner" />{t('loading_sites')}</div>
           ) : (
             <table className="evo-table">
               <thead>
                 <tr>
-                  <th>Site ID</th>
-                  <th>Name</th>
-                  <th>Address</th>
-                  <th>City</th>
-                  <th>County</th>
-                  <th>Post Code</th>
-                  <th>Pole Sign</th>
-                  <th>Opening</th>
-                  <th>Closing</th>
+                  <th>{t('col_site_id')}</th>
+                  <th>{t('col_site_name')}</th>
+                  <th>{t('col_address')}</th>
+                  <th>{t('col_city')}</th>
+                  <th>{t('col_county')}</th>
+                  <th>{t('col_post_code')}</th>
+                  <th>{t('col_pole_sign')}</th>
+                  <th>{t('col_opening')}</th>
+                  <th>{t('col_closing')}</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
-                  <tr><td colSpan={10}><div className="empty-state">No sites found</div></td></tr>
+                  <tr><td colSpan={10}><div className="empty-state">{t('no_sites_found')}</div></td></tr>
                 ) : filtered.map(site => (
                   <tr key={site.siteId}>
                     <td>

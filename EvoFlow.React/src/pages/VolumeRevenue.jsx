@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
+import { useLanguage } from '../i18n/LanguageContext'
 import { useNavigate } from 'react-router-dom'
 import { sitesApi } from '../api/client'
 import api from '../api/client'
@@ -17,6 +18,7 @@ function SortIcon({ col, sortCol, sortDir }) {
 
 export default function VolumeRevenue() {
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const [rows, setRows] = useState([])
   const [sites, setSites] = useState([])
   const [loading, setLoading] = useState(false)
@@ -90,24 +92,24 @@ export default function VolumeRevenue() {
     <ErrorBoundary fallback="Volume & Revenue page error.">
       <div className="page-header mb-4">
         <div>
-          <div className="page-title">Volume &amp; Revenue</div>
+          <div className="page-title">{t('page_title_volume_revenue')}</div>
           <div className="page-subtitle">Pump totals — cumulative and daily volume and money metrics</div>
         </div>
       </div>
 
       <div className="stat-cards-row mb-5" style={{ gridTemplateColumns: 'repeat(3,1fr)' }}>
         <div className="stat-card">
-          <div className="stat-card-label">Rows</div>
+          <div className="stat-card-label">{t('stat_rows')}</div>
           <div className="stat-card-value">{rows.length.toLocaleString()}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-label">Daily Volume (L)</div>
+          <div className="stat-card-label">{t('stat_daily_volume')}</div>
           <div className="stat-card-value" style={{ color: 'var(--accent)' }}>
             {totalVolumeDiff.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-label">Daily Revenue (£)</div>
+          <div className="stat-card-label">{t('stat_daily_revenue')}</div>
           <div className="stat-card-value" style={{ color: 'var(--green)' }}>
             £{totalMoneyDiff.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
@@ -122,12 +124,12 @@ export default function VolumeRevenue() {
         <div className="filters-bar">
           <select className="filter-select" value={filters.siteId}
             onChange={e => setFilters(f => ({ ...f, siteId: e.target.value }))}>
-            <option value="">All Sites</option>
+            <option value="">{t('all_sites')}</option>
             {sites.map(s => <option key={s.siteId} value={s.siteId}>{s.siteName}</option>)}
           </select>
           <select className="filter-select" value={filters.totType}
             onChange={e => setFilters(f => ({ ...f, totType: e.target.value }))}>
-            <option value="">Both</option>
+            <option value="">{t('filter_both')}</option>
             <option value="fp">FP</option>
             <option value="pump">Pump</option>
           </select>
@@ -151,7 +153,7 @@ export default function VolumeRevenue() {
 
         <div className="table-responsive">
           {loading ? (
-            <div className="loading-state"><div className="spinner" />Loading Volume &amp; Revenue...</div>
+            <div className="loading-state"><div className="spinner" />{t('loading_volume_revenue')}</div>
           ) : (
             <table className="evo-table">
               <thead>

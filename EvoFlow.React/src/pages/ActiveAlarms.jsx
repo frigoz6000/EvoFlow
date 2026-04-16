@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import ErrorBoundary from '../components/ErrorBoundary'
+import { useLanguage } from '../i18n/LanguageContext'
 
 const GROUPS = ['Northern', 'Southern', 'Eastern', 'Western', 'Central']
 const SITES = ['Site Alpha', 'Site Beta', 'Site Gamma', 'Site Delta', 'Site Echo',
@@ -54,6 +55,7 @@ const SEV_BADGE = {
 const PAGE_SIZE = 20
 
 export default function ActiveAlarms() {
+  const { t } = useLanguage()
   const [severityFilter, setSeverityFilter] = useState('')
   const [groupFilter, setGroupFilter] = useState('')
   const [siteFilter, setSiteFilter] = useState('')
@@ -88,8 +90,8 @@ export default function ActiveAlarms() {
     <ErrorBoundary fallback="Active Alarms page error.">
       <div className="page-header mb-4">
         <div>
-          <div className="page-title">Active Alarms</div>
-          <div className="page-subtitle">Real-time alarm monitoring across all sites</div>
+          <div className="page-title">{t('page_title_active_alarms')}</div>
+          <div className="page-subtitle">{t('page_subtitle_active_alarms')}</div>
         </div>
       </div>
 
@@ -129,19 +131,19 @@ export default function ActiveAlarms() {
 
         <div className="filters-bar">
           <select className="filter-select" value={groupFilter} onChange={handleGroupChange}>
-            <option value="">All Groups</option>
+            <option value="">{t('all_groups')}</option>
             {GROUPS.map(g => <option key={g} value={g}>{g}</option>)}
           </select>
           <select className="filter-select" value={siteFilter} onChange={handleSiteChange}>
-            <option value="">All Sites</option>
+            <option value="">{t('all_sites')}</option>
             {SITES.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
           <select className="filter-select" value={severityFilter}
             onChange={e => { setSeverityFilter(e.target.value); setPage(1) }}>
-            <option value="">All Severities</option>
+            <option value="">{t('all_severities')}</option>
             {SEVERITIES.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
-          <button className="btn btn-outline btn-sm" onClick={handleClear}>Clear</button>
+          <button className="btn btn-outline btn-sm" onClick={handleClear}>{t('btn_clear')}</button>
         </div>
 
         <div className="table-responsive">
@@ -149,17 +151,17 @@ export default function ActiveAlarms() {
             <thead>
               <tr>
                 <th>#</th>
-                <th>Group</th>
-                <th>Site</th>
-                <th>Severity</th>
-                <th>Malfunction</th>
-                <th>Opening Date</th>
-                <th>Category</th>
-                <th>Equipment</th>
-                <th>Equipment Detail</th>
-                <th>Parameter</th>
-                <th>Product</th>
-                <th>Tracking</th>
+                <th>{t('col_group')}</th>
+                <th>{t('label_site')}</th>
+                <th>{t('col_severity')}</th>
+                <th>{t('col_malfunction')}</th>
+                <th>{t('col_opening_date')}</th>
+                <th>{t('col_category')}</th>
+                <th>{t('col_equipment')}</th>
+                <th>{t('col_equipment_detail')}</th>
+                <th>{t('col_parameter')}</th>
+                <th>{t('col_product')}</th>
+                <th>{t('col_tracking')}</th>
               </tr>
             </thead>
             <tbody>

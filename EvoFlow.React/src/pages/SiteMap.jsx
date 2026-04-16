@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
+import { useLanguage } from '../i18n/LanguageContext'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Popup, useMap, Circle } from 'react-leaflet'
 import L from 'leaflet'
@@ -219,7 +220,7 @@ function FilterBar({ filters, setFilters, allBrands, onSearch, onNearMe, searchi
             color: 'var(--text-primary)', cursor: 'pointer', width: '100%'
           }}
         >
-          <option value="">All grades</option>
+          <option value="">{t('all_grades')}</option>
           {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
         </select>
       </div>
@@ -261,14 +262,14 @@ function FilterBar({ filters, setFilters, allBrands, onSearch, onNearMe, searchi
             color: 'var(--text-primary)', cursor: 'pointer', width: '100%'
           }}
         >
-          <option value="">All brands</option>
+          <option value="">{t('all_brands')}</option>
           {allBrands.map(b => <option key={b} value={b}>{b}</option>)}
         </select>
       </div>
 
       {/* Open now */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-        <label style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Open now</label>
+        <label style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{t('open_now')}</label>
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12 }}>
           <input
             type="checkbox"
@@ -303,6 +304,7 @@ function FilterBar({ filters, setFilters, allBrands, onSearch, onNearMe, searchi
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function SiteMap() {
+  const { t } = useLanguage()
   const [searchParams] = useSearchParams()
   const focusSiteId = searchParams.get('siteId')
   const navigate = useNavigate()
@@ -415,7 +417,7 @@ export default function SiteMap() {
     <ErrorBoundary fallback="Map page error.">
       <div className="page-header mb-4">
         <div>
-          <div className="page-title">Site Map</div>
+          <div className="page-title">{t('page_title_site_map')}</div>
           <div className="page-subtitle">
             {loading ? 'Loading…' : `Showing ${filtered.length} of ${sites.length} sites`}
             {activeFilters ? ' (filtered)' : ''}
@@ -455,7 +457,7 @@ export default function SiteMap() {
 
       {loading ? (
         <div className="card">
-          <div className="loading-state"><div className="spinner" />Loading sites…</div>
+          <div className="loading-state"><div className="spinner" />{t('loading_sites_map')}</div>
         </div>
       ) : (
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>

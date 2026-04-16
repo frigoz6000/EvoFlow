@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
+import { useLanguage } from '../i18n/LanguageContext'
 import api from '../api/client'
 import ErrorBoundary from '../components/ErrorBoundary'
 
@@ -18,6 +19,7 @@ function getLast7Days() {
 }
 
 export default function DataIntegrity() {
+  const { t } = useLanguage()
   const [filters, setFilters]       = useState(getLast7Days)
   const [summary, setSummary]       = useState([])
   const [missing, setMissing]       = useState([])
@@ -118,7 +120,7 @@ export default function DataIntegrity() {
     <ErrorBoundary fallback="Data Integrity page error.">
       <div className="page-header mb-4">
         <div>
-          <div className="page-title">Data Integrity</div>
+          <div className="page-title">{t('page_title_data_integrity')}</div>
           <div className="page-subtitle">Check for missing site data across date range</div>
         </div>
       </div>
@@ -153,21 +155,21 @@ export default function DataIntegrity() {
           {/* Stat cards */}
           <div className="stat-cards-row mb-5" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
             <div className="stat-card">
-              <div className="stat-card-label">Dates Checked</div>
+              <div className="stat-card-label">{t('stat_dates_checked')}</div>
               <div className="stat-card-value">{dates.length}</div>
             </div>
             <div className="stat-card">
-              <div className="stat-card-label">Expected Records</div>
+              <div className="stat-card-label">{t('stat_expected_records')}</div>
               <div className="stat-card-value">{totalExpected.toLocaleString()}</div>
             </div>
             <div className="stat-card">
-              <div className="stat-card-label">Coverage</div>
+              <div className="stat-card-label">{t('stat_coverage')}</div>
               <div className="stat-card-value" style={{ color: totalMissing === 0 ? 'var(--green)' : 'var(--red)' }}>
                 {coveragePct}%
               </div>
             </div>
             <div className="stat-card">
-              <div className="stat-card-label">Missing Records</div>
+              <div className="stat-card-label">{t('stat_missing_records')}</div>
               <div className="stat-card-value" style={{ color: totalMissing > 0 ? 'var(--red)' : 'var(--green)' }}>
                 {totalMissing.toLocaleString()}
               </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useLanguage } from '../i18n/LanguageContext'
 import { emailConfigApi } from '../api/client'
 import ErrorBoundary from '../components/ErrorBoundary'
 
@@ -14,6 +15,7 @@ const EMPTY_FORM = {
 }
 
 export default function EmailConfig() {
+  const { t } = useLanguage()
   const [form, setForm] = useState(EMPTY_FORM)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -72,17 +74,17 @@ export default function EmailConfig() {
     <ErrorBoundary fallback="Email Config page error.">
       <div className="page-header mb-4">
         <div>
-          <div className="page-title">Email Configuration</div>
+          <div className="page-title">{t('page_title_email_config')}</div>
           <div className="page-subtitle">Configure the SMTP account used to send alarm notifications and reports</div>
         </div>
       </div>
 
       {loading ? (
-        <div className="loading-state"><div className="spinner" />Loading configuration...</div>
+        <div className="loading-state"><div className="spinner" />{t('loading_config')}</div>
       ) : (
         <div className="card" style={{ maxWidth: 560 }}>
           <div className="card-header">
-            <span className="card-title">SMTP Settings</span>
+            <span className="card-title">{t('card_smtp_settings')}</span>
             <span style={{
               display: 'inline-block',
               marginLeft: 10,

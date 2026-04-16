@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
+import { useLanguage } from '../i18n/LanguageContext'
 import { useNavigate } from 'react-router-dom'
 import { sitesApi } from '../api/client'
 import api from '../api/client'
@@ -17,6 +18,7 @@ function SortIcon({ col, sortCol, sortDir }) {
 
 export default function DeviceAlerts() {
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const [rows, setRows] = useState([])
   const [sites, setSites] = useState([])
   const [loading, setLoading] = useState(false)
@@ -93,24 +95,24 @@ export default function DeviceAlerts() {
     <ErrorBoundary fallback="Device Alerts page error.">
       <div className="page-header mb-4">
         <div>
-          <div className="page-title">Device Alerts</div>
+          <div className="page-title">{t('page_title_device_alerts')}</div>
           <div className="page-subtitle">Pump device status log — states and error bit flags</div>
         </div>
       </div>
 
       <div className="stat-cards-row mb-5" style={{ gridTemplateColumns: 'repeat(3,1fr)' }}>
         <div className="stat-card">
-          <div className="stat-card-label">Total Records</div>
+          <div className="stat-card-label">{t('stat_total_records')}</div>
           <div className="stat-card-value">{rows.length.toLocaleString()}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-label">Offline Devices</div>
+          <div className="stat-card-label">{t('stat_offline_devices')}</div>
           <div className="stat-card-value" style={{ color: offlineCount > 0 ? 'var(--red)' : 'var(--green)' }}>
             {offlineCount}
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-label">Distinct States</div>
+          <div className="stat-card-label">{t('stat_distinct_states')}</div>
           <div className="stat-card-value">{uniqueStates.length}</div>
         </div>
       </div>
@@ -123,7 +125,7 @@ export default function DeviceAlerts() {
         <div className="filters-bar">
           <select className="filter-select" value={filters.siteId}
             onChange={e => setFilters(f => ({ ...f, siteId: e.target.value }))}>
-            <option value="">All Sites</option>
+            <option value="">{t('all_sites')}</option>
             {sites.map(s => <option key={s.siteId} value={s.siteId}>{s.siteName}</option>)}
           </select>
           <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>From</label>
@@ -134,7 +136,7 @@ export default function DeviceAlerts() {
             onChange={e => setFilters(f => ({ ...f, dateTo: e.target.value }))} />
           <select className="filter-select" value={filters.stateFilter}
             onChange={e => setFilters(f => ({ ...f, stateFilter: e.target.value }))}>
-            <option value="">All States</option>
+            <option value="">{t('all_states')}</option>
             {uniqueStates.map(st => <option key={st} value={st}>{st}</option>)}
           </select>
           <button className="btn btn-primary btn-sm" onClick={handleSearch}>Search</button>
@@ -151,7 +153,7 @@ export default function DeviceAlerts() {
 
         <div className="table-responsive">
           {loading ? (
-            <div className="loading-state"><div className="spinner" />Loading Device Alerts...</div>
+            <div className="loading-state"><div className="spinner" />{t('loading_device_alerts')}</div>
           ) : (
             <table className="evo-table">
               <thead>

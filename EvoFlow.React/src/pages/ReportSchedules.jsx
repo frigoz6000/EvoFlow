@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useLanguage } from '../i18n/LanguageContext'
 import { reportSchedulesApi, emailRecipientsApi, reportDispatchesApi } from '../api/client'
 import ErrorBoundary from '../components/ErrorBoundary'
 
@@ -53,6 +54,7 @@ function describeSchedule(schedule) {
 }
 
 export default function ReportSchedules() {
+  const { t } = useLanguage()
   const [tab, setTab] = useState('schedules') // 'schedules' | 'history'
   const [schedules, setSchedules] = useState([])
   const [recipients, setRecipients] = useState([])
@@ -195,7 +197,7 @@ export default function ReportSchedules() {
     <ErrorBoundary fallback="Report Schedules page error.">
       <div className="page-header mb-4">
         <div>
-          <div className="page-title">Report Schedules</div>
+          <div className="page-title">{t('page_title_report_schedules')}</div>
           <div className="page-subtitle">Schedule automated reports to be sent to email recipients</div>
         </div>
         {tab === 'schedules' && (
@@ -227,7 +229,7 @@ export default function ReportSchedules() {
           </div>
           <div className="table-responsive">
             {historyLoading ? (
-              <div className="loading-state"><div className="spinner" />Loading history...</div>
+              <div className="loading-state"><div className="spinner" />{t('loading_history')}</div>
             ) : dispatches.length === 0 ? (
               <div className="loading-state">No dispatches recorded yet. Reports will appear here once the background service fires them.</div>
             ) : (
@@ -426,7 +428,7 @@ export default function ReportSchedules() {
         </div>
         <div className="table-responsive">
           {loading ? (
-            <div className="loading-state"><div className="spinner" />Loading schedules...</div>
+            <div className="loading-state"><div className="spinner" />{t('loading_schedules')}</div>
           ) : (
             <table className="evo-table">
               <thead>

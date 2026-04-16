@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { LanguageProvider } from './i18n/LanguageContext'
 import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
 import Sites from './pages/Sites'
@@ -26,6 +27,7 @@ import FuelPriceHistory from './pages/FuelPriceHistory'
 
 export default function App() {
   return (
+    <LanguageProvider>
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Layout />}>
@@ -55,5 +57,6 @@ export default function App() {
         </Route>
       </Routes>
     </BrowserRouter>
+    </LanguageProvider>
   )
 }

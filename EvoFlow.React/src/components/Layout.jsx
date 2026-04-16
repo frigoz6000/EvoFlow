@@ -2,8 +2,10 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 import '../styles/theme.css'
 import ErrorBoundary from './ErrorBoundary'
+import LanguageSelector from './LanguageSelector'
 import api from '../api/client'
 import { sitesApi } from '../api/client'
+import { useLanguage } from '../i18n/LanguageContext'
 import {
   IconHome, IconPump, IconMapPin, IconMap,
   IconSearch, IconSun, IconMoon, IconTable,
@@ -13,84 +15,69 @@ import {
   IconMessageCircle, IconUsers, IconSliders, IconClipboardList
 } from './Icons'
 
-const NAV = [
-  { section: 'MAIN', sectionIcon: IconHome },
-  { to: '/', icon: IconHome, label: 'Home', exact: true },
-  { section: 'MONITORING', sectionIcon: IconPump },
-  { to: '/pump-monitoring', icon: IconPump, label: 'Pump Monitor' },
-  { section: 'SITES', sectionIcon: IconMapPin },
-  { to: '/sites', icon: IconMapPin, label: 'All Sites' },
-  { to: '/site-map', icon: IconMap, label: 'Site Map' },
-  { section: 'FUEL PRICES', sectionIcon: IconDroplets },
-  { to: '/fuel-prices', icon: IconDroplets, label: 'Fuel Prices' },
-  { to: '/fuel-price-history', icon: IconDroplets, label: 'Price History' },
-  { section: 'REPORTS', sectionIcon: IconBarChart },
-  { to: '/doms-info', icon: IconTable, label: 'Doms Info' },
-  { to: '/flow-rates', icon: IconActivity, label: 'Flow Rates' },
-  { to: '/device-alerts', icon: IconAlertTriangle, label: 'Device Alerts' },
-  { to: '/volume-revenue', icon: IconBarChart, label: 'Volume & Revenue' },
-  { to: '/tank-gauges', icon: IconDroplets, label: 'Tank Gauges' },
-  { section: 'ALARMS', sectionIcon: IconAlarmActive },
-  { to: '/active-alarms', icon: IconAlarmActive, label: 'Active Alarms' },
-  { to: '/alarm-history', icon: IconAlarmHistory, label: 'Alarm History' },
-  { to: '/alarm-notifications', icon: IconNotifications, label: 'Notifications' },
-  { section: 'EMAIL', sectionIcon: IconMail },
-  { to: '/config/email-recipients', icon: IconUsers, label: 'Recipients' },
-  { to: '/config/email-config', icon: IconSliders, label: 'Settings' },
-  { to: '/config/email-log', icon: IconClipboardList, label: 'Email Log' },
-  { section: 'WHATSAPP', sectionIcon: IconMessageCircle },
-  { to: '/config/whatsapp', icon: IconNotifications, label: 'WhatsApp Alerts' },
-  { section: 'CONFIG', sectionIcon: IconSettings },
-  { to: '/config/alarm-settings', icon: IconSettings, label: 'Alarm Settings' },
-  { to: '/config/report-schedules', icon: IconCalendar, label: 'Report Schedules' },
-  { to: '/config/import-data', icon: IconTable, label: 'Import Data' },
-  { to: '/data-integrity', icon: IconShieldCheck, label: 'Data Integrity' },
+const NAV_DEF = [
+  { section: 'nav_main', sectionIcon: IconHome },
+  { to: '/', icon: IconHome, labelKey: 'nav_home', exact: true },
+  { section: 'nav_monitoring', sectionIcon: IconPump },
+  { to: '/pump-monitoring', icon: IconPump, labelKey: 'nav_pump_monitor' },
+  { section: 'nav_sites', sectionIcon: IconMapPin },
+  { to: '/sites', icon: IconMapPin, labelKey: 'nav_all_sites' },
+  { to: '/site-map', icon: IconMap, labelKey: 'nav_site_map' },
+  { section: 'nav_fuel_prices', sectionIcon: IconDroplets },
+  { to: '/fuel-prices', icon: IconDroplets, labelKey: 'nav_fuel_prices_item' },
+  { to: '/fuel-price-history', icon: IconDroplets, labelKey: 'nav_price_history' },
+  { section: 'nav_reports', sectionIcon: IconBarChart },
+  { to: '/doms-info', icon: IconTable, labelKey: 'nav_doms_info' },
+  { to: '/flow-rates', icon: IconActivity, labelKey: 'nav_flow_rates' },
+  { to: '/device-alerts', icon: IconAlertTriangle, labelKey: 'nav_device_alerts' },
+  { to: '/volume-revenue', icon: IconBarChart, labelKey: 'nav_volume_revenue' },
+  { to: '/tank-gauges', icon: IconDroplets, labelKey: 'nav_tank_gauges' },
+  { section: 'nav_alarms', sectionIcon: IconAlarmActive },
+  { to: '/active-alarms', icon: IconAlarmActive, labelKey: 'nav_active_alarms' },
+  { to: '/alarm-history', icon: IconAlarmHistory, labelKey: 'nav_alarm_history' },
+  { to: '/alarm-notifications', icon: IconNotifications, labelKey: 'nav_notifications' },
+  { section: 'nav_email', sectionIcon: IconMail },
+  { to: '/config/email-recipients', icon: IconUsers, labelKey: 'nav_recipients' },
+  { to: '/config/email-config', icon: IconSliders, labelKey: 'nav_email_settings' },
+  { to: '/config/email-log', icon: IconClipboardList, labelKey: 'nav_email_log' },
+  { section: 'nav_whatsapp', sectionIcon: IconMessageCircle },
+  { to: '/config/whatsapp', icon: IconNotifications, labelKey: 'nav_whatsapp_alerts' },
+  { section: 'nav_config', sectionIcon: IconSettings },
+  { to: '/config/alarm-settings', icon: IconSettings, labelKey: 'nav_alarm_settings' },
+  { to: '/config/report-schedules', icon: IconCalendar, labelKey: 'nav_report_schedules' },
+  { to: '/config/import-data', icon: IconTable, labelKey: 'nav_import_data' },
+  { to: '/data-integrity', icon: IconShieldCheck, labelKey: 'nav_data_integrity' },
 ]
 
-const PAGE_TITLES = {
-  '/': 'Site Listing',
-  '/sites': 'All Sites',
-  '/site-map': 'Site Map',
-  '/vehicles': 'Vehicles',
-  '/pump-monitoring': 'Pump Monitoring',
-  '/doms-info': 'Doms Info',
-  '/flow-rates': 'Flow Rates',
-  '/device-alerts': 'Device Alerts',
-  '/volume-revenue': 'Volume & Revenue',
-  '/tank-gauges': 'Tank Gauges',
-  '/active-alarms': 'Active Alarms',
-  '/alarm-history': 'Alarm History',
-  '/alarm-notifications': 'Notifications',
-  '/config/email-recipients': 'Email Recipients',
-  '/config/email-config': 'Email Configuration',
-  '/config/email-log': 'Email Log',
-  '/config/whatsapp': 'WhatsApp Alerts',
-  '/config/alarm-settings': 'Alarm Settings',
-  '/config/report-schedules': 'Report Schedules',
-  '/config/import-data': 'Import Data',
-  '/data-integrity': 'Data Integrity',
-  '/fuel-prices': 'Fuel Prices',
-  '/fuel-price-history': 'Fuel Price History',
+const PAGE_TITLE_KEYS = {
+  '/': 'nav_home',
+  '/sites': 'nav_all_sites',
+  '/site-map': 'nav_site_map',
+  '/pump-monitoring': 'nav_pump_monitor',
+  '/doms-info': 'nav_doms_info',
+  '/flow-rates': 'nav_flow_rates',
+  '/device-alerts': 'nav_device_alerts',
+  '/volume-revenue': 'nav_volume_revenue',
+  '/tank-gauges': 'nav_tank_gauges',
+  '/active-alarms': 'nav_active_alarms',
+  '/alarm-history': 'nav_alarm_history',
+  '/alarm-notifications': 'nav_notifications',
+  '/config/email-recipients': 'nav_recipients',
+  '/config/email-config': 'page_title_email_config',
+  '/config/email-log': 'nav_email_log',
+  '/config/whatsapp': 'nav_whatsapp_alerts',
+  '/config/alarm-settings': 'nav_alarm_settings',
+  '/config/report-schedules': 'nav_report_schedules',
+  '/config/import-data': 'nav_import_data',
+  '/data-integrity': 'nav_data_integrity',
+  '/fuel-prices': 'nav_fuel_prices_item',
+  '/fuel-price-history': 'nav_price_history',
 }
-
-// Group NAV items into sections for accordion rendering
-const NAV_SECTIONS = (() => {
-  const sections = []
-  let current = null
-  for (const item of NAV) {
-    if (item.section) {
-      current = { label: item.section, icon: item.sectionIcon, items: [] }
-      sections.push(current)
-    } else if (current) {
-      current.items.push(item)
-    }
-  }
-  return sections
-})()
 
 export default function Layout() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const [search, setSearch] = useState('')
   const [collapsed, setCollapsed] = useState(() => window.innerWidth < 768)
   const [hovered, setHovered] = useState(false)
@@ -101,7 +88,22 @@ export default function Layout() {
   const [searchFocused, setSearchFocused] = useState(false)
   const [openSection, setOpenSection] = useState(null)
   const searchRef = useRef(null)
-  const title = PAGE_TITLES[location.pathname] || 'EvoFlow'
+  const titleKey = PAGE_TITLE_KEYS[location.pathname]
+  const title = titleKey ? t(titleKey) : 'EvoFlow'
+
+  const NAV_SECTIONS = (() => {
+    const sections = []
+    let current = null
+    for (const item of NAV_DEF) {
+      if (item.section) {
+        current = { label: t(item.section), icon: item.sectionIcon, items: [] }
+        sections.push(current)
+      } else if (current) {
+        current.items.push({ ...item, label: t(item.labelKey) })
+      }
+    }
+    return sections
+  })()
 
   function toggleSection(label) {
     setOpenSection(prev => prev === label ? null : label)
@@ -227,7 +229,7 @@ export default function Layout() {
           <button
             className="topbar-icon-btn"
             onClick={() => { setCollapsed(c => !c); setHovered(false) }}
-            title={collapsed ? 'Expand menu' : 'Collapse menu'}
+            title={collapsed ? t('expand_menu') : t('collapse_menu')}
             style={{ marginRight: 8 }}
           >
             <IconMenu size={18} />
@@ -237,7 +239,7 @@ export default function Layout() {
             <input
               ref={searchRef}
               type="text"
-              placeholder="Search site ID or name..."
+              placeholder={t('search_placeholder')}
               value={search}
               onChange={e => setSearch(e.target.value)}
               onFocus={() => setSearchFocused(true)}
@@ -273,11 +275,12 @@ export default function Layout() {
           </div>
           <div className="topbar-spacer" />
           <div className="topbar-actions">
+            <LanguageSelector />
             <button
               className="topbar-icon-btn"
               onClick={handleGitPush}
               disabled={pushing}
-              title={pushing ? 'Pushing to GitHub…' : pushMsg || 'Push to GitHub'}
+              title={pushing ? t('pushing') : pushMsg || t('push_github')}
               style={{ opacity: pushing ? 0.6 : 1, position: 'relative' }}
             >
               {pushing ? (
@@ -295,7 +298,7 @@ export default function Layout() {
             <button
               className="topbar-icon-btn"
               onClick={() => setDark(d => !d)}
-              title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+              title={dark ? t('light_mode') : t('dark_mode')}
             >
               {dark ? <IconSun size={15} /> : <IconMoon size={15} />}
             </button>

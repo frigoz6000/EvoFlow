@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useLanguage } from '../i18n/LanguageContext'
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
   PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid,
@@ -79,6 +80,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [apiError, setApiError] = useState(null)
   const navigate = useNavigate()
+  const { t } = useLanguage()
 
   useEffect(() => {
     Promise.allSettled([
@@ -183,8 +185,8 @@ export default function Dashboard() {
       {/* Page header */}
       <div className="page-header" style={{ marginBottom: 18 }}>
         <div>
-          <div className="page-title">Sales Dashboard</div>
-          <div className="page-subtitle">Fuel analytics overview across all sites</div>
+          <div className="page-title">{t('page_title_dashboard')}</div>
+          <div className="page-subtitle">{t('page_subtitle_dashboard')}</div>
         </div>
         <div style={{ fontSize: 12, color: 'var(--text-secondary)', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: 7, padding: '6px 12px' }}>
           {tradingDays} trading day{tradingDays !== 1 ? 's' : ''} of data
@@ -195,7 +197,7 @@ export default function Dashboard() {
       <div className="kpi-row">
         <ErrorBoundary fallback={<div className="kpi-card">—</div>}>
           <KpiCard
-            label="Total Revenue"
+            label={t('col_revenue') + ' (' + t('total') + ')'}
             value={fmtGbp(totalRevenue)}
             sub="All pump transactions"
             accent={PINK}
@@ -204,7 +206,7 @@ export default function Dashboard() {
         </ErrorBoundary>
         <ErrorBoundary fallback={<div className="kpi-card">—</div>}>
           <KpiCard
-            label="Total Volume"
+            label={t('col_volume') + ' (' + t('total') + ')'}
             value={`${fmt(totalVolume)} L`}
             sub="Fuel dispensed (litres)"
             accent={PURPLE}
@@ -213,7 +215,7 @@ export default function Dashboard() {
         </ErrorBoundary>
         <ErrorBoundary fallback={<div className="kpi-card">—</div>}>
           <KpiCard
-            label="Total Sites"
+            label={t('nav_all_sites')}
             value={sites.length.toLocaleString()}
             sub="Registered locations"
             accent={BLUE}
@@ -222,7 +224,7 @@ export default function Dashboard() {
         </ErrorBoundary>
         <ErrorBoundary fallback={<div className="kpi-card">—</div>}>
           <KpiCard
-            label="Total Pumps"
+            label={t('stat_total_pumps')}
             value={devices.length.toLocaleString()}
             sub={`${onlinePumps} currently online`}
             accent={ORANGE}
@@ -231,7 +233,7 @@ export default function Dashboard() {
         </ErrorBoundary>
         <ErrorBoundary fallback={<div className="kpi-card">—</div>}>
           <KpiCard
-            label="Avg Daily Revenue"
+            label={t('stat_daily_revenue')}
             value={fmtGbp(avgDailyRev)}
             sub={`Over ${tradingDays} trading days`}
             accent={PINK}
@@ -242,6 +244,7 @@ export default function Dashboard() {
           <KpiCard
             label="Avg Revenue / Pump"
             value={fmtGbp(avgPerPump)}
+
             sub="Across all pump devices"
             accent={GREEN}
             icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>}
@@ -255,12 +258,12 @@ export default function Dashboard() {
         <ErrorBoundary fallback={<div className="card" style={{padding:24}}>Chart unavailable</div>}>
           <div className="card">
             <div className="card-header">
-              <span className="card-title">Fuel Sales Overview</span>
-              <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>Revenue &amp; Volume by Day</span>
+              <span className="card-title">{t('card_fuel_sales')}</span>
+              <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>{t('revenue_volume_by_day')}</span>
             </div>
             <div style={{ padding: '16px 18px 12px' }}>
               {dailyChart.length === 0 ? (
-                <div className="empty-state" style={{ padding: 32 }}>No daily data available</div>
+                <div className="empty-state" style={{ padding: 32 }}>{t('no_daily_data')}</div>
               ) : (
                 <ResponsiveContainer width="100%" height={220}>
                   <AreaChart data={dailyChart} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
@@ -292,7 +295,7 @@ export default function Dashboard() {
         <ErrorBoundary fallback={<div className="card" style={{padding:24}}>Chart unavailable</div>}>
           <div className="card">
             <div className="card-header">
-              <span className="card-title">Pump Status</span>
+              <span className="card-title">{t('card_pump_status')}</span>
             </div>
             <div style={{ padding: '8px 0 0', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <div style={{ position: 'relative', width: 180, height: 180 }}>
@@ -319,7 +322,7 @@ export default function Dashboard() {
                   transform: 'translate(-50%,-50%)', textAlign: 'center'
                 }}>
                   <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)' }}>{devices.length}</div>
-                  <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>Total</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>{t('total')}</div>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 16, marginTop: 4, marginBottom: 16 }}>
@@ -342,12 +345,12 @@ export default function Dashboard() {
         <ErrorBoundary fallback={<div className="card" style={{padding:24}}>Chart unavailable</div>}>
           <div className="card">
             <div className="card-header">
-              <span className="card-title">Top Sites by Revenue</span>
-              <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>Sort by highest</span>
+              <span className="card-title">{t('card_top_sites')}</span>
+              <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>{t('sort_by_highest')}</span>
             </div>
             <div style={{ padding: '14px 18px' }}>
               {topSites.length === 0 ? (
-                <div style={{ color: 'var(--text-muted)', fontSize: 12, padding: '16px 0' }}>No site revenue data available</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: 12, padding: '16px 0' }}>{t('no_site_revenue')}</div>
               ) : topSites.map((s, i) => (
                 <div key={s.id} style={{ marginBottom: 12 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -376,7 +379,7 @@ export default function Dashboard() {
         <ErrorBoundary fallback={<div className="card" style={{padding:24}}>Chart unavailable</div>}>
           <div className="card">
             <div className="card-header">
-              <span className="card-title">Daily Revenue Breakdown</span>
+              <span className="card-title">{t('card_daily_revenue')}</span>
               <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>£ Revenue per trading day</span>
             </div>
             <div style={{ padding: '16px 18px 12px' }}>
@@ -406,7 +409,7 @@ export default function Dashboard() {
       <ErrorBoundary fallback={<div className="card" style={{padding:24}}>Table unavailable</div>}>
         <div className="card">
           <div className="card-header">
-            <span className="card-title">Sites Overview</span>
+            <span className="card-title">{t('card_sites_overview')}</span>
             <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>
               {sites.length} registered site{sites.length !== 1 ? 's' : ''}
             </span>
@@ -415,13 +418,13 @@ export default function Dashboard() {
             <table className="evo-table">
               <thead>
                 <tr>
-                  <th>Site ID</th>
-                  <th>Site Name</th>
-                  <th>City</th>
-                  <th>Post Code</th>
-                  <th>Pumps</th>
-                  <th>Status</th>
-                  <th>Revenue</th>
+                  <th>{t('col_site_id')}</th>
+                  <th>{t('col_site_name')}</th>
+                  <th>{t('col_city')}</th>
+                  <th>{t('col_post_code')}</th>
+                  <th>{t('col_pumps')}</th>
+                  <th>{t('col_status')}</th>
+                  <th>{t('col_revenue')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -446,7 +449,7 @@ export default function Dashboard() {
                           <span className={`badge ${online > 0 ? 'badge-green' : 'badge-red'}`}>
                             {online > 0 ? `${online}/${sitePumps.length} Online` : 'Offline'}
                           </span>
-                        ) : <span className="badge badge-gray">No Pumps</span>}
+                        ) : <span className="badge badge-gray">{t('no_pumps')}</span>}
                       </td>
                       <td style={{ fontWeight: 700, color: rev > 0 ? PINK : 'var(--text-muted)' }}>
                         {rev > 0 ? fmtGbp(rev) : '—'}

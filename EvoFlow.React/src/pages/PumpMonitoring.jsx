@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react'
 import { pumpDevicesApi, pumpStatusApi, pumpTotalsApi, sitesApi } from '../api/client'
 import { useOutletContext, useNavigate } from 'react-router-dom'
 import ErrorBoundary from '../components/ErrorBoundary'
+import { useLanguage } from '../i18n/LanguageContext'
 
 export default function PumpMonitoring() {
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const [devices, setDevices] = useState([])
   const [statuses, setStatuses] = useState([])
   const [totals, setTotals] = useState([])
@@ -60,26 +62,26 @@ export default function PumpMonitoring() {
     <ErrorBoundary fallback="Pump Monitoring page error.">
       <div className="page-header mb-4">
         <div>
-          <div className="page-title">Pump Monitoring</div>
+          <div className="page-title">{t('page_title_pump_monitoring')}</div>
           <div className="page-subtitle">{onlineCount} of {devices.length} pumps online</div>
         </div>
       </div>
 
       <div className="stat-cards-row mb-5" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
         <div className="stat-card">
-          <div className="stat-card-label">Total Pumps</div>
+          <div className="stat-card-label">{t('stat_total_pumps')}</div>
           <div className="stat-card-value">{devices.length}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-label">Online</div>
+          <div className="stat-card-label">{t('stat_online')}</div>
           <div className="stat-card-value" style={{ color: 'var(--green)' }}>{onlineCount}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-label">Offline</div>
+          <div className="stat-card-label">{t('stat_offline')}</div>
           <div className="stat-card-value" style={{ color: 'var(--red)' }}>{devices.length - onlineCount}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-label">Uptime</div>
+          <div className="stat-card-label">{t('stat_uptime')}</div>
           <div className="stat-card-value">
             {devices.length > 0 ? `${Math.round((onlineCount / devices.length) * 100)}%` : '—'}
           </div>
@@ -103,27 +105,27 @@ export default function PumpMonitoring() {
         <div className="filters-bar">
           <select className="filter-select" value={filterSite}
             onChange={e => setFilterSite(e.target.value)}>
-            <option value="">All Sites</option>
+            <option value="">{t('all_sites')}</option>
             {sites.map(s => <option key={s.siteId} value={s.siteId}>{s.siteName}</option>)}
           </select>
         </div>
 
         <div className="table-responsive">
           {loading ? (
-            <div className="loading-state"><div className="spinner" />Loading pumps...</div>
+            <div className="loading-state"><div className="spinner" />{t('loading_pumps')}</div>
           ) : (
             <table className="evo-table">
               <thead>
                 <tr>
-                  <th>Pump ID</th>
-                  <th>Device ID</th>
-                  <th>Site</th>
-                  <th>Protocol</th>
-                  <th>Status</th>
-                  <th>Offline Count</th>
-                  <th>Last Seen</th>
-                  <th>Last State</th>
-                  <th>Volume (L)</th>
+                  <th>{t('col_pump_id')}</th>
+                  <th>{t('col_device_id')}</th>
+                  <th>{t('label_site')}</th>
+                  <th>{t('col_protocol')}</th>
+                  <th>{t('col_status')}</th>
+                  <th>{t('col_offline_count')}</th>
+                  <th>{t('col_last_seen')}</th>
+                  <th>{t('col_last_state')}</th>
+                  <th>{t('col_volume')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -140,7 +142,7 @@ export default function PumpMonitoring() {
                       <td style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{d.protocol || '—'}</td>
                       <td>
                         <span className={`badge ${d.online ? 'badge-green' : 'badge-red'}`}>
-                          {d.online ? 'Online' : 'Offline'}
+                          {d.online ? t('stat_online') : t('stat_offline')}
                         </span>
                       </td>
                       <td>

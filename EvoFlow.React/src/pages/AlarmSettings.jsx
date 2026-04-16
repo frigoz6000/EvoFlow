@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
+import { useLanguage } from '../i18n/LanguageContext'
 import { alarmSettingsApi, emailRecipientsApi } from '../api/client'
 import ErrorBoundary from '../components/ErrorBoundary'
 
 const CATEGORY_ORDER = ['Tank', 'Delivery', 'Pump', 'Equipment', 'Safety', 'Connectivity', 'Reporting']
 
 export default function AlarmSettings() {
+  const { t } = useLanguage()
   const [alarms, setAlarms] = useState([])
   const [recipients, setRecipients] = useState([])
   const [loading, setLoading] = useState(true)
@@ -71,7 +73,7 @@ export default function AlarmSettings() {
     <ErrorBoundary fallback="Alarm Settings page error.">
       <div className="page-header mb-4">
         <div>
-          <div className="page-title">Alarm Settings</div>
+          <div className="page-title">{t('page_title_alarm_settings')}</div>
           <div className="page-subtitle">Configure alarms and assign email recipients for each alert type</div>
         </div>
       </div>
@@ -160,7 +162,7 @@ export default function AlarmSettings() {
       )}
 
       {loading ? (
-        <div className="loading-state"><div className="spinner" />Loading alarm settings...</div>
+        <div className="loading-state"><div className="spinner" />{t('loading_alarm_settings')}</div>
       ) : (
         <div className="card">
           <div className="table-responsive">

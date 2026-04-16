@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { useLanguage } from '../i18n/LanguageContext'
 import { emailLogApi } from '../api/client'
 import ErrorBoundary from '../components/ErrorBoundary'
 
@@ -49,6 +50,7 @@ function StatusBadge({ status }) {
 }
 
 export default function EmailLog() {
+  const { t } = useLanguage()
   const [filters, setFilters] = useState(defaultFilters)
   const [pending, setPending] = useState(defaultFilters)
   const [page, setPage] = useState(1)
@@ -110,7 +112,7 @@ export default function EmailLog() {
     <ErrorBoundary fallback="Email Log page error.">
       <div className="page-header mb-4">
         <div>
-          <div className="page-title">Email Log</div>
+          <div className="page-title">{t('page_title_email_log')}</div>
           <div className="page-subtitle">Audit trail of all emails sent by EvoFlow</div>
         </div>
       </div>
@@ -118,21 +120,21 @@ export default function EmailLog() {
       {/* Summary stat cards */}
       <div className="stat-cards-row mb-5" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
         <div className="stat-card">
-          <div className="stat-card-label">Total Sent</div>
+          <div className="stat-card-label">{t('stat_total_sent_email')}</div>
           <div className="stat-card-value">{stats.total.toLocaleString()}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-label">Successful</div>
+          <div className="stat-card-label">{t('stat_successful')}</div>
           <div className="stat-card-value" style={{ color: 'var(--success, #059669)' }}>{stats.sent.toLocaleString()}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-label">Failed</div>
+          <div className="stat-card-label">{t('stat_failed_email')}</div>
           <div className="stat-card-value" style={{ color: stats.failed > 0 ? 'var(--danger, #dc2626)' : undefined }}>
             {stats.failed.toLocaleString()}
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-label">Success Rate</div>
+          <div className="stat-card-label">{t('stat_success_rate')}</div>
           <div className="stat-card-value" style={{ color: successRate < 90 ? 'var(--danger, #dc2626)' : 'var(--success, #059669)' }}>
             {successRate}%
           </div>
@@ -150,7 +152,7 @@ export default function EmailLog() {
           <input type="date" className="filter-search" style={{ minWidth: 130 }}
             value={pending.dateTo} onChange={e => set('dateTo', e.target.value)} />
           <select className="filter-select" value={pending.status} onChange={e => set('status', e.target.value)}>
-            <option value="">All Statuses</option>
+            <option value="">{t('all_statuses_filter')}</option>
             <option value="Sent">Sent</option>
             <option value="Failed">Failed</option>
           </select>

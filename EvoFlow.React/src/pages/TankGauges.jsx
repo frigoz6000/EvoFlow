@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
+import { useLanguage } from '../i18n/LanguageContext'
 import { useNavigate } from 'react-router-dom'
 import { sitesApi } from '../api/client'
 import api from '../api/client'
@@ -52,6 +53,7 @@ function SortIcon({ col, sort }) {
 
 export default function TankGauges() {
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const [rows, setRows] = useState([])
   const [sites, setSites] = useState([])
   const [loading, setLoading] = useState(false)
@@ -142,26 +144,26 @@ export default function TankGauges() {
     <ErrorBoundary fallback="Tank Gauges page error.">
       <div className="page-header mb-4">
         <div>
-          <div className="page-title">Tank Gauges</div>
+          <div className="page-title">{t('page_title_tank_gauges')}</div>
           <div className="page-subtitle">Tank inventory — gauged levels, ullage, temperature and product height</div>
         </div>
       </div>
 
       <div className="stat-cards-row mb-5" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
         <div className="stat-card">
-          <div className="stat-card-label">Total Tanks</div>
+          <div className="stat-card-label">{t('stat_total_tanks')}</div>
           <div className="stat-card-value">{rows.length.toLocaleString()}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-label">Online</div>
+          <div className="stat-card-label">{t('stat_online')}</div>
           <div className="stat-card-value" style={{ color: 'var(--green)' }}>{onlineCount}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-label">Offline</div>
+          <div className="stat-card-label">{t('stat_offline')}</div>
           <div className="stat-card-value" style={{ color: offlineCount > 0 ? 'var(--red)' : 'var(--text-muted)' }}>{offlineCount}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-label">Avg Fill %</div>
+          <div className="stat-card-label">{t('stat_avg_fill')}</div>
           <div className="stat-card-value" style={{ color: 'var(--accent)' }}>{avgFillPct}{avgFillPct !== '—' ? '%' : ''}</div>
         </div>
       </div>
@@ -174,7 +176,7 @@ export default function TankGauges() {
         <div className="filters-bar">
           <select className="filter-select" value={filters.siteId}
             onChange={e => setFilters(f => ({ ...f, siteId: e.target.value }))}>
-            <option value="">All Sites</option>
+            <option value="">{t('all_sites')}</option>
             {sites.map(s => <option key={s.siteId} value={s.siteId}>{s.siteName}</option>)}
           </select>
           <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>From</label>
@@ -221,7 +223,7 @@ export default function TankGauges() {
 
         <div className="table-responsive">
           {loading ? (
-            <div className="loading-state"><div className="spinner" />Loading Tank Gauges...</div>
+            <div className="loading-state"><div className="spinner" />{t('loading_tank_gauges')}</div>
           ) : (
             <table className="evo-table">
               <thead>

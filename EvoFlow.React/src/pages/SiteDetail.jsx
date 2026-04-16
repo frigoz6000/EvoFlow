@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
+import { useLanguage } from '../i18n/LanguageContext'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
@@ -107,6 +108,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 export default function SiteDetail() {
   const { siteId } = useParams()
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -249,12 +251,12 @@ export default function SiteDetail() {
         <ErrorBoundary fallback={<div className="card" style={{padding:24}}>Chart unavailable</div>}>
           <div className="card">
             <div className="card-header">
-              <span className="card-title">Revenue & Volume Trend</span>
+              <span className="card-title">{t('card_revenue_volume_trend')}</span>
               <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>By trading day</span>
             </div>
             <div style={{ padding: '16px 18px 12px' }}>
               {dailyChart.length === 0 ? (
-                <div className="empty-state" style={{ padding: 32 }}>No trading data available</div>
+                <div className="empty-state" style={{ padding: 32 }}>{t('no_trading_data')}</div>
               ) : (
                 <ResponsiveContainer width="100%" height={220}>
                   <AreaChart data={dailyChart} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
@@ -286,11 +288,11 @@ export default function SiteDetail() {
         <ErrorBoundary fallback={<div className="card" style={{padding:24}}>Chart unavailable</div>}>
           <div className="card">
             <div className="card-header">
-              <span className="card-title">Fuel Type Breakdown</span>
+              <span className="card-title">{t('card_fuel_type_breakdown')}</span>
             </div>
             <div style={{ padding: '8px 0 0', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               {fuelChart.length === 0 ? (
-                <div className="empty-state" style={{ padding: 32 }}>No fuel data</div>
+                <div className="empty-state" style={{ padding: 32 }}>{t('no_fuel_data')}</div>
               ) : (
                 <>
                   <ResponsiveContainer width="100%" height={160}>
@@ -329,12 +331,12 @@ export default function SiteDetail() {
         {/* Pump devices */}
         <div className="card">
           <div className="card-header">
-            <span className="card-title">Pump Devices</span>
+            <span className="card-title">{t('card_pump_devices')}</span>
             <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>{totalPumps} device{totalPumps !== 1 ? 's' : ''}</span>
           </div>
           <div className="table-responsive">
             {pumps.length === 0 ? (
-              <div className="empty-state">No pump devices registered</div>
+              <div className="empty-state">{t('no_pump_devices')}</div>
             ) : (
               <table className="evo-table">
                 <thead>
@@ -373,7 +375,7 @@ export default function SiteDetail() {
         {/* Tank gauges */}
         <div className="card">
           <div className="card-header">
-            <span className="card-title">Tank Gauge Readings</span>
+            <span className="card-title">{t('card_tank_gauge_readings')}</span>
             <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>
               Latest reading per tank
               {tankReadings?.length > 0 && tankReadings[0].businessDate && (
@@ -383,7 +385,7 @@ export default function SiteDetail() {
           </div>
           <div className="table-responsive">
             {!tankReadings?.length ? (
-              <div className="empty-state">No tank gauge data</div>
+              <div className="empty-state">{t('no_tank_data')}</div>
             ) : (
               <table className="evo-table">
                 <thead>
@@ -445,12 +447,12 @@ export default function SiteDetail() {
       {/* Recent transactions */}
       <div className="card">
         <div className="card-header">
-          <span className="card-title">Recent Transactions</span>
+          <span className="card-title">{t('card_recent_transactions')}</span>
           <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>Latest 20</span>
         </div>
         <div className="table-responsive">
           {!recentTransactions?.length ? (
-            <div className="empty-state">No transactions recorded</div>
+            <div className="empty-state">{t('no_transactions')}</div>
           ) : (
             <table className="evo-table">
               <thead>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useLanguage } from '../i18n/LanguageContext'
 import { whatsAppContactsApi, whatsAppConfigApi } from '../api/client'
 import ErrorBoundary from '../components/ErrorBoundary'
 
@@ -6,6 +7,7 @@ const EMPTY_CONTACT = { id: 0, name: '', phoneNumber: '', isActive: true }
 const EMPTY_CONFIG = { accountSid: '', authToken: '', fromNumber: '', isEnabled: false }
 
 export default function WhatsAppContacts() {
+  const { t } = useLanguage()
   const [tab, setTab] = useState('contacts')
 
   // Contacts state
@@ -107,7 +109,7 @@ export default function WhatsAppContacts() {
     <ErrorBoundary fallback="WhatsApp Contacts page error.">
       <div className="page-header mb-4">
         <div>
-          <div className="page-title">WhatsApp Alerts</div>
+          <div className="page-title">{t('page_title_whatsapp')}</div>
           <div className="page-subtitle">
             Manage contacts and Twilio configuration for WhatsApp alert delivery
           </div>
@@ -204,7 +206,7 @@ export default function WhatsAppContacts() {
             </div>
             <div className="table-responsive">
               {loadingContacts ? (
-                <div className="loading-state"><div className="spinner" />Loading contacts...</div>
+                <div className="loading-state"><div className="spinner" />{t('loading_contacts')}</div>
               ) : contacts.length === 0 ? (
                 <div className="empty-state">No contacts yet. Add one to get started.</div>
               ) : (
@@ -245,7 +247,7 @@ export default function WhatsAppContacts() {
       {tab === 'settings' && (
         <div className="card">
           <div className="card-header">
-            <span className="card-title">Twilio WhatsApp Configuration</span>
+            <span className="card-title">{t('card_twilio_config')}</span>
           </div>
           <form onSubmit={handleSaveConfig} style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>

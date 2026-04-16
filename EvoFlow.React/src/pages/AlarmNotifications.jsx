@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useLanguage } from '../i18n/LanguageContext'
 import ErrorBoundary from '../components/ErrorBoundary'
 
 const RECIPIENTS = [
@@ -60,6 +61,7 @@ const SEV_BADGE = { Critical: 'badge-red', High: 'badge-orange', Medium: 'badge-
 const PAGE_SIZE = 20
 
 export default function AlarmNotifications() {
+  const { t } = useLanguage()
   const [filters, setFilters] = useState({ type: '', severity: '', site: '', status: '', search: '' })
   const [page, setPage] = useState(1)
 
@@ -89,27 +91,27 @@ export default function AlarmNotifications() {
     <ErrorBoundary fallback="Notifications page error.">
       <div className="page-header mb-4">
         <div>
-          <div className="page-title">Notifications</div>
-          <div className="page-subtitle">Email and SMS notifications sent for alarm events</div>
+          <div className="page-title">{t('page_title_notifications')}</div>
+          <div className="page-subtitle">{t('page_subtitle_notifications')}</div>
         </div>
       </div>
 
       {/* Summary stats */}
       <div className="stat-cards-row mb-5" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
         <div className="stat-card">
-          <div className="stat-card-label">Total Sent</div>
+          <div className="stat-card-label">{t('stat_total_sent')}</div>
           <div className="stat-card-value">{NOTIFICATIONS.length}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-label">Delivered</div>
+          <div className="stat-card-label">{t('stat_delivered')}</div>
           <div className="stat-card-value" style={{ color: 'var(--green)' }}>{deliveredCount}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-label">Failed</div>
+          <div className="stat-card-label">{t('stat_failed')}</div>
           <div className="stat-card-value" style={{ color: 'var(--red)' }}>{failedCount}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-label">Pending</div>
+          <div className="stat-card-label">{t('stat_pending')}</div>
           <div className="stat-card-value" style={{ color: 'var(--orange)' }}>{pendingCount}</div>
         </div>
       </div>

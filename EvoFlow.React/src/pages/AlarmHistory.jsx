@@ -3,6 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts'
 import ErrorBoundary from '../components/ErrorBoundary'
+import { useLanguage } from '../i18n/LanguageContext'
 
 const GROUPS = ['Northern', 'Southern', 'Eastern', 'Western', 'Central']
 const SITES = ['Site Alpha', 'Site Beta', 'Site Gamma', 'Site Delta', 'Site Echo',
@@ -76,6 +77,7 @@ function buildChartDataBy(rows, groupBy) {
 const PAGE_SIZE = 20
 
 export default function AlarmHistory() {
+  const { t } = useLanguage()
   const [filters, setFilters] = useState({
     dateFrom: '2026-01-01',
     dateTo: '2026-03-31',
@@ -118,8 +120,8 @@ export default function AlarmHistory() {
     <ErrorBoundary fallback="Alarm History page error.">
       <div className="page-header mb-4">
         <div>
-          <div className="page-title">Alarm History</div>
-          <div className="page-subtitle">Historical alarm records with trend analysis</div>
+          <div className="page-title">{t('page_title_alarm_history')}</div>
+          <div className="page-subtitle">{t('page_subtitle_alarm_history')}</div>
         </div>
       </div>
 
@@ -137,33 +139,33 @@ export default function AlarmHistory() {
 
       {/* Filters */}
       <div className="card mb-4">
-        <div className="card-header"><span className="card-title">Filters</span></div>
+        <div className="card-header"><span className="card-title">{t('card_filters')}</span></div>
         <div className="filters-bar" style={{ flexWrap: 'wrap', gap: 8, padding: '12px 16px' }}>
-          <label style={{ fontSize: 12, color: 'var(--text-secondary)', alignSelf: 'center' }}>From</label>
+          <label style={{ fontSize: 12, color: 'var(--text-secondary)', alignSelf: 'center' }}>{t('label_from')}</label>
           <input type="date" className="filter-search" style={{ minWidth: 130 }}
             value={filters.dateFrom} onChange={e => set('dateFrom', e.target.value)} />
-          <label style={{ fontSize: 12, color: 'var(--text-secondary)', alignSelf: 'center' }}>To</label>
+          <label style={{ fontSize: 12, color: 'var(--text-secondary)', alignSelf: 'center' }}>{t('label_to')}</label>
           <input type="date" className="filter-search" style={{ minWidth: 130 }}
             value={filters.dateTo} onChange={e => set('dateTo', e.target.value)} />
           <select className="filter-select" value={filters.group} onChange={e => set('group', e.target.value)}>
-            <option value="">All Groups</option>
+            <option value="">{t('all_groups')}</option>
             {GROUPS.map(g => <option key={g} value={g}>{g}</option>)}
           </select>
           <select className="filter-select" value={filters.site} onChange={e => set('site', e.target.value)}>
-            <option value="">All Sites</option>
+            <option value="">{t('all_sites')}</option>
             {SITES.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
           <select className="filter-select" value={filters.severity} onChange={e => set('severity', e.target.value)}>
-            <option value="">All Severities</option>
+            <option value="">{t('all_severities')}</option>
             {SEVERITIES.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
           <select className="filter-select" value={filters.category} onChange={e => set('category', e.target.value)}>
-            <option value="">All Categories</option>
+            <option value="">{t('all_categories')}</option>
             {['Mechanical', 'Electrical', 'Network', 'Safety', 'Operational'].map(c => (
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
-          <button className="btn btn-outline btn-sm" onClick={handleClear}>Clear</button>
+          <button className="btn btn-outline btn-sm" onClick={handleClear}>{t('btn_clear')}</button>
         </div>
       </div>
 
@@ -218,23 +220,23 @@ export default function AlarmHistory() {
             <thead>
               <tr>
                 <th>#</th>
-                <th>Group</th>
-                <th>Site</th>
-                <th>Severity</th>
-                <th>Malfunction</th>
-                <th>Opening Date</th>
-                <th>Closing Date</th>
-                <th>Duration (days)</th>
-                <th>Category</th>
-                <th>Equipment</th>
-                <th>Parameter</th>
-                <th>Product</th>
-                <th>Resolution</th>
+                <th>{t('col_group')}</th>
+                <th>{t('label_site')}</th>
+                <th>{t('col_severity')}</th>
+                <th>{t('col_malfunction')}</th>
+                <th>{t('col_opening_date')}</th>
+                <th>{t('col_closing_date')}</th>
+                <th>{t('col_duration')}</th>
+                <th>{t('col_category')}</th>
+                <th>{t('col_equipment')}</th>
+                <th>{t('col_parameter')}</th>
+                <th>{t('col_product')}</th>
+                <th>{t('col_resolution')}</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={13}><div className="empty-state">No records match the selected filters</div></td></tr>
+                <tr><td colSpan={13}><div className="empty-state">{t('no_records_filters')}</div></td></tr>
               ) : pageRows.map(a => (
                 <tr key={a.id}>
                   <td style={{ color: 'var(--text-muted)', fontSize: 11 }}>{a.id}</td>

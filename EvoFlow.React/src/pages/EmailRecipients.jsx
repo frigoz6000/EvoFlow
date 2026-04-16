@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
+import { useLanguage } from '../i18n/LanguageContext'
 import { emailRecipientsApi } from '../api/client'
 import ErrorBoundary from '../components/ErrorBoundary'
 
 const EMPTY_FORM = { email: '', name: '', isActive: true }
 
 export default function EmailRecipients() {
+  const { t } = useLanguage()
   const [recipients, setRecipients] = useState([])
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState(EMPTY_FORM)
@@ -79,7 +81,7 @@ export default function EmailRecipients() {
     <ErrorBoundary fallback="Email Recipients page error.">
       <div className="page-header mb-4">
         <div>
-          <div className="page-title">Email Recipients</div>
+          <div className="page-title">{t('page_title_email_recipients')}</div>
           <div className="page-subtitle">Manage addresses for alarm notifications and reports</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -142,7 +144,7 @@ export default function EmailRecipients() {
         </div>
         <div className="table-responsive">
           {loading ? (
-            <div className="loading-state"><div className="spinner" />Loading recipients...</div>
+            <div className="loading-state"><div className="spinner" />{t('loading_recipients')}</div>
           ) : (
             <table className="evo-table">
               <thead>

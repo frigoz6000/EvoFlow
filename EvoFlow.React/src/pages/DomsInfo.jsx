@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
+import { useLanguage } from '../i18n/LanguageContext'
 import { useNavigate } from 'react-router-dom'
 import { sitesApi } from '../api/client'
 import api from '../api/client'
@@ -46,6 +47,7 @@ function SortIcon({ dir }) {
 
 export default function DomsInfo() {
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const [rows, setRows] = useState([])
   const [sites, setSites] = useState([])
   const [loading, setLoading] = useState(false)
@@ -198,7 +200,7 @@ export default function DomsInfo() {
     <ErrorBoundary fallback="Doms Info page error.">
       <div className="page-header mb-4" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <div className="page-title">Doms Info</div>
+          <div className="page-title">{t('page_title_doms_info')}</div>
           <div className="page-subtitle">Pump monitoring overview — all sites</div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
@@ -245,19 +247,19 @@ export default function DomsInfo() {
 
       <div className="stat-cards-row mb-5" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
         <div className="stat-card">
-          <div className="stat-card-label">Rows</div>
+          <div className="stat-card-label">{t('stat_rows')}</div>
           <div className="stat-card-value">{rows.length}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-label">Devices</div>
+          <div className="stat-card-label">{t('stat_devices')}</div>
           <div className="stat-card-value">{totalDevices}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-label">Online</div>
+          <div className="stat-card-label">{t('stat_online')}</div>
           <div className="stat-card-value" style={{ color: 'var(--green)' }}>{onlineDevices}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-label">Total Transactions</div>
+          <div className="stat-card-label">{t('stat_total_transactions')}</div>
           <div className="stat-card-value">{totalTransactions.toLocaleString()}</div>
         </div>
       </div>
@@ -368,7 +370,7 @@ export default function DomsInfo() {
 
         <div className="table-responsive">
           {loading ? (
-            <div className="loading-state"><div className="spinner" />Loading Doms Info...</div>
+            <div className="loading-state"><div className="spinner" />{t('loading_doms_info')}</div>
           ) : (
             <table className="evo-table">
               <thead>
