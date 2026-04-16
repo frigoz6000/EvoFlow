@@ -199,7 +199,7 @@ export default function Dashboard() {
             value={fmtGbp(totalRevenue)}
             sub="All pump transactions"
             accent={PINK}
-            icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>}
+            icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 7c0-2.76-2.24-5-5-5s-5 2.24-5 5v10"/><line x1="7" y1="12" x2="15" y2="12"/><line x1="6" y1="20" x2="18" y2="20"/></svg>}
           />
         </ErrorBoundary>
         <ErrorBoundary fallback={<div className="kpi-card">—</div>}>
@@ -226,7 +226,7 @@ export default function Dashboard() {
             value={devices.length.toLocaleString()}
             sub={`${onlinePumps} currently online`}
             accent={ORANGE}
-            icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="13" height="18" rx="2"/><path d="M15 8h2a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2"/><line x1="8" y1="7" x2="8" y2="7"/></svg>}
+            icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 22V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v10h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2 2 2 0 0 0 2-2v-7l-3-3"/><rect x="3" y="10" width="9" height="5" rx="1"/></svg>}
           />
         </ErrorBoundary>
         <ErrorBoundary fallback={<div className="kpi-card">—</div>}>
