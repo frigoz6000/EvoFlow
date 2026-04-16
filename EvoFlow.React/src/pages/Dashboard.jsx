@@ -226,7 +226,7 @@ export default function Dashboard() {
             value={devices.length.toLocaleString()}
             sub={`${onlinePumps} currently online`}
             accent={ORANGE}
-            icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="12" height="18" rx="2"/><rect x="5" y="6" width="8" height="6" rx="1"/><path d="M15 8h2a4 4 0 0 1 4 4 4 4 0 0 1-4 4h-2"/></svg>}
+            icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="2" width="12" height="16" rx="2"/><rect x="5" y="5" width="8" height="6" rx="1"/><path d="M15 7h2a4 4 0 0 1 4 4 4 4 0 0 1-4 4h-2"/><rect x="1" y="18" width="16" height="3" rx="1"/></svg>}
           />
         </ErrorBoundary>
         <ErrorBoundary fallback={<div className="kpi-card">—</div>}>
