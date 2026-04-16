@@ -2,12 +2,12 @@
 :root,
 [data-theme="light"] {
   --sidebar-bg: #1a1d35;
-  --sidebar-text: #8b93bc;
+  --sidebar-text: #b0b9d8;
   --sidebar-text-active: #ffffff;
   --sidebar-hover: #22274a;
   --sidebar-active-bg: #2d3460;
   --sidebar-active-border: #e91e8c;
-  --sidebar-section-label: #454d7a;
+  --sidebar-section-label: #6b75a8;
   --sidebar-width: 216px;
   --sidebar-width-collapsed: 56px;
 
@@ -54,12 +54,12 @@
 
 [data-theme="dark"] {
   --sidebar-bg: #111320;
-  --sidebar-text: #6b75a8;
+  --sidebar-text: #9aa5cb;
   --sidebar-text-active: #e8eaf5;
   --sidebar-hover: #181c34;
   --sidebar-active-bg: #1f2448;
   --sidebar-active-border: #e91e8c;
-  --sidebar-section-label: #373e6a;
+  --sidebar-section-label: #5a6490;
 
   --topbar-bg: #151828;
   --topbar-border: #1e2340;
