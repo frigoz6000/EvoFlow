@@ -32,6 +32,7 @@ export default function LanguageSelector() {
         title={current.label}
         style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 8px' }}
       >
+        <LangFlag code={current.code} size={22} />
         <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: 0.5 }}>
           {current.code.toUpperCase()}
         </span>
