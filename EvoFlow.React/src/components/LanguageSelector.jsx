@@ -33,9 +33,6 @@ export default function LanguageSelector() {
         style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 8px' }}
       >
         <LangFlag code={current.code} size={22} />
-        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: 0.5 }}>
-          {current.code.toUpperCase()}
-        </span>
         <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8"
           style={{ transition: 'transform 0.15s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>
           <polyline points="1,3 5,7 9,3" />
@@ -64,8 +61,8 @@ export default function LanguageSelector() {
               onMouseEnter={e => { if (l.code !== lang) e.currentTarget.style.background = 'var(--hover-bg, rgba(0,0,0,0.04))' }}
               onMouseLeave={e => { if (l.code !== lang) e.currentTarget.style.background = 'transparent' }}
             >
-              {l.code === lang && <LangFlag code={l.code} size={22} />}
-              <span style={{ paddingLeft: l.code === lang ? 0 : 32 }}>{l.label}</span>
+              <LangFlag code={l.code} size={22} />
+              <span>{l.label}</span>
             </button>
           ))}
         </div>
