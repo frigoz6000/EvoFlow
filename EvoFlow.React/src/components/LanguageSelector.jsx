@@ -64,8 +64,8 @@ export default function LanguageSelector() {
               onMouseEnter={e => { if (l.code !== lang) e.currentTarget.style.background = 'var(--hover-bg, rgba(0,0,0,0.04))' }}
               onMouseLeave={e => { if (l.code !== lang) e.currentTarget.style.background = 'transparent' }}
             >
-              <LangFlag code={l.code} size={22} />
-              <span>{l.label}</span>
+              {l.code === lang && <LangFlag code={l.code} size={22} />}
+              <span style={{ paddingLeft: l.code === lang ? 0 : 32 }}>{l.label}</span>
             </button>
           ))}
         </div>
