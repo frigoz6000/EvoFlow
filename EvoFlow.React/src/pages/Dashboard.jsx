@@ -29,14 +29,24 @@ function fmtGbp(n) {
   return `£${Number(n).toFixed(2)}`
 }
 
-function KpiCard({ label, value, sub, icon, accent, trend, trendLabel }) {
+function KpiCard({ label, value, sub, icon, accent, trend, trendLabel, onClick }) {
   const color = accent || PINK
   const bg = color + '18'
   return (
-    <div className="kpi-card" style={{ '--kc': color }}>
+    <div
+      className="kpi-card"
+      style={{ '--kc': color, cursor: onClick ? 'pointer' : 'default', transition: 'transform 0.15s, box-shadow 0.15s' }}
+      onClick={onClick}
+      onMouseEnter={onClick ? e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 24px rgba(0,0,0,0.13)' } : undefined}
+      onMouseLeave={onClick ? e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '' } : undefined}
+      title={onClick ? `Click to drill down` : undefined}
+    >
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
         <div>
-          <div className="kpi-label">{label}</div>
+          <div className="kpi-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            {label}
+            {onClick && <span style={{ fontSize: 10, opacity: 0.5, marginLeft: 2 }}>↗</span>}
+          </div>
           <div className="kpi-value">{value}</div>
         </div>
         <div className="kpi-icon-wrap" style={{ background: bg, color }}>
@@ -201,6 +211,7 @@ export default function Dashboard() {
             value={fmtGbp(totalRevenue)}
             sub="All pump transactions"
             accent={PINK}
+            onClick={() => navigate('/volume-revenue')}
             icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 6C14 3 7 3 7 7V20"/><line x1="5" y1="13" x2="15" y2="13"/><line x1="5" y1="20" x2="19" y2="20"/></svg>}
           />
         </ErrorBoundary>
@@ -210,6 +221,7 @@ export default function Dashboard() {
             value={`${fmt(totalVolume)} L`}
             sub="Fuel dispensed (litres)"
             accent={PURPLE}
+            onClick={() => navigate('/volume-revenue')}
             icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 3h18v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3z"/><line x1="3" y1="8" x2="21" y2="8"/><line x1="12" y1="8" x2="12" y2="18"/></svg>}
           />
         </ErrorBoundary>
@@ -219,6 +231,7 @@ export default function Dashboard() {
             value={sites.length.toLocaleString()}
             sub="Registered locations"
             accent={BLUE}
+            onClick={() => navigate('/sites')}
             icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>}
           />
         </ErrorBoundary>
@@ -228,6 +241,7 @@ export default function Dashboard() {
             value={devices.length.toLocaleString()}
             sub={`${onlinePumps} currently online`}
             accent={ORANGE}
+            onClick={() => navigate('/pump-monitoring')}
             icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="1" width="12" height="19" rx="2"/><rect x="5" y="4" width="8" height="8" rx="1"/><rect x="1" y="20" width="16" height="2" rx="1"/><path d="M15 11h1a2 2 0 0 0 2-2 3 3 0 0 0 3 3v7l-2 2"/></svg>}
           />
         </ErrorBoundary>
@@ -237,6 +251,7 @@ export default function Dashboard() {
             value={fmtGbp(avgDailyRev)}
             sub={`Over ${tradingDays} trading days`}
             accent={PINK}
+            onClick={() => navigate('/volume-revenue')}
             icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>}
           />
         </ErrorBoundary>
@@ -244,9 +259,9 @@ export default function Dashboard() {
           <KpiCard
             label="Avg Revenue / Pump"
             value={fmtGbp(avgPerPump)}
-
             sub="Across all pump devices"
             accent={GREEN}
+            onClick={() => navigate('/pump-monitoring')}
             icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>}
           />
         </ErrorBoundary>
@@ -352,7 +367,14 @@ export default function Dashboard() {
               {topSites.length === 0 ? (
                 <div style={{ color: 'var(--text-muted)', fontSize: 12, padding: '16px 0' }}>{t('no_site_revenue')}</div>
               ) : topSites.map((s, i) => (
-                <div key={s.id} style={{ marginBottom: 12 }}>
+                <div
+                  key={s.id}
+                  style={{ marginBottom: 12, cursor: 'pointer', borderRadius: 6, padding: '4px 2px', transition: 'background 0.15s' }}
+                  onClick={() => navigate(`/sites/${s.id}`)}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--table-border)'}
+                  onMouseLeave={e => e.currentTarget.style.background = ''}
+                  title={`View ${s.name}`}
+                >
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                     <span style={{ fontSize: 12, color: 'var(--text-primary)', fontWeight: 600 }}>
                       <span style={{ color: 'var(--text-muted)', marginRight: 6, fontSize: 11 }}>#{i + 1}</span>
