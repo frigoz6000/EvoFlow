@@ -251,6 +251,96 @@ public class ImportController(IDapperConnectionFactory connectionFactory, ILogge
         });
     }
 
+    private const string MoveDatesForwardSql = @"
+        DECLARE @MaxDate DATE;
+        DECLARE @Today DATE = CAST(GETDATE() AS DATE);
+        DECLARE @OffsetDays INT;
+
+        SELECT @MaxDate = MAX(d) FROM (
+            SELECT MAX(BusinessDate) AS d FROM FuelRecords
+            UNION ALL SELECT MAX(BusinessDate) FROM PumpMonitoring
+            UNION ALL SELECT MAX(BusinessDate) FROM PumpStatus
+            UNION ALL SELECT MAX(BusinessDate) FROM PumpTotals
+            UNION ALL SELECT MAX(BusinessDate) FROM TankGauges
+        ) x;
+
+        IF @MaxDate IS NULL OR @MaxDate >= @Today
+        BEGIN
+            SELECT 0 AS OffsetDays, 0 AS RowsUpdated;
+            RETURN;
+        END
+
+        SET @OffsetDays = DATEDIFF(day, @MaxDate, @Today);
+
+        UPDATE FuelRecords
+        SET BusinessDate = DATEADD(day, @OffsetDays, BusinessDate),
+            TransactionUtc = DATEADD(day, @OffsetDays, TransactionUtc);
+
+        UPDATE PumpMonitoring
+        SET BusinessDate = DATEADD(day, @OffsetDays, BusinessDate),
+            SnapshotUtc = DATEADD(day, @OffsetDays, SnapshotUtc);
+
+        UPDATE PumpStatus
+        SET BusinessDate = DATEADD(day, @OffsetDays, BusinessDate),
+            SnapshotUtc = DATEADD(day, @OffsetDays, SnapshotUtc);
+
+        UPDATE PumpTotals
+        SET BusinessDate = DATEADD(day, @OffsetDays, BusinessDate),
+            SnapshotUtc = DATEADD(day, @OffsetDays, SnapshotUtc);
+
+        UPDATE TankGauges
+        SET BusinessDate = DATEADD(day, @OffsetDays, BusinessDate);
+
+        SELECT @OffsetDays AS OffsetDays,
+               (SELECT COUNT(*) FROM FuelRecords) +
+               (SELECT COUNT(*) FROM PumpMonitoring) +
+               (SELECT COUNT(*) FROM PumpStatus) +
+               (SELECT COUNT(*) FROM PumpTotals) +
+               (SELECT COUNT(*) FROM TankGauges) AS RowsUpdated;";
+
+    /// <summary>
+    /// Shifts all business dates forward so the latest date becomes today.
+    /// Updates FuelRecords, PumpMonitoring, PumpStatus, PumpTotals, and TankGauges,
+    /// then refreshes the DomsInfoSnapshot.
+    /// </summary>
+    [HttpPost("move-dates-forward")]
+    public async Task<IActionResult> MoveDatesForward()
+    {
+        var started = DateTime.UtcNow;
+        logger.LogInformation("Moving dates forward so latest business date = today");
+
+        using var conn = connectionFactory.CreateConnection();
+        var row = await conn.QuerySingleAsync(MoveDatesForwardSql, commandTimeout: 300);
+        int offsetDays = (int)row.OffsetDays;
+        int rowsUpdated = (int)row.RowsUpdated;
+
+        if (offsetDays == 0)
+        {
+            return Ok(new
+            {
+                message = "Dates are already current — no changes made",
+                offsetDays = 0,
+                rowsUpdated = 0,
+                elapsedSeconds = 0.0
+            });
+        }
+
+        // Refresh the DomsInfoSnapshot to reflect the shifted dates
+        var snapshotRows = await conn.ExecuteScalarAsync<int>(PopulateSql, commandTimeout: 300);
+
+        var elapsed = (DateTime.UtcNow - started).TotalSeconds;
+        logger.LogInformation("Move dates forward complete. Offset={Days}d, Rows={Rows}", offsetDays, rowsUpdated);
+
+        return Ok(new
+        {
+            message = "Dates moved forward successfully",
+            offsetDays,
+            rowsUpdated,
+            snapshotRowsRefreshed = snapshotRows,
+            elapsedSeconds = Math.Round(elapsed, 1)
+        });
+    }
+
     private const string ImportLogInsertSql = @"
         INSERT INTO ImportLog (FileName, Status, Message, ImportedAtUtc)
         VALUES (@FileName, @Status, @Message, @ImportedAtUtc)";

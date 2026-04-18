@@ -72,6 +72,35 @@ const ShieldIcon = () => (
   </svg>
 )
 
+const CalendarArrowIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+    <line x1="16" y1="2" x2="16" y2="6"/>
+    <line x1="8" y1="2" x2="8" y2="6"/>
+    <line x1="3" y1="10" x2="21" y2="10"/>
+    <polyline points="14 16 17 19 20 16"/>
+    <line x1="17" y1="19" x2="17" y2="13"/>
+  </svg>
+)
+
+function MoveDatesResultPanel({ result }) {
+  return (
+    <div style={{ background: 'rgba(234,88,12,0.08)', border: '1px solid #ea580c', borderRadius: 8, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#ea580c', fontWeight: 700, fontSize: 15 }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        {result.offsetDays === 0 ? 'Dates already current' : 'Dates moved forward'}
+      </div>
+      <div style={{ fontSize: 13, color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {result.offsetDays > 0 && <span>Days shifted: <strong>+{result.offsetDays}</strong></span>}
+        {result.rowsUpdated > 0 && <span>Rows updated: <strong>{result.rowsUpdated?.toLocaleString()}</strong></span>}
+        <span>Time taken: <strong>{result.elapsedSeconds}s</strong></span>
+      </div>
+    </div>
+  )
+}
+
 function AnonymizeResultPanel({ result }) {
   return (
     <div style={{ background: 'rgba(124,58,237,0.08)', border: '1px solid #7c3aed', borderRadius: 8, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -103,7 +132,11 @@ export default function ImportData() {
   const [anonResult, setAnonResult] = useState(null)
   const [anonError, setAnonError] = useState(null)
 
-  const anyRunning = fullStatus === 'running' || appendStatus === 'running' || anonStatus === 'running'
+  const [moveDatesStatus, setMoveDatesStatus] = useState('idle')
+  const [moveDatesResult, setMoveDatesResult] = useState(null)
+  const [moveDatesError, setMoveDatesError] = useState(null)
+
+  const anyRunning = fullStatus === 'running' || appendStatus === 'running' || anonStatus === 'running' || moveDatesStatus === 'running'
 
   function handleImport(skipDelete) {
     if (skipDelete) {
@@ -126,6 +159,18 @@ export default function ImportData() {
         const msg = e.response?.data?.error || e.message || 'Import failed'
         if (skipDelete) { setAppendError(msg); setAppendStatus('error') }
         else { setFullError(msg); setFullStatus('error') }
+      })
+  }
+
+  function handleMoveDates() {
+    setMoveDatesStatus('running')
+    setMoveDatesResult(null)
+    setMoveDatesError(null)
+    api.post('/import/move-dates-forward', null, { timeout: 120000 })
+      .then(r => { setMoveDatesResult(r.data); setMoveDatesStatus('done') })
+      .catch(e => {
+        const msg = e.response?.data?.error || e.message || 'Move dates failed'
+        setMoveDatesError(msg); setMoveDatesStatus('error')
       })
   }
 
@@ -210,6 +255,38 @@ export default function ImportData() {
           </button>
           {appendStatus === 'done' && appendResult && <ResultPanel result={appendResult} />}
           {appendStatus === 'error' && <ErrorPanel error={appendError} />}
+        </div>
+      </div>
+
+      {/* Move dates forward */}
+      <div className="card mt-4" style={{ maxWidth: 600 }}>
+        <div className="card-header">
+          <span className="card-title">{t('card_move_dates')}</span>
+        </div>
+        <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6 }}>
+            Shifts all business dates in the database forward so the <strong>latest date becomes today</strong>.
+            Updates FuelRecords, PumpMonitoring, PumpStatus, PumpTotals, and TankGauges,
+            then refreshes the Doms Info snapshot automatically.
+          </p>
+          <button
+            onClick={handleMoveDates}
+            disabled={anyRunning}
+            style={{
+              background: moveDatesStatus === 'running' ? 'var(--surface)' : '#ea580c',
+              border: '1px solid ' + (moveDatesStatus === 'running' ? 'var(--border)' : '#ea580c'),
+              borderRadius: 8, padding: '12px 28px',
+              cursor: anyRunning ? 'not-allowed' : 'pointer',
+              color: moveDatesStatus === 'running' ? 'var(--text-muted)' : '#fff',
+              fontSize: 15, fontWeight: 700,
+              display: 'flex', alignItems: 'center', gap: 10, alignSelf: 'flex-start',
+              opacity: anyRunning ? 0.7 : 1, transition: 'background 0.15s',
+            }}
+          >
+            {moveDatesStatus === 'running' ? <><SpinnerIcon /> Moving dates…</> : <><CalendarArrowIcon /> Move Dates Forward</>}
+          </button>
+          {moveDatesStatus === 'done' && moveDatesResult && <MoveDatesResultPanel result={moveDatesResult} />}
+          {moveDatesStatus === 'error' && <ErrorPanel error={moveDatesError} title="Move dates failed" />}
         </div>
       </div>
 
