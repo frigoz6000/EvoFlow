@@ -5,6 +5,7 @@ namespace EvoFlow.Api.Data;
 
 public class EvoFlowDbContext(DbContextOptions<EvoFlowDbContext> options) : DbContext(options)
 {
+    public DbSet<User> Users => Set<User>();
     public DbSet<Site> Sites => Set<Site>();
     public DbSet<FuelType> FuelTypes => Set<FuelType>();
     public DbSet<Vehicle> Vehicles => Set<Vehicle>();
@@ -102,6 +103,12 @@ public class EvoFlowDbContext(DbContextOptions<EvoFlowDbContext> options) : DbCo
         modelBuilder.Entity<FuelGradePriceHistory>(e =>
         {
             e.Property(x => x.GradeUnitPrice).HasColumnType("decimal(18,4)");
+        });
+
+        modelBuilder.Entity<User>(e =>
+        {
+            e.Property(x => x.Username).HasMaxLength(100);
+            e.HasIndex(x => x.Username).IsUnique();
         });
 
         modelBuilder.Entity<AlarmType>().HasData(

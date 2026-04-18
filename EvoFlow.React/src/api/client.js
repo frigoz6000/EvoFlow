@@ -5,6 +5,24 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' }
 })
 
+api.interceptors.request.use(config => {
+  const token = localStorage.getItem('evoflow-token')
+  if (token) config.headers.Authorization = `Bearer ${token}`
+  return config
+})
+
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('evoflow-token')
+      localStorage.removeItem('evoflow-username')
+      window.location.href = '/login'
+    }
+    return Promise.reject(error)
+  }
+)
+
 export const sitesApi = {
   getAll: () => api.get('/sites').then(r => r.data),
   getById: (id) => api.get(`/sites/${id}`).then(r => r.data),

@@ -6,6 +6,7 @@ import LanguageSelector from './LanguageSelector'
 import api from '../api/client'
 import { sitesApi } from '../api/client'
 import { useLanguage } from '../i18n/LanguageContext'
+import { useAuth } from '../auth/AuthContext'
 import {
   IconHome, IconPump, IconMapPin, IconMap,
   IconSearch, IconSun, IconMoon, IconTable,
@@ -78,6 +79,7 @@ export default function Layout() {
   const location = useLocation()
   const navigate = useNavigate()
   const { t } = useLanguage()
+  const { username, logout } = useAuth()
   const [search, setSearch] = useState('')
   const [collapsed, setCollapsed] = useState(() => window.innerWidth < 768)
   const [hovered, setHovered] = useState(false)
@@ -302,7 +304,17 @@ export default function Layout() {
             >
               {dark ? <IconSun size={15} /> : <IconMoon size={15} />}
             </button>
-            <div className="topbar-avatar" title="User">U</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div className="topbar-avatar" title={username}>{username ? username[0].toUpperCase() : 'U'}</div>
+              <button
+                className="topbar-icon-btn"
+                onClick={() => { logout(); navigate('/login') }}
+                title="Sign out"
+                style={{ fontSize: 12, padding: '4px 10px', whiteSpace: 'nowrap' }}
+              >
+                Sign out
+              </button>
+            </div>
           </div>
         </header>
 

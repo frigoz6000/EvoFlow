@@ -1,6 +1,8 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { LanguageProvider } from './i18n/LanguageContext'
+import { AuthProvider, useAuth } from './auth/AuthContext'
 import Layout from './components/Layout'
+import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Sites from './pages/Sites'
 import SiteDetail from './pages/SiteDetail'
@@ -25,38 +27,50 @@ import SiteMap from './pages/SiteMap'
 import FuelPrices from './pages/FuelPrices'
 import FuelPriceHistory from './pages/FuelPriceHistory'
 
+function ProtectedRoute({ children }) {
+  const { isAuthenticated } = useAuth()
+  const location = useLocation()
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />
+  }
+  return children
+}
+
 export default function App() {
   return (
     <LanguageProvider>
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="sites" element={<Sites />} />
-          <Route path="sites/:siteId" element={<SiteDetail />} />
-          <Route path="site-map" element={<SiteMap />} />
-          <Route path="pump-monitoring" element={<PumpMonitoring />} />
-<Route path="doms-info" element={<DomsInfo />} />
-          <Route path="flow-rates" element={<FlowRates />} />
-          <Route path="device-alerts" element={<DeviceAlerts />} />
-          <Route path="volume-revenue" element={<VolumeRevenue />} />
-          <Route path="active-alarms" element={<ActiveAlarms />} />
-          <Route path="alarm-history" element={<AlarmHistory />} />
-          <Route path="alarm-notifications" element={<AlarmNotifications />} />
-          <Route path="tank-gauges" element={<TankGauges />} />
-          <Route path="config/email-recipients" element={<EmailRecipients />} />
-          <Route path="config/email-config" element={<EmailConfig />} />
-          <Route path="config/email-log" element={<EmailLog />} />
-          <Route path="config/alarm-settings" element={<AlarmSettings />} />
-          <Route path="config/report-schedules" element={<ReportSchedules />} />
-          <Route path="config/import-data" element={<ImportData />} />
-          <Route path="data-integrity" element={<DataIntegrity />} />
-          <Route path="config/whatsapp" element={<WhatsAppContacts />} />
-          <Route path="fuel-prices" element={<FuelPrices />} />
-          <Route path="fuel-price-history" element={<FuelPriceHistory />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+      <BrowserRouter>
+        <AuthProvider>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+              <Route index element={<Dashboard />} />
+              <Route path="sites" element={<Sites />} />
+              <Route path="sites/:siteId" element={<SiteDetail />} />
+              <Route path="site-map" element={<SiteMap />} />
+              <Route path="pump-monitoring" element={<PumpMonitoring />} />
+              <Route path="doms-info" element={<DomsInfo />} />
+              <Route path="flow-rates" element={<FlowRates />} />
+              <Route path="device-alerts" element={<DeviceAlerts />} />
+              <Route path="volume-revenue" element={<VolumeRevenue />} />
+              <Route path="active-alarms" element={<ActiveAlarms />} />
+              <Route path="alarm-history" element={<AlarmHistory />} />
+              <Route path="alarm-notifications" element={<AlarmNotifications />} />
+              <Route path="tank-gauges" element={<TankGauges />} />
+              <Route path="config/email-recipients" element={<EmailRecipients />} />
+              <Route path="config/email-config" element={<EmailConfig />} />
+              <Route path="config/email-log" element={<EmailLog />} />
+              <Route path="config/alarm-settings" element={<AlarmSettings />} />
+              <Route path="config/report-schedules" element={<ReportSchedules />} />
+              <Route path="config/import-data" element={<ImportData />} />
+              <Route path="data-integrity" element={<DataIntegrity />} />
+              <Route path="config/whatsapp" element={<WhatsAppContacts />} />
+              <Route path="fuel-prices" element={<FuelPrices />} />
+              <Route path="fuel-price-history" element={<FuelPriceHistory />} />
+            </Route>
+          </Routes>
+        </AuthProvider>
+      </BrowserRouter>
     </LanguageProvider>
   )
 }
