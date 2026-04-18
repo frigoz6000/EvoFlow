@@ -13,7 +13,7 @@ import {
   IconActivity, IconAlertTriangle, IconBarChart, IconDroplets,
   IconAlarmActive, IconAlarmHistory, IconNotifications,
   IconMenu, IconMail, IconSettings, IconCalendar, IconShieldCheck,
-  IconMessageCircle, IconUsers, IconSliders, IconClipboardList
+  IconMessageCircle, IconUser, IconUsers, IconSliders, IconClipboardList
 } from './Icons'
 
 const NAV_DEF = [
@@ -89,6 +89,7 @@ export default function Layout() {
   const [allSites, setAllSites] = useState([])
   const [searchFocused, setSearchFocused] = useState(false)
   const [openSection, setOpenSection] = useState(null)
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
   const searchRef = useRef(null)
   const titleKey = PAGE_TITLE_KEYS[location.pathname]
   const title = titleKey ? t(titleKey) : 'EvoFlow'
@@ -304,16 +305,43 @@ export default function Layout() {
             >
               {dark ? <IconSun size={15} /> : <IconMoon size={15} />}
             </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div className="topbar-avatar" title={username}>{username ? username[0].toUpperCase() : 'U'}</div>
+            <div style={{ position: 'relative' }}>
               <button
                 className="topbar-icon-btn"
-                onClick={() => { logout(); navigate('/login') }}
-                title="Sign out"
-                style={{ fontSize: 12, padding: '4px 10px', whiteSpace: 'nowrap' }}
+                onClick={() => setUserMenuOpen(o => !o)}
+                onBlur={() => setTimeout(() => setUserMenuOpen(false), 150)}
+                title={username}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px' }}
               >
-                Sign out
+                <IconUser size={18} />
               </button>
+              {userMenuOpen && (
+                <div style={{
+                  position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 9999,
+                  background: 'var(--card-bg)', border: '1px solid var(--card-border)',
+                  borderRadius: 'var(--radius, 7px)', boxShadow: 'var(--card-shadow)',
+                  minWidth: 160, overflow: 'hidden',
+                }}>
+                  <div style={{
+                    padding: '10px 14px', borderBottom: '1px solid var(--table-border)',
+                    fontSize: 13, fontWeight: 600, color: 'var(--text-primary)'
+                  }}>
+                    {username}
+                  </div>
+                  <button
+                    onMouseDown={() => { logout(); navigate('/login') }}
+                    style={{
+                      display: 'block', width: '100%', textAlign: 'left',
+                      padding: '10px 14px', background: 'none', border: 'none',
+                      fontSize: 13, color: 'var(--text-secondary)', cursor: 'pointer',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg, rgba(0,0,0,0.04))'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                  >
+                    Sign out
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </header>
