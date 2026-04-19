@@ -68,7 +68,7 @@ def b(val):
     return 1 if val and val.lower() == "yes" else 0
 
 
-def import_xml(cursor, filepath: str):
+def import_xml(cursor, filepath: str, known_grade_names: dict):
     filename = os.path.basename(filepath)
     try:
         tree = ET.parse(filepath)
@@ -108,6 +108,62 @@ def import_xml(cursor, filepath: str):
         ELSE
         UPDATE Sites SET SiteName = ? WHERE SiteId = ?
     """, site_id, site_id, site_name, site_name, site_id)
+
+    # --- Fuel Grades (FuelTypes) ---
+    # Extract grade names from <grades> element and upsert into FuelTypes
+    for grades_el in root.iter("grades"):
+        for grade_el in grades_el.findall("grade"):
+            grade_id = grade_el.get("id", "").strip()
+            grade_name = grade_el.get("name", "").strip()
+            if grade_id and grade_name:
+                # Track known grade names (shared across all files)
+                known_grade_names[grade_id] = grade_name
+                cursor.execute("""
+                    IF NOT EXISTS (SELECT 1 FROM FuelTypes WHERE FuelTypeId = ?)
+                    INSERT INTO FuelTypes (FuelTypeId, Name)
+                    VALUES (?, ?)
+                    ELSE
+                    UPDATE FuelTypes SET Name = ? WHERE FuelTypeId = ?
+                """, grade_id, grade_id, grade_name, grade_name, grade_id)
+
+    # --- Fuel Grade Prices (FuelGradePrices) ---
+    # Extract current prices from <prices>/<priceset type="current">
+    prices_el = root.find(".//prices")
+    if prices_el is not None:
+        for priceset_el in prices_el.findall("priceset"):
+            if priceset_el.get("type", "") != "current":
+                continue
+            load_date_str = priceset_el.get("loaddate", "00000000")
+            load_time_str = priceset_el.get("loadtime", "000000")
+            dt_fuel_change = parse_datetime(load_date_str, load_time_str)
+
+            for price_group_el in priceset_el.findall("price_group"):
+                for grade_el in price_group_el.findall("grade"):
+                    grade_id = grade_el.get("id", "").strip()
+                    price_val = f(grade_el.get("value"))
+                    if not grade_id or price_val is None or price_val >= 9.99:
+                        continue
+                    grade_name = known_grade_names.get(grade_id, grade_id)
+                    short_code = grade_name[:10].upper().replace(" ", "")[:10]
+
+                    cursor.execute("""
+                        IF NOT EXISTS (SELECT 1 FROM FuelGradePrices WHERE SiteId = ? AND GradeId = ?)
+                        INSERT INTO FuelGradePrices
+                            (SiteId, GradeId, GradeDescription, GradeShortCode, GradeUnitPrice,
+                             DtFuelChange, DtSentToGov, DtLastReceived)
+                        VALUES (?, ?, ?, ?, ?, ?, NULL, ?)
+                        ELSE
+                        UPDATE FuelGradePrices
+                        SET GradeDescription = ?, GradeShortCode = ?, GradeUnitPrice = ?,
+                            DtFuelChange = ?, DtLastReceived = ?
+                        WHERE SiteId = ? AND GradeId = ?
+                    """,
+                        site_id, grade_id,
+                        site_id, grade_id, grade_name, short_code, price_val,
+                        dt_fuel_change, snapshot_utc,
+                        grade_name, short_code, price_val, dt_fuel_change, snapshot_utc,
+                        site_id, grade_id
+                    )
 
     forecourt = root.find(".//devices/forecourt")
     if forecourt is None:
@@ -355,7 +411,10 @@ def main():
     import sys
     skip_delete = "--no-delete" in sys.argv
 
-    xml_files = sorted(glob.glob(os.path.join(XML_DIR, "*.xml")))
+    xml_files = sorted(set(
+        glob.glob(os.path.join(XML_DIR, "**", "*.xml"), recursive=True)
+        + glob.glob(os.path.join(XML_DIR, "*.xml"))
+    ))
     print(f"Found {len(xml_files)} XML files.")
 
     conn = pyodbc.connect(CONN_STR)
@@ -394,11 +453,12 @@ def main():
     # Step 2: Import each XML
     success = 0
     errors = 0
+    known_grade_names: dict = {}  # grade_id -> grade_name, shared across files
     for idx, filepath in enumerate(xml_files, 1):
         filename = os.path.basename(filepath)
         print(f"[{idx}/{len(xml_files)}] {filename}", end=" ... ")
         try:
-            import_xml(cursor, filepath)
+            import_xml(cursor, filepath, known_grade_names)
             conn.commit()
             print("OK")
             success += 1
