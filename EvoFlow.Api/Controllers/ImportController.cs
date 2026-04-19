@@ -341,6 +341,145 @@ public class ImportController(IDapperConnectionFactory connectionFactory, ILogge
         });
     }
 
+    private const string RandomizeDataSql = @"
+        -- ── Step 1: build site mapping (keep 200, renumber 1001…) ──────────────
+        CREATE TABLE #SiteMap (OldId VARCHAR(20) NOT NULL, NewId VARCHAR(20) NOT NULL, Keep BIT NOT NULL);
+
+        WITH Ranked AS (
+            SELECT SiteId, ROW_NUMBER() OVER (ORDER BY SiteId) AS rn
+            FROM Sites
+        )
+        INSERT INTO #SiteMap (OldId, NewId, Keep)
+        SELECT SiteId,
+               CAST(1000 + rn AS VARCHAR(20)),
+               CASE WHEN rn <= 200 THEN 1 ELSE 0 END
+        FROM Ranked;
+
+        -- ── Step 2: delete child data for excess sites ───────────────────────────
+        DELETE pfi FROM PumpFlowInfo pfi
+            JOIN PumpMonitoringGrade pmg ON pmg.PumpMonitoringGradeId = pfi.PumpMonitoringGradeId
+            JOIN PumpMonitoring pm        ON pm.PumpMonitoringId       = pmg.PumpMonitoringId
+            JOIN PumpDevices pd           ON pd.PumpDeviceId           = pm.PumpDeviceId
+            JOIN #SiteMap sm              ON sm.OldId = pd.SiteId AND sm.Keep = 0;
+
+        DELETE ptc FROM PumpTankConsumption ptc
+            JOIN PumpGradeTotals pgt ON pgt.PumpGradeTotalsId = ptc.PumpGradeTotalsId
+            JOIN PumpTotals pt       ON pt.PumpTotalsId        = pgt.PumpTotalsId
+            JOIN PumpDevices pd      ON pd.PumpDeviceId        = pt.PumpDeviceId
+            JOIN #SiteMap sm         ON sm.OldId = pd.SiteId AND sm.Keep = 0;
+
+        DELETE pgt FROM PumpGradeTotals pgt
+            JOIN PumpTotals pt  ON pt.PumpTotalsId   = pgt.PumpTotalsId
+            JOIN PumpDevices pd ON pd.PumpDeviceId   = pt.PumpDeviceId
+            JOIN #SiteMap sm    ON sm.OldId = pd.SiteId AND sm.Keep = 0;
+
+        DELETE pt FROM PumpTotals pt
+            JOIN PumpDevices pd ON pd.PumpDeviceId = pt.PumpDeviceId
+            JOIN #SiteMap sm    ON sm.OldId = pd.SiteId AND sm.Keep = 0;
+
+        DELETE pmg FROM PumpMonitoringGrade pmg
+            JOIN PumpMonitoring pm ON pm.PumpMonitoringId = pmg.PumpMonitoringId
+            JOIN PumpDevices pd    ON pd.PumpDeviceId     = pm.PumpDeviceId
+            JOIN #SiteMap sm       ON sm.OldId = pd.SiteId AND sm.Keep = 0;
+
+        DELETE pm FROM PumpMonitoring pm
+            JOIN PumpDevices pd ON pd.PumpDeviceId = pm.PumpDeviceId
+            JOIN #SiteMap sm    ON sm.OldId = pd.SiteId AND sm.Keep = 0;
+
+        DELETE ps FROM PumpStatus ps
+            JOIN PumpDevices pd ON pd.PumpDeviceId = ps.PumpDeviceId
+            JOIN #SiteMap sm    ON sm.OldId = pd.SiteId AND sm.Keep = 0;
+
+        DELETE pd FROM PumpDevices pd
+            JOIN #SiteMap sm ON sm.OldId = pd.SiteId AND sm.Keep = 0;
+
+        DELETE fr  FROM FuelRecords fr          JOIN #SiteMap sm ON sm.OldId = fr.SiteId  AND sm.Keep = 0;
+        DELETE fgp FROM FuelGradePrices fgp     JOIN #SiteMap sm ON sm.OldId = fgp.SiteId AND sm.Keep = 0;
+        DELETE fgh FROM FuelGradePriceHistory fgh JOIN #SiteMap sm ON sm.OldId = fgh.SiteId AND sm.Keep = 0;
+        DELETE tg  FROM TankGauges tg           JOIN #SiteMap sm ON sm.OldId = tg.SiteId  AND sm.Keep = 0;
+        DELETE s   FROM Sites s                 JOIN #SiteMap sm ON sm.OldId = s.SiteId   AND sm.Keep = 0;
+
+        -- ── Step 3: renumber SiteIds 1001…1200 ──────────────────────────────────
+        ALTER TABLE FuelGradePriceHistory NOCHECK CONSTRAINT ALL;
+        ALTER TABLE FuelGradePrices       NOCHECK CONSTRAINT ALL;
+        ALTER TABLE FuelRecords           NOCHECK CONSTRAINT ALL;
+        ALTER TABLE PumpDevices           NOCHECK CONSTRAINT ALL;
+        ALTER TABLE TankGauges            NOCHECK CONSTRAINT ALL;
+
+        UPDATE fr  SET fr.SiteId  = sm.NewId FROM FuelRecords fr          JOIN #SiteMap sm ON sm.OldId = fr.SiteId  WHERE sm.Keep = 1;
+        UPDATE fgp SET fgp.SiteId = sm.NewId FROM FuelGradePrices fgp     JOIN #SiteMap sm ON sm.OldId = fgp.SiteId WHERE sm.Keep = 1;
+        UPDATE fgh SET fgh.SiteId = sm.NewId FROM FuelGradePriceHistory fgh JOIN #SiteMap sm ON sm.OldId = fgh.SiteId WHERE sm.Keep = 1;
+        UPDATE pd  SET pd.SiteId  = sm.NewId FROM PumpDevices pd           JOIN #SiteMap sm ON sm.OldId = pd.SiteId  WHERE sm.Keep = 1;
+        UPDATE tg  SET tg.SiteId  = sm.NewId FROM TankGauges tg            JOIN #SiteMap sm ON sm.OldId = tg.SiteId  WHERE sm.Keep = 1;
+        UPDATE s   SET s.SiteId   = sm.NewId FROM Sites s                  JOIN #SiteMap sm ON sm.OldId = s.SiteId   WHERE sm.Keep = 1;
+
+        ALTER TABLE FuelGradePriceHistory WITH CHECK CHECK CONSTRAINT ALL;
+        ALTER TABLE FuelGradePrices       WITH CHECK CHECK CONSTRAINT ALL;
+        ALTER TABLE FuelRecords           WITH CHECK CHECK CONSTRAINT ALL;
+        ALTER TABLE PumpDevices           WITH CHECK CHECK CONSTRAINT ALL;
+        ALTER TABLE TankGauges            WITH CHECK CHECK CONSTRAINT ALL;
+
+        -- ── Step 4: randomise financial figures ±30 % ───────────────────────────
+        -- FuelRecords: AmountGBP, VolumeL
+        UPDATE FuelRecords
+        SET AmountGBP = ROUND(AmountGBP * (0.7 + (ABS(CHECKSUM(NEWID())) % 601) / 1000.0), 2),
+            VolumeL   = ROUND(VolumeL   * (0.7 + (ABS(CHECKSUM(NEWID())) % 601) / 1000.0), 3);
+
+        -- FuelGradePrices: GradeUnitPrice
+        UPDATE FuelGradePrices
+        SET GradeUnitPrice = ROUND(GradeUnitPrice * (0.7 + (ABS(CHECKSUM(NEWID())) % 601) / 1000.0), 4);
+
+        -- PumpTotals: MoneyTotal, MoneyDiff, VolumeTotal, VolumeDiff
+        UPDATE PumpTotals
+        SET MoneyTotal  = ROUND(MoneyTotal  * (0.7 + (ABS(CHECKSUM(NEWID())) % 601) / 1000.0), 2),
+            MoneyDiff   = ROUND(MoneyDiff   * (0.7 + (ABS(CHECKSUM(NEWID())) % 601) / 1000.0), 2),
+            VolumeTotal = ROUND(VolumeTotal * (0.7 + (ABS(CHECKSUM(NEWID())) % 601) / 1000.0), 3),
+            VolumeDiff  = ROUND(VolumeDiff  * (0.7 + (ABS(CHECKSUM(NEWID())) % 601) / 1000.0), 3);
+
+        -- PumpGradeTotals: VolumeTotal, VolumeDiff
+        UPDATE PumpGradeTotals
+        SET VolumeTotal = ROUND(VolumeTotal * (0.7 + (ABS(CHECKSUM(NEWID())) % 601) / 1000.0), 3),
+            VolumeDiff  = ROUND(VolumeDiff  * (0.7 + (ABS(CHECKSUM(NEWID())) % 601) / 1000.0), 3);
+
+        -- TankGauges: volume/level readings
+        UPDATE TankGauges
+        SET Gauged    = ROUND(Gauged    * (0.7 + (ABS(CHECKSUM(NEWID())) % 601) / 1000.0), 1),
+            GaugedDif = ROUND(GaugedDif * (0.7 + (ABS(CHECKSUM(NEWID())) % 601) / 1000.0), 1),
+            Ullage     = ROUND(Ullage    * (0.7 + (ABS(CHECKSUM(NEWID())) % 601) / 1000.0), 1),
+            TcCorrVol  = ROUND(TcCorrVol * (0.7 + (ABS(CHECKSUM(NEWID())) % 601) / 1000.0), 1);
+
+        DROP TABLE #SiteMap;
+
+        SELECT COUNT(*) FROM Sites;";
+
+    /// <summary>
+    /// Reduces sites to 200, renumbers SiteIds starting at 1001, and randomises
+    /// all financial/volume figures by a random ±30 %.
+    /// </summary>
+    [HttpPost("randomize-data")]
+    public async Task<IActionResult> RandomizeData()
+    {
+        var started = DateTime.UtcNow;
+        logger.LogInformation("Randomize data: reducing to 200 sites, renumbering IDs, randomising financials");
+
+        using var conn = connectionFactory.CreateConnection();
+        var sitesAfter = await conn.ExecuteScalarAsync<int>(RandomizeDataSql, commandTimeout: 300);
+
+        // Rebuild the DomsInfoSnapshot to reflect the new state
+        var snapshotRows = await conn.ExecuteScalarAsync<int>(PopulateSql, commandTimeout: 300);
+
+        var elapsed = (DateTime.UtcNow - started).TotalSeconds;
+        logger.LogInformation("Randomize data complete. Sites now: {Sites}, snapshot rows: {Snap}", sitesAfter, snapshotRows);
+
+        return Ok(new
+        {
+            message = "Data randomized successfully",
+            sitesAfter,
+            snapshotRowsRefreshed = snapshotRows,
+            elapsedSeconds = Math.Round(elapsed, 1)
+        });
+    }
+
     private const string ImportLogInsertSql = @"
         INSERT INTO ImportLog (FileName, Status, Message, ImportedAtUtc)
         VALUES (@FileName, @Status, @Message, @ImportedAtUtc)";

@@ -118,6 +118,35 @@ function AnonymizeResultPanel({ result }) {
   )
 }
 
+function RandomizeResultPanel({ result }) {
+  return (
+    <div style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid #ca8a04', borderRadius: 8, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#ca8a04', fontWeight: 700, fontSize: 15 }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        Randomization complete
+      </div>
+      <div style={{ fontSize: 13, color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <span>Sites remaining: <strong>{result.sitesAfter?.toLocaleString()}</strong></span>
+        <span>Snapshot rows refreshed: <strong>{result.snapshotRowsRefreshed?.toLocaleString()}</strong></span>
+        <span>Time taken: <strong>{result.elapsedSeconds}s</strong></span>
+      </div>
+    </div>
+  )
+}
+
+const DiceIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="2" width="20" height="20" rx="3" ry="3"/>
+    <circle cx="8" cy="8" r="1.5" fill="currentColor" stroke="none"/>
+    <circle cx="16" cy="8" r="1.5" fill="currentColor" stroke="none"/>
+    <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+    <circle cx="8" cy="16" r="1.5" fill="currentColor" stroke="none"/>
+    <circle cx="16" cy="16" r="1.5" fill="currentColor" stroke="none"/>
+  </svg>
+)
+
 export default function ImportData() {
   const { t } = useLanguage()
   const [fullStatus, setFullStatus] = useState('idle')   // idle | running | done | error
@@ -136,7 +165,11 @@ export default function ImportData() {
   const [moveDatesResult, setMoveDatesResult] = useState(null)
   const [moveDatesError, setMoveDatesError] = useState(null)
 
-  const anyRunning = fullStatus === 'running' || appendStatus === 'running' || anonStatus === 'running' || moveDatesStatus === 'running'
+  const [randomizeStatus, setRandomizeStatus] = useState('idle')
+  const [randomizeResult, setRandomizeResult] = useState(null)
+  const [randomizeError, setRandomizeError] = useState(null)
+
+  const anyRunning = fullStatus === 'running' || appendStatus === 'running' || anonStatus === 'running' || moveDatesStatus === 'running' || randomizeStatus === 'running'
 
   function handleImport(skipDelete) {
     if (skipDelete) {
@@ -183,6 +216,18 @@ export default function ImportData() {
       .catch(e => {
         const msg = e.response?.data?.error || e.message || 'Anonymization failed'
         setAnonError(msg); setAnonStatus('error')
+      })
+  }
+
+  function handleRandomize() {
+    setRandomizeStatus('running')
+    setRandomizeResult(null)
+    setRandomizeError(null)
+    api.post('/import/randomize-data', null, { timeout: 300000 })
+      .then(r => { setRandomizeResult(r.data); setRandomizeStatus('done') })
+      .catch(e => {
+        const msg = e.response?.data?.error || e.message || 'Randomization failed'
+        setRandomizeError(msg); setRandomizeStatus('error')
       })
   }
 
@@ -319,6 +364,38 @@ export default function ImportData() {
           </button>
           {anonStatus === 'done' && anonResult && <AnonymizeResultPanel result={anonResult} />}
           {anonStatus === 'error' && <ErrorPanel error={anonError} title="Anonymization failed" />}
+        </div>
+      </div>
+
+      {/* Randomize data */}
+      <div className="card mt-4" style={{ maxWidth: 600 }}>
+        <div className="card-header">
+          <span className="card-title">Randomize Data</span>
+        </div>
+        <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6 }}>
+            Reduces the dataset to <strong>200 sites</strong>, renumbers site IDs starting at <strong>1001</strong>,
+            and applies a random <strong>±30%</strong> adjustment to all financial and volume figures.
+            The Doms Info snapshot is refreshed automatically when done.
+          </p>
+          <button
+            onClick={handleRandomize}
+            disabled={anyRunning}
+            style={{
+              background: randomizeStatus === 'running' ? 'var(--surface)' : '#ca8a04',
+              border: '1px solid ' + (randomizeStatus === 'running' ? 'var(--border)' : '#ca8a04'),
+              borderRadius: 8, padding: '12px 28px',
+              cursor: anyRunning ? 'not-allowed' : 'pointer',
+              color: randomizeStatus === 'running' ? 'var(--text-muted)' : '#fff',
+              fontSize: 15, fontWeight: 700,
+              display: 'flex', alignItems: 'center', gap: 10, alignSelf: 'flex-start',
+              opacity: anyRunning ? 0.7 : 1, transition: 'background 0.15s',
+            }}
+          >
+            {randomizeStatus === 'running' ? <><SpinnerIcon /> Randomizing… this may take a moment</> : <><DiceIcon /> Randomize Data</>}
+          </button>
+          {randomizeStatus === 'done' && randomizeResult && <RandomizeResultPanel result={randomizeResult} />}
+          {randomizeStatus === 'error' && <ErrorPanel error={randomizeError} title="Randomization failed" />}
         </div>
       </div>
     </ErrorBoundary>
