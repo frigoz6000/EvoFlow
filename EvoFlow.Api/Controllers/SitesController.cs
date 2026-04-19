@@ -53,13 +53,27 @@ public class SitesController(EvoFlowDbContext db, IDapperConnectionFactory conne
 
         var fuelBreakdown = (await conn.QueryAsync<object>(
             @"SELECT fr.FuelTypeId AS fuelType,
+                     ISNULL(ft.Name, fr.FuelTypeId) AS fuelDescription,
                      SUM(fr.VolumeL) AS totalVolume,
                      SUM(fr.AmountGBP) AS totalRevenue,
                      COUNT(*) AS transactions
               FROM FuelRecords fr
+              LEFT JOIN FuelTypes ft ON fr.FuelTypeId = ft.FuelTypeId
               WHERE fr.SiteId = @SiteId
-              GROUP BY fr.FuelTypeId
+              GROUP BY fr.FuelTypeId, ft.Name
               ORDER BY totalRevenue DESC",
+            new { SiteId = id })).ToList();
+
+        var fuelGrades = (await conn.QueryAsync<object>(
+            @"SELECT GradeId AS gradeId,
+                     GradeDescription AS gradeDescription,
+                     GradeShortCode AS gradeShortCode,
+                     GradeUnitPrice AS gradeUnitPrice,
+                     CONVERT(varchar(23), DtFuelChange, 126) AS dtFuelChange,
+                     CONVERT(varchar(23), DtLastReceived, 126) AS dtLastReceived
+              FROM FuelGradePrices
+              WHERE SiteId = @SiteId
+              ORDER BY GradeDescription",
             new { SiteId = id })).ToList();
 
         var recentTransactions = (await conn.QueryAsync<object>(
@@ -112,6 +126,7 @@ public class SitesController(EvoFlowDbContext db, IDapperConnectionFactory conne
             totalTransactions,
             dailyStats,
             fuelBreakdown,
+            fuelGrades,
             recentTransactions,
             tankReadings
         });

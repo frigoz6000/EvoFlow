@@ -134,11 +134,16 @@ export default function SiteDetail() {
   const fuelChart = useMemo(() => {
     if (!data?.fuelBreakdown) return []
     return data.fuelBreakdown.map(f => ({
-      name: f.fuelType || 'Unknown',
+      name: f.fuelDescription || f.fuelType || 'Unknown',
       revenue: Number(f.totalRevenue || 0),
       volume: Number(f.totalVolume || 0),
       transactions: Number(f.transactions || 0),
     }))
+  }, [data])
+
+  const gradeRows = useMemo(() => {
+    if (!data?.fuelGrades) return []
+    return data.fuelGrades
   }, [data])
 
   if (loading) {
@@ -305,9 +310,7 @@ export default function SiteDetail() {
               <span className="card-title">{t('card_fuel_type_breakdown')}</span>
             </div>
             <div style={{ padding: '8px 0 0', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              {fuelChart.length === 0 ? (
-                <div className="empty-state" style={{ padding: 32 }}>{t('no_fuel_data')}</div>
-              ) : (
+              {fuelChart.length > 0 ? (
                 <>
                   <ResponsiveContainer width="100%" height={160}>
                     <PieChart>
@@ -334,6 +337,33 @@ export default function SiteDetail() {
                     ))}
                   </div>
                 </>
+              ) : gradeRows.length > 0 ? (
+                <div style={{ padding: '4px 16px 14px', width: '100%' }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>Current grade prices</div>
+                  {gradeRows.map((g, i) => (
+                    <div key={g.gradeId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, fontSize: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: PIE_COLORS[i % PIE_COLORS.length], flexShrink: 0 }} />
+                        <div>
+                          <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{g.gradeDescription}</span>
+                          <span style={{ marginLeft: 6, fontSize: 10, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{g.gradeShortCode}</span>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
+                        <span style={{ fontWeight: 700, color: PIE_COLORS[i % PIE_COLORS.length] }}>
+                          £{Number(g.gradeUnitPrice).toFixed(4)}/L
+                        </span>
+                        {g.dtFuelChange && (
+                          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+                            changed {g.dtFuelChange.slice(0, 10)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-state" style={{ padding: 32 }}>{t('no_fuel_data')}</div>
               )}
             </div>
           </div>
