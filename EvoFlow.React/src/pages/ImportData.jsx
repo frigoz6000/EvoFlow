@@ -169,7 +169,11 @@ export default function ImportData() {
   const [randomizeResult, setRandomizeResult] = useState(null)
   const [randomizeError, setRandomizeError] = useState(null)
 
-  const anyRunning = fullStatus === 'running' || appendStatus === 'running' || anonStatus === 'running' || moveDatesStatus === 'running' || randomizeStatus === 'running'
+  const [seedPriceStatus, setSeedPriceStatus] = useState('idle')
+  const [seedPriceResult, setSeedPriceResult] = useState(null)
+  const [seedPriceError, setSeedPriceError] = useState(null)
+
+  const anyRunning = fullStatus === 'running' || appendStatus === 'running' || anonStatus === 'running' || moveDatesStatus === 'running' || randomizeStatus === 'running' || seedPriceStatus === 'running'
 
   function handleImport(skipDelete) {
     if (skipDelete) {
@@ -228,6 +232,18 @@ export default function ImportData() {
       .catch(e => {
         const msg = e.response?.data?.error || e.message || 'Randomization failed'
         setRandomizeError(msg); setRandomizeStatus('error')
+      })
+  }
+
+  function handleSeedPriceHistory() {
+    setSeedPriceStatus('running')
+    setSeedPriceResult(null)
+    setSeedPriceError(null)
+    api.post('/import/seed-price-history', null, { timeout: 120000 })
+      .then(r => { setSeedPriceResult(r.data); setSeedPriceStatus('done') })
+      .catch(e => {
+        const msg = e.response?.data?.error || e.message || 'Seeding failed'
+        setSeedPriceError(msg); setSeedPriceStatus('error')
       })
   }
 
@@ -396,6 +412,57 @@ export default function ImportData() {
           </button>
           {randomizeStatus === 'done' && randomizeResult && <RandomizeResultPanel result={randomizeResult} />}
           {randomizeStatus === 'error' && <ErrorPanel error={randomizeError} title="Randomization failed" />}
+        </div>
+      </div>
+
+      {/* Seed fuel price history */}
+      <div className="card mt-4" style={{ maxWidth: 600 }}>
+        <div className="card-header">
+          <span className="card-title">Seed Fuel Price History</span>
+        </div>
+        <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6 }}>
+            Generates <strong>14 days</strong> of fake fuel price history in the <code style={{ background: 'var(--surface)', padding: '2px 6px', borderRadius: 4, fontSize: 12 }}>FuelGradePriceHistory</code> table
+            based on the current <code style={{ background: 'var(--surface)', padding: '2px 6px', borderRadius: 4, fontSize: 12 }}>FuelGradePrices</code>.
+            Prices change every <strong>1–3 days</strong> per grade with a random ±8% variation.
+            Existing history for the last 14 days is replaced.
+          </p>
+          <button
+            onClick={handleSeedPriceHistory}
+            disabled={anyRunning}
+            style={{
+              background: seedPriceStatus === 'running' ? 'var(--surface)' : '#0ea5e9',
+              border: '1px solid ' + (seedPriceStatus === 'running' ? 'var(--border)' : '#0ea5e9'),
+              borderRadius: 8, padding: '12px 28px',
+              cursor: anyRunning ? 'not-allowed' : 'pointer',
+              color: seedPriceStatus === 'running' ? 'var(--text-muted)' : '#fff',
+              fontSize: 15, fontWeight: 700,
+              display: 'flex', alignItems: 'center', gap: 10, alignSelf: 'flex-start',
+              opacity: anyRunning ? 0.7 : 1, transition: 'background 0.15s',
+            }}
+          >
+            {seedPriceStatus === 'running' ? <><SpinnerIcon /> Seeding…</> : <>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+              </svg>
+              Seed Price History
+            </>}
+          </button>
+          {seedPriceStatus === 'done' && seedPriceResult && (
+            <div style={{ background: 'rgba(14,165,233,0.08)', border: '1px solid #0ea5e9', borderRadius: 8, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#0ea5e9', fontWeight: 700, fontSize: 15 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                Price history seeded
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <span>Rows inserted: <strong>{seedPriceResult.rowsInserted?.toLocaleString()}</strong></span>
+                <span>Time taken: <strong>{seedPriceResult.elapsedSeconds}s</strong></span>
+              </div>
+            </div>
+          )}
+          {seedPriceStatus === 'error' && <ErrorPanel error={seedPriceError} title="Seeding failed" />}
         </div>
       </div>
     </ErrorBoundary>

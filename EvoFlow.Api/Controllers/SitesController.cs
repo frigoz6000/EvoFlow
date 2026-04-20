@@ -211,6 +211,27 @@ public class SitesController(EvoFlowDbContext db, IDapperConnectionFactory conne
         return Ok(geocodingService.GetProgress());
     }
 
+    [HttpGet("{id}/fuel-price-history")]
+    public async Task<IActionResult> GetFuelPriceHistory(string id)
+    {
+        using var conn = connectionFactory.CreateConnection();
+        var from = DateTime.Today.AddDays(-13);
+        var to = DateTime.Today.AddDays(1);
+        var sql = @"
+            SELECT CONVERT(varchar(10), h.HistoryDate, 120) AS historyDate,
+                   h.GradeId AS gradeId,
+                   h.GradeDescription AS gradeDescription,
+                   h.GradeShortCode AS gradeShortCode,
+                   h.GradeUnitPrice AS gradeUnitPrice
+            FROM FuelGradePriceHistory h
+            WHERE h.SiteId = @SiteId
+              AND h.HistoryDate >= @From
+              AND h.HistoryDate < @To
+            ORDER BY h.HistoryDate, h.GradeDescription";
+        var rows = await conn.QueryAsync(sql, new { SiteId = id, From = from, To = to });
+        return Ok(rows);
+    }
+
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] Site site)
     {

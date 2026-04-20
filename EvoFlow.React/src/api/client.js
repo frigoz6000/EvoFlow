@@ -28,6 +28,7 @@ export const sitesApi = {
   getById: (id) => api.get(`/sites/${id}`).then(r => r.data),
   getDetail: (id) => api.get(`/sites/${id}/detail`).then(r => r.data),
   getMapData: () => api.get('/sites/map-data').then(r => r.data),
+  getFuelPriceHistory: (id) => api.get(`/sites/${id}/fuel-price-history`).then(r => r.data),
 }
 
 export const fuelRecordsApi = {

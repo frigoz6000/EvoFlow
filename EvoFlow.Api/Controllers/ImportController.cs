@@ -480,6 +480,65 @@ public class ImportController(IDapperConnectionFactory connectionFactory, ILogge
         });
     }
 
+    private const string SeedPriceHistorySql = @"
+        -- Remove existing seeded history for the last 14 days so re-runs are idempotent
+        DELETE FROM FuelGradePriceHistory
+        WHERE HistoryDate >= DATEADD(day, -13, CAST(GETDATE() AS DATE));
+
+        -- Insert 14 days of price history derived from current FuelGradePrices.
+        -- Each site+grade gets a change interval of 1, 2 or 3 days (hash-determined),
+        -- so the price stays flat within a period then shifts by a random ±8%.
+        INSERT INTO FuelGradePriceHistory
+            (SiteId, HistoryDate, GradeId, GradeDescription, GradeShortCode, GradeUnitPrice, DtFuelChange)
+        SELECT
+            gp.SiteId,
+            CAST(DATEADD(day, n - 13, CAST(GETDATE() AS DATE)) AS DATE) AS HistoryDate,
+            gp.GradeId,
+            gp.GradeDescription,
+            gp.GradeShortCode,
+            ROUND(
+                gp.GradeUnitPrice * (
+                    0.92 +
+                    CAST(ABS(CHECKSUM(
+                        gp.SiteId,
+                        gp.GradeId,
+                        n / (1 + ABS(CHECKSUM(gp.SiteId, gp.GradeId)) % 3)
+                    )) % 160 AS DECIMAL(10,4)) / 1000.0
+                ),
+                4
+            ) AS GradeUnitPrice,
+            CAST(DATEADD(day, n - 13, CAST(GETDATE() AS DATE)) AS DATE) AS DtFuelChange
+        FROM FuelGradePrices gp
+        CROSS JOIN (VALUES (0),(1),(2),(3),(4),(5),(6),(7),(8),(9),(10),(11),(12),(13)) AS t(n);
+
+        SELECT COUNT(*) FROM FuelGradePriceHistory
+        WHERE HistoryDate >= DATEADD(day, -13, CAST(GETDATE() AS DATE));";
+
+    /// <summary>
+    /// Seeds 14 days of fake fuel price history into FuelGradePriceHistory.
+    /// Prices vary every 1–3 days per site+grade combination.
+    /// Any existing rows in that date range are replaced.
+    /// </summary>
+    [HttpPost("seed-price-history")]
+    public async Task<IActionResult> SeedPriceHistory()
+    {
+        var started = DateTime.UtcNow;
+        logger.LogInformation("Seeding fuel price history for the last 14 days");
+
+        using var conn = connectionFactory.CreateConnection();
+        var rowsInserted = await conn.ExecuteScalarAsync<int>(SeedPriceHistorySql, commandTimeout: 120);
+
+        var elapsed = (DateTime.UtcNow - started).TotalSeconds;
+        logger.LogInformation("Price history seeding complete. Rows: {Rows}", rowsInserted);
+
+        return Ok(new
+        {
+            message = "Price history seeded successfully",
+            rowsInserted,
+            elapsedSeconds = Math.Round(elapsed, 1)
+        });
+    }
+
     private const string ImportLogInsertSql = @"
         INSERT INTO ImportLog (FileName, Status, Message, ImportedAtUtc)
         VALUES (@FileName, @Status, @Message, @ImportedAtUtc)";

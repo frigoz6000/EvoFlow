@@ -3,6 +3,7 @@ import { useLanguage } from '../i18n/LanguageContext'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+  LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts'
 import { sitesApi } from '../api/client'
@@ -105,6 +106,8 @@ const CustomTooltip = ({ active, payload, label }) => {
   )
 }
 
+const GRADE_COLORS = [PINK, PURPLE, BLUE, GREEN, ORANGE, RED, '#8b5cf6', '#06b6d4']
+
 export default function SiteDetail() {
   const { siteId } = useParams()
   const navigate = useNavigate()
@@ -112,12 +115,19 @@ export default function SiteDetail() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [priceHistory, setPriceHistory] = useState([])
 
   useEffect(() => {
     setLoading(true)
     setError(null)
-    sitesApi.getDetail(siteId)
-      .then(d => setData(d))
+    Promise.all([
+      sitesApi.getDetail(siteId),
+      sitesApi.getFuelPriceHistory(siteId).catch(() => [])
+    ])
+      .then(([d, history]) => {
+        setData(d)
+        setPriceHistory(history || [])
+      })
       .catch(e => setError(e.response?.status === 404 ? 'Site not found.' : 'Failed to load site data.'))
       .finally(() => setLoading(false))
   }, [siteId])
@@ -145,6 +155,23 @@ export default function SiteDetail() {
     if (!data?.fuelGrades) return []
     return data.fuelGrades
   }, [data])
+
+  // Transform flat price history rows into recharts-friendly [{date, Grade1: price, Grade2: price, ...}]
+  const { priceHistoryChart, priceHistoryGrades } = useMemo(() => {
+    if (!priceHistory.length) return { priceHistoryChart: [], priceHistoryGrades: [] }
+
+    const grades = [...new Set(priceHistory.map(r => r.gradeDescription))].sort()
+    const byDate = {}
+    priceHistory.forEach(r => {
+      const dateKey = (r.historyDate || '').slice(5) // MM-DD
+      if (!byDate[dateKey]) byDate[dateKey] = { date: dateKey }
+      byDate[dateKey][r.gradeDescription] = Number(r.gradeUnitPrice)
+    })
+
+    // Sort by date ascending
+    const chart = Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date))
+    return { priceHistoryChart: chart, priceHistoryGrades: grades }
+  }, [priceHistory])
 
   if (loading) {
     return (
@@ -369,6 +396,72 @@ export default function SiteDetail() {
           </div>
         </ErrorBoundary>
       </div>
+
+      {/* Fuel Price History chart */}
+      <ErrorBoundary fallback={<div className="card" style={{padding:24}}>Chart unavailable</div>}>
+        <div className="card" style={{ marginBottom: 14 }}>
+          <div className="card-header">
+            <span className="card-title">Fuel Price History</span>
+            <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>Last 14 days · all grades · £/L</span>
+          </div>
+          <div style={{ padding: '16px 18px 12px' }}>
+            {priceHistoryChart.length === 0 ? (
+              <div className="empty-state" style={{ padding: 32 }}>No price history data available for this site</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={240}>
+                <LineChart data={priceHistoryChart} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--table-border)" />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={v => `£${Number(v).toFixed(3)}`}
+                    domain={['auto', 'auto']}
+                    width={68}
+                  />
+                  <Tooltip
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null
+                      return (
+                        <div style={{
+                          background: 'var(--card-bg)', border: '1px solid var(--card-border)',
+                          borderRadius: 8, padding: '10px 14px', fontSize: 12,
+                          boxShadow: 'var(--card-shadow)'
+                        }}>
+                          <div style={{ fontWeight: 700, marginBottom: 6, color: 'var(--text-primary)' }}>{label}</div>
+                          {payload.map((p, i) => (
+                            <div key={i} style={{ color: p.color, marginBottom: 2 }}>
+                              {p.name}: <strong>£{Number(p.value).toFixed(4)}/L</strong>
+                            </div>
+                          ))}
+                        </div>
+                      )
+                    }}
+                  />
+                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+                  {priceHistoryGrades.map((grade, i) => (
+                    <Line
+                      key={grade}
+                      type="stepAfter"
+                      dataKey={grade}
+                      stroke={GRADE_COLORS[i % GRADE_COLORS.length]}
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+      </ErrorBoundary>
 
       {/* Bottom row: pumps + tanks */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
