@@ -448,7 +448,7 @@ export default function SiteDetail() {
                   {priceHistoryGrades.map((grade, i) => (
                     <Line
                       key={grade}
-                      type="stepAfter"
+                      type="monotone"
                       dataKey={grade}
                       stroke={GRADE_COLORS[i % GRADE_COLORS.length]}
                       strokeWidth={2}
