@@ -422,10 +422,10 @@ export default function ImportData() {
         </div>
         <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
           <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6 }}>
-            Generates <strong>14 days</strong> of fake fuel price history in the <code style={{ background: 'var(--surface)', padding: '2px 6px', borderRadius: 4, fontSize: 12 }}>FuelGradePriceHistory</code> table
+            Generates <strong>365 days</strong> of fake fuel price history in the <code style={{ background: 'var(--surface)', padding: '2px 6px', borderRadius: 4, fontSize: 12 }}>FuelGradePriceHistory</code> table
             based on the current <code style={{ background: 'var(--surface)', padding: '2px 6px', borderRadius: 4, fontSize: 12 }}>FuelGradePrices</code>.
             Prices change every <strong>1–3 days</strong> per grade with a random ±8% variation.
-            Existing history for the last 14 days is replaced.
+            Existing history for the last 365 days is replaced.
           </p>
           <button
             onClick={handleSeedPriceHistory}
