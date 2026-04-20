@@ -126,7 +126,7 @@ export default function SiteDetail() {
     ])
       .then(([d, history]) => {
         setData(d)
-        setPriceHistory(history || [])
+        setPriceHistory(Array.isArray(history) ? history : [])
       })
       .catch(e => setError(e.response?.status === 404 ? 'Site not found.' : 'Failed to load site data.'))
       .finally(() => setLoading(false))
@@ -158,7 +158,7 @@ export default function SiteDetail() {
 
   // Transform flat price history rows into recharts-friendly [{date, Grade1: price, Grade2: price, ...}]
   const { priceHistoryChart, priceHistoryGrades } = useMemo(() => {
-    if (!priceHistory.length) return { priceHistoryChart: [], priceHistoryGrades: [] }
+    if (!Array.isArray(priceHistory) || priceHistory.length === 0) return { priceHistoryChart: [], priceHistoryGrades: [] }
 
     const grades = [...new Set(priceHistory.map(r => r.gradeDescription))].sort()
     const byDate = {}
