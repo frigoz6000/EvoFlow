@@ -194,7 +194,7 @@ export default function SiteDetail() {
 
   if (!data) return null
 
-  const { site, pumps, totalPumps, onlinePumps, totalRevenue, totalVolume, totalTransactions, recentTransactions, tankReadings } = data
+  const { site, pumps, totalPumps, onlinePumps, totalRevenue, totalVolume, tankReadings } = data
 
   const address = [site.address1, site.address2, site.city, site.county, site.postCode]
     .filter(Boolean).join(', ') || 'No address recorded'
@@ -267,13 +267,6 @@ export default function SiteDetail() {
           sub="Fuel dispensed (litres)"
           accent={PURPLE}
           icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 3h18v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3z"/><line x1="3" y1="8" x2="21" y2="8"/><line x1="12" y1="8" x2="12" y2="18"/></svg>}
-        />
-        <KpiCard
-          label="Transactions"
-          value={Number(totalTransactions).toLocaleString()}
-          sub="Fuel records at this site"
-          accent={BLUE}
-          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>}
         />
         <KpiCard
           label="Pump Devices"
@@ -581,47 +574,6 @@ export default function SiteDetail() {
         </div>
       </div>
 
-      {/* Recent transactions */}
-      <div className="card">
-        <div className="card-header">
-          <span className="card-title">{t('card_recent_transactions')}</span>
-          <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>Latest 20</span>
-        </div>
-        <div className="table-responsive">
-          {!recentTransactions?.length ? (
-            <div className="empty-state">{t('no_transactions')}</div>
-          ) : (
-            <table className="evo-table">
-              <thead>
-                <tr>
-                  <th>Date/Time</th>
-                  <th>Fuel Type</th>
-                  <th>Volume (L)</th>
-                  <th>Amount (£)</th>
-                  <th>Vehicle</th>
-                  <th>Odometer</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentTransactions.map((r, i) => (
-                  <tr key={i}>
-                    <td className="font-mono" style={{ fontSize: 11 }}>{fmtDateTime(r.transactionUtc)}</td>
-                    <td>
-                      <span className="badge badge-blue">{r.fuelTypeId}</span>
-                    </td>
-                    <td style={{ fontWeight: 600 }}>{fmt(r.volumeL, 2)}</td>
-                    <td style={{ fontWeight: 700, color: PINK }}>{fmtGbp(r.amountGBP)}</td>
-                    <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.vehicleReg || '—'}</td>
-                    <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                      {r.odometerKm ? `${r.odometerKm.toLocaleString()} km` : '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </div>
     </ErrorBoundary>
   )
 }
