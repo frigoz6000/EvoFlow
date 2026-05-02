@@ -119,7 +119,40 @@ public class ImportController(IDapperConnectionFactory connectionFactory, ILogge
         FROM Sites s
         INNER JOIN NumberedSites n ON s.SiteId = n.SiteId;
 
-        -- Step 2: assign random UK addresses, pole signs, country and geography locations
+        -- Step 2: sync SiteIds to match new site names (e.g. 'Site 001' -> SiteId '001')
+        CREATE TABLE #AnonSiteMap (OldId VARCHAR(20) NOT NULL, NewId VARCHAR(20) NOT NULL);
+        INSERT INTO #AnonSiteMap (OldId, NewId)
+        SELECT SiteId, LTRIM(RTRIM(REPLACE(SiteName, 'Site ', '')))
+        FROM Sites
+        WHERE SiteId <> LTRIM(RTRIM(REPLACE(SiteName, 'Site ', '')));
+
+        IF EXISTS (SELECT 1 FROM #AnonSiteMap)
+        BEGIN
+            ALTER TABLE FuelGradePriceHistory NOCHECK CONSTRAINT FK_FuelGradePriceHistory_Sites;
+            ALTER TABLE FuelGradePrices       NOCHECK CONSTRAINT FK_FuelGradePrices_Sites;
+            ALTER TABLE FuelRecords           NOCHECK CONSTRAINT FK_FuelRecords_Sites;
+            ALTER TABLE PumpDevices           NOCHECK CONSTRAINT FK_PumpDevices_Site;
+            ALTER TABLE TankGauges            NOCHECK CONSTRAINT FK_TankGauges_Sites;
+
+            UPDATE fr  SET fr.SiteId  = m.NewId FROM FuelRecords fr             JOIN #AnonSiteMap m ON fr.SiteId  = m.OldId;
+            UPDATE fgp SET fgp.SiteId = m.NewId FROM FuelGradePrices fgp        JOIN #AnonSiteMap m ON fgp.SiteId = m.OldId;
+            UPDATE fgh SET fgh.SiteId = m.NewId FROM FuelGradePriceHistory fgh  JOIN #AnonSiteMap m ON fgh.SiteId = m.OldId;
+            UPDATE pd  SET pd.SiteId  = m.NewId FROM PumpDevices pd             JOIN #AnonSiteMap m ON pd.SiteId  = m.OldId;
+            UPDATE tg  SET tg.SiteId  = m.NewId FROM TankGauges tg              JOIN #AnonSiteMap m ON tg.SiteId  = m.OldId;
+            UPDATE dis SET dis.SiteId = m.NewId FROM DomsInfoSnapshot dis        JOIN #AnonSiteMap m ON dis.SiteId = m.OldId;
+            UPDATE deo SET deo.SiteId = m.NewId FROM DeliverectOrders deo        JOIN #AnonSiteMap m ON deo.SiteId = m.OldId;
+            UPDATE s   SET s.SiteId   = m.NewId FROM Sites s                    JOIN #AnonSiteMap m ON s.SiteId   = m.OldId;
+
+            ALTER TABLE FuelGradePriceHistory WITH CHECK CHECK CONSTRAINT FK_FuelGradePriceHistory_Sites;
+            ALTER TABLE FuelGradePrices       WITH CHECK CHECK CONSTRAINT FK_FuelGradePrices_Sites;
+            ALTER TABLE FuelRecords           WITH CHECK CHECK CONSTRAINT FK_FuelRecords_Sites;
+            ALTER TABLE PumpDevices           WITH CHECK CHECK CONSTRAINT FK_PumpDevices_Site;
+            ALTER TABLE TankGauges            WITH CHECK CHECK CONSTRAINT FK_TankGauges_Sites;
+        END
+
+        DROP TABLE #AnonSiteMap;
+
+        -- Step 3: assign random UK addresses, pole signs, country and geography locations
         WITH StreetNames AS (
             SELECT 1 AS id, 'High Street' AS name UNION ALL SELECT 2,'Victoria Road' UNION ALL
             SELECT 3,'Church Lane' UNION ALL SELECT 4,'Station Road' UNION ALL SELECT 5,'Park Road' UNION ALL
@@ -342,7 +375,7 @@ public class ImportController(IDapperConnectionFactory connectionFactory, ILogge
     }
 
     private const string RandomizeDataSql = @"
-        -- ── Step 1: build site mapping (keep 200, renumber 1001…) ──────────────
+        -- ── Step 1: build site mapping (keep 200, renumber 001…200) ──────────────
         CREATE TABLE #SiteMap (OldId VARCHAR(20) NOT NULL, NewId VARCHAR(20) NOT NULL, Keep BIT NOT NULL);
 
         WITH Ranked AS (
@@ -351,7 +384,7 @@ public class ImportController(IDapperConnectionFactory connectionFactory, ILogge
         )
         INSERT INTO #SiteMap (OldId, NewId, Keep)
         SELECT SiteId,
-               CAST(1000 + rn AS VARCHAR(20)),
+               RIGHT('000' + CAST(rn AS VARCHAR(3)), 3),
                CASE WHEN rn <= 200 THEN 1 ELSE 0 END
         FROM Ranked;
 
@@ -399,7 +432,7 @@ public class ImportController(IDapperConnectionFactory connectionFactory, ILogge
         DELETE tg  FROM TankGauges tg           JOIN #SiteMap sm ON sm.OldId = tg.SiteId  AND sm.Keep = 0;
         DELETE s   FROM Sites s                 JOIN #SiteMap sm ON sm.OldId = s.SiteId   AND sm.Keep = 0;
 
-        -- ── Step 3: renumber SiteIds 1001…1200 ──────────────────────────────────
+        -- ── Step 3: renumber SiteIds 001…200 ────────────────────────────────────
         ALTER TABLE FuelGradePriceHistory NOCHECK CONSTRAINT ALL;
         ALTER TABLE FuelGradePrices       NOCHECK CONSTRAINT ALL;
         ALTER TABLE FuelRecords           NOCHECK CONSTRAINT ALL;
@@ -453,7 +486,7 @@ public class ImportController(IDapperConnectionFactory connectionFactory, ILogge
         SELECT COUNT(*) FROM Sites;";
 
     /// <summary>
-    /// Reduces sites to 200, renumbers SiteIds starting at 1001, and randomises
+    /// Reduces sites to 200, renumbers SiteIds as 001–200, and randomises
     /// all financial/volume figures by a random ±30 %.
     /// </summary>
     [HttpPost("randomize-data")]

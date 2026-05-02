@@ -390,7 +390,7 @@ export default function ImportData() {
         </div>
         <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
           <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6 }}>
-            Reduces the dataset to <strong>200 sites</strong>, renumbers site IDs starting at <strong>1001</strong>,
+            Reduces the dataset to <strong>200 sites</strong>, renumbers site IDs as <strong>001–200</strong>,
             and applies a random <strong>±30%</strong> adjustment to all financial and volume figures.
             The Doms Info snapshot is refreshed automatically when done.
           </p>
