@@ -3,7 +3,7 @@ const translations = {
     // Nav sections
     nav_main: 'MAIN', nav_monitoring: 'MONITORING', nav_sites: 'SITES',
     nav_fuel_prices: 'FUEL PRICES', nav_reports: 'REPORTS', nav_alarms: 'ALARMS',
-    nav_email: 'EMAIL', nav_whatsapp: 'WHATSAPP', nav_config: 'CONFIG',
+    nav_email: 'EMAIL', nav_whatsapp: 'WHATSAPP', nav_deliverect: 'DELIVERECT', nav_config: 'CONFIG',
     // Nav items
     nav_home: 'Home', nav_pump_monitor: 'Pump Monitor', nav_all_sites: 'All Sites',
     nav_site_map: 'Site Map', nav_fuel_prices_item: 'Fuel Prices', nav_price_history: 'Price History',
@@ -15,6 +15,7 @@ const translations = {
     nav_whatsapp_alerts: 'WhatsApp Alerts', nav_alarm_settings: 'Alarm Settings',
     nav_report_schedules: 'Report Schedules', nav_import_data: 'Import Data',
     nav_data_integrity: 'Data Integrity',
+    nav_deliverect_orders: 'Deliverect Orders',
     // Topbar
     search_placeholder: 'Search site ID or name...',
     expand_menu: 'Expand menu', collapse_menu: 'Collapse menu',

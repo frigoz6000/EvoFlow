@@ -285,51 +285,110 @@ public class ImportController(IDapperConnectionFactory connectionFactory, ILogge
     }
 
     private const string MoveDatesForwardSql = @"
-        DECLARE @MaxDate DATE;
         DECLARE @Today DATE = CAST(GETDATE() AS DATE);
-        DECLARE @OffsetDays INT;
 
-        SELECT @MaxDate = MAX(d) FROM (
+        -- Each table group computes its own offset so a group that is already current
+        -- does not block other groups from being shifted.
+
+        DECLARE @PrimaryMaxDate DATE;
+        SELECT @PrimaryMaxDate = MAX(d) FROM (
             SELECT MAX(BusinessDate) AS d FROM FuelRecords
             UNION ALL SELECT MAX(BusinessDate) FROM PumpMonitoring
             UNION ALL SELECT MAX(BusinessDate) FROM PumpStatus
             UNION ALL SELECT MAX(BusinessDate) FROM PumpTotals
             UNION ALL SELECT MAX(BusinessDate) FROM TankGauges
         ) x;
+        DECLARE @PrimaryOffset INT = 0;
+        IF @PrimaryMaxDate IS NOT NULL AND @PrimaryMaxDate < @Today
+            SET @PrimaryOffset = DATEDIFF(day, @PrimaryMaxDate, @Today);
 
-        IF @MaxDate IS NULL OR @MaxDate >= @Today
+        DECLARE @DeliverectMaxDate DATE = (SELECT MAX(OrderDate) FROM DeliverectOrders);
+        DECLARE @DeliverectOffset INT = 0;
+        IF @DeliverectMaxDate IS NOT NULL AND @DeliverectMaxDate < @Today
+            SET @DeliverectOffset = DATEDIFF(day, @DeliverectMaxDate, @Today);
+
+        DECLARE @HistoryMaxDate DATE = (SELECT MAX(CAST(HistoryDate AS DATE)) FROM FuelGradePriceHistory);
+        DECLARE @HistoryOffset INT = 0;
+        IF @HistoryMaxDate IS NOT NULL AND @HistoryMaxDate < @Today
+            SET @HistoryOffset = DATEDIFF(day, @HistoryMaxDate, @Today);
+
+        -- FuelGradePrices uses DtLastReceived (falling back to DtFuelChange) as its anchor
+        DECLARE @FuelPricesMaxDate DATE = (
+            SELECT MAX(CAST(ISNULL(DtLastReceived, DtFuelChange) AS DATE)) FROM FuelGradePrices
+        );
+        DECLARE @FuelPricesOffset INT = 0;
+        IF @FuelPricesMaxDate IS NOT NULL AND @FuelPricesMaxDate < @Today
+            SET @FuelPricesOffset = DATEDIFF(day, @FuelPricesMaxDate, @Today);
+
+        IF @PrimaryOffset = 0 AND @DeliverectOffset = 0 AND @HistoryOffset = 0 AND @FuelPricesOffset = 0
         BEGIN
             SELECT 0 AS OffsetDays, 0 AS RowsUpdated;
             RETURN;
         END
 
-        SET @OffsetDays = DATEDIFF(day, @MaxDate, @Today);
+        IF @PrimaryOffset > 0
+        BEGIN
+            UPDATE FuelRecords
+            SET BusinessDate = DATEADD(day, @PrimaryOffset, BusinessDate),
+                TransactionUtc = DATEADD(day, @PrimaryOffset, TransactionUtc);
 
-        UPDATE FuelRecords
-        SET BusinessDate = DATEADD(day, @OffsetDays, BusinessDate),
-            TransactionUtc = DATEADD(day, @OffsetDays, TransactionUtc);
+            UPDATE PumpMonitoring
+            SET BusinessDate = DATEADD(day, @PrimaryOffset, BusinessDate),
+                SnapshotUtc = DATEADD(day, @PrimaryOffset, SnapshotUtc);
 
-        UPDATE PumpMonitoring
-        SET BusinessDate = DATEADD(day, @OffsetDays, BusinessDate),
-            SnapshotUtc = DATEADD(day, @OffsetDays, SnapshotUtc);
+            UPDATE PumpStatus
+            SET BusinessDate = DATEADD(day, @PrimaryOffset, BusinessDate),
+                SnapshotUtc = DATEADD(day, @PrimaryOffset, SnapshotUtc);
 
-        UPDATE PumpStatus
-        SET BusinessDate = DATEADD(day, @OffsetDays, BusinessDate),
-            SnapshotUtc = DATEADD(day, @OffsetDays, SnapshotUtc);
+            UPDATE PumpTotals
+            SET BusinessDate = DATEADD(day, @PrimaryOffset, BusinessDate),
+                SnapshotUtc = DATEADD(day, @PrimaryOffset, SnapshotUtc);
 
-        UPDATE PumpTotals
-        SET BusinessDate = DATEADD(day, @OffsetDays, BusinessDate),
-            SnapshotUtc = DATEADD(day, @OffsetDays, SnapshotUtc);
+            UPDATE TankGauges
+            SET BusinessDate = DATEADD(day, @PrimaryOffset, BusinessDate);
+        END
 
-        UPDATE TankGauges
-        SET BusinessDate = DATEADD(day, @OffsetDays, BusinessDate);
+        IF @FuelPricesOffset > 0
+        BEGIN
+            UPDATE FuelGradePrices
+            SET DtFuelChange = DATEADD(day, @FuelPricesOffset, DtFuelChange),
+                DtSentToGov = DATEADD(day, @FuelPricesOffset, DtSentToGov),
+                DtLastReceived = DATEADD(day, @FuelPricesOffset, DtLastReceived);
+        END
 
-        SELECT @OffsetDays AS OffsetDays,
+        IF @DeliverectOffset > 0
+        BEGIN
+            UPDATE DeliverectOrders
+            SET OrderDate = DATEADD(day, @DeliverectOffset, OrderDate),
+                OrderReceivedAtSiteDateTime = DATEADD(day, @DeliverectOffset, OrderReceivedAtSiteDateTime),
+                OrderPickedDateTime = DATEADD(day, @DeliverectOffset, OrderPickedDateTime),
+                OrderReadyForCollectionDateTime = DATEADD(day, @DeliverectOffset, OrderReadyForCollectionDateTime),
+                OrderCollectedDateTime = DATEADD(day, @DeliverectOffset, OrderCollectedDateTime),
+                TransactionDateTime = DATEADD(day, @DeliverectOffset, TransactionDateTime);
+        END
+
+        IF @HistoryOffset > 0
+        BEGIN
+            UPDATE FuelGradePriceHistory
+            SET HistoryDate = DATEADD(day, @HistoryOffset, HistoryDate),
+                DtFuelChange = DATEADD(day, @HistoryOffset, DtFuelChange),
+                DtSentToGov = DATEADD(day, @HistoryOffset, DtSentToGov),
+                DtLastReceived = DATEADD(day, @HistoryOffset, DtLastReceived);
+        END
+
+        -- Return the largest offset applied across all groups
+        DECLARE @MaxOffset INT = (
+            SELECT MAX(v) FROM (VALUES (@PrimaryOffset),(@FuelPricesOffset),(@DeliverectOffset),(@HistoryOffset)) AS t(v)
+        );
+        SELECT @MaxOffset AS OffsetDays,
                (SELECT COUNT(*) FROM FuelRecords) +
                (SELECT COUNT(*) FROM PumpMonitoring) +
                (SELECT COUNT(*) FROM PumpStatus) +
                (SELECT COUNT(*) FROM PumpTotals) +
-               (SELECT COUNT(*) FROM TankGauges) AS RowsUpdated;";
+               (SELECT COUNT(*) FROM TankGauges) +
+               (SELECT COUNT(*) FROM DeliverectOrders) +
+               (SELECT COUNT(*) FROM FuelGradePrices) +
+               (SELECT COUNT(*) FROM FuelGradePriceHistory) AS RowsUpdated;";
 
     /// <summary>
     /// Shifts all business dates forward so the latest date becomes today.

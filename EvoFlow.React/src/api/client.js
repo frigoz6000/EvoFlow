@@ -112,4 +112,8 @@ export const fuelGradePriceHistoryApi = {
   getAll: (params = {}) => api.get('/fuelgradepricehistory', { params }).then(r => r.data),
 }
 
+export const deliverectApi = {
+  getAll: (params = {}) => api.get('/deliverectorders', { params }).then(r => r.data),
+}
+
 export default api

@@ -10,13 +10,29 @@ namespace EvoFlow.Api.Controllers;
 public class PumpTotalsController(EvoFlowDbContext db, IDapperConnectionFactory connectionFactory) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] int? pumpDeviceId = null, [FromQuery] DateOnly? date = null)
+    public async Task<IActionResult> GetAll([FromQuery] int? pumpDeviceId = null, [FromQuery] DateOnly? date = null, [FromQuery] bool latestOnly = false)
     {
         using var conn = connectionFactory.CreateConnection();
-        var sql = @"SELECT * FROM PumpTotals
+        string sql;
+        if (latestOnly)
+        {
+            sql = @"WITH Ranked AS (
+                        SELECT *, ROW_NUMBER() OVER (PARTITION BY PumpDeviceId ORDER BY SnapshotUtc DESC) AS rn
+                        FROM PumpTotals
+                        WHERE TotType = 'pump'
+                          AND (@PumpDeviceId IS NULL OR PumpDeviceId = @PumpDeviceId)
+                          AND (@Date IS NULL OR BusinessDate = @Date)
+                    )
+                    SELECT PumpTotalsId, PumpDeviceId, BusinessDate, SnapshotUtc, TotType, MoneyTotal, MoneyDiff, VolumeTotal, VolumeDiff
+                    FROM Ranked WHERE rn = 1";
+        }
+        else
+        {
+            sql = @"SELECT * FROM PumpTotals
                     WHERE (@PumpDeviceId IS NULL OR PumpDeviceId = @PumpDeviceId)
                       AND (@Date IS NULL OR BusinessDate = @Date)
                     ORDER BY SnapshotUtc DESC";
+        }
         var items = await conn.QueryAsync<PumpTotals>(sql, new { PumpDeviceId = pumpDeviceId, Date = date });
         return Ok(items);
     }

@@ -4,6 +4,8 @@ import { useOutletContext, useNavigate } from 'react-router-dom'
 import ErrorBoundary from '../components/ErrorBoundary'
 import { useLanguage } from '../i18n/LanguageContext'
 
+const PAGE_SIZE = 100
+
 export default function PumpMonitoring() {
   const navigate = useNavigate()
   const { t } = useLanguage()
@@ -14,13 +16,14 @@ export default function PumpMonitoring() {
   const [loading, setLoading] = useState(true)
   const [filterSite, setFilterSite] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
+  const [page, setPage] = useState(1)
   const { globalSearch = '' } = useOutletContext() || {}
 
   useEffect(() => {
     Promise.allSettled([
       pumpDevicesApi.getAll(),
-      pumpStatusApi.getAll({ pageSize: 200 }),
-      pumpTotalsApi.getAll({ pageSize: 200 }),
+      pumpStatusApi.getAll({ latestOnly: true }),
+      pumpTotalsApi.getAll({ latestOnly: true }),
       sitesApi.getAll(),
     ]).then(([dRes, sRes, tRes, siRes]) => {
       if (dRes.status === 'fulfilled') setDevices(dRes.value || [])
@@ -30,22 +33,16 @@ export default function PumpMonitoring() {
     }).finally(() => setLoading(false))
   }, [])
 
+  // Reset to page 1 whenever filters change
+  useEffect(() => { setPage(1) }, [filterSite, filterStatus, globalSearch])
+
   const siteMap = Object.fromEntries(sites.map(s => [s.siteId, s.siteName]))
 
-  // Latest status per device
-  const latestStatus = {}
-  statuses.forEach(s => {
-    const prev = latestStatus[s.pumpDeviceId]
-    if (!prev || new Date(s.snapshotUtc) > new Date(prev.snapshotUtc)) {
-      latestStatus[s.pumpDeviceId] = s
-    }
-  })
+  // Latest status per device (one record per device already from latestOnly=true)
+  const latestStatus = Object.fromEntries(statuses.map(s => [s.pumpDeviceId, s]))
 
-  // Volume per device
-  const volumeByDevice = {}
-  totals.forEach(t => {
-    volumeByDevice[t.pumpDeviceId] = (volumeByDevice[t.pumpDeviceId] || 0) + (Number(t.volumeDiff) || 0)
-  })
+  // Volume per device (latest cumulative total, one record per device)
+  const volumeByDevice = Object.fromEntries(totals.map(t => [t.pumpDeviceId, Number(t.volumeTotal) || 0]))
 
   const filtered = devices.filter(d => {
     const q = globalSearch.toLowerCase()
@@ -56,6 +53,8 @@ export default function PumpMonitoring() {
     return true
   })
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
   const onlineCount = devices.filter(d => d.online).length
 
   return (
@@ -129,9 +128,9 @@ export default function PumpMonitoring() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.length === 0 ? (
+                {paginated.length === 0 ? (
                   <tr><td colSpan={9}><div className="empty-state">No devices match filters</div></td></tr>
-                ) : filtered.map(d => {
+                ) : paginated.map(d => {
                   const status = latestStatus[d.pumpDeviceId]
                   const vol = volumeByDevice[d.pumpDeviceId] || 0
                   return (
@@ -168,6 +167,16 @@ export default function PumpMonitoring() {
             </table>
           )}
         </div>
+
+        {!loading && totalPages > 1 && (
+          <div className="pagination-bar" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderTop: '1px solid var(--border)' }}>
+            <button className="btn-tag" disabled={page === 1} onClick={() => setPage(p => p - 1)}>← Prev</button>
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+              Page {page} of {totalPages} &nbsp;·&nbsp; {filtered.length} pumps
+            </span>
+            <button className="btn-tag" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>Next →</button>
+          </div>
+        )}
       </div>
     </ErrorBoundary>
   )

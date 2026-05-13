@@ -13,7 +13,8 @@ import {
   IconActivity, IconAlertTriangle, IconBarChart, IconDroplets,
   IconAlarmActive, IconAlarmHistory, IconNotifications,
   IconMenu, IconMail, IconSettings, IconCalendar, IconShieldCheck,
-  IconMessageCircle, IconUser, IconUsers, IconSliders, IconClipboardList
+  IconMessageCircle, IconUser, IconUsers, IconSliders, IconClipboardList,
+  IconDelivery
 } from './Icons'
 
 const NAV_DEF = [
@@ -27,6 +28,8 @@ const NAV_DEF = [
   { section: 'nav_fuel_prices', sectionIcon: IconDroplets },
   { to: '/fuel-prices', icon: IconDroplets, labelKey: 'nav_fuel_prices_item' },
   { to: '/fuel-price-history', icon: IconDroplets, labelKey: 'nav_price_history' },
+  { section: 'nav_deliverect', sectionIcon: IconDelivery },
+  { to: '/deliverect', icon: IconDelivery, labelKey: 'nav_deliverect_orders' },
   { section: 'nav_reports', sectionIcon: IconBarChart },
   { to: '/doms-info', icon: IconTable, labelKey: 'nav_doms_info' },
   { to: '/flow-rates', icon: IconActivity, labelKey: 'nav_flow_rates' },
@@ -73,6 +76,7 @@ const PAGE_TITLE_KEYS = {
   '/data-integrity': 'nav_data_integrity',
   '/fuel-prices': 'nav_fuel_prices_item',
   '/fuel-price-history': 'nav_price_history',
+  '/deliverect': 'nav_deliverect_orders',
 }
 
 export default function Layout() {

@@ -26,6 +26,7 @@ import WhatsAppContacts from './pages/WhatsAppContacts'
 import SiteMap from './pages/SiteMap'
 import FuelPrices from './pages/FuelPrices'
 import FuelPriceHistory from './pages/FuelPriceHistory'
+import Deliverect from './pages/Deliverect'
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuth()
@@ -67,6 +68,7 @@ export default function App() {
               <Route path="config/whatsapp" element={<WhatsAppContacts />} />
               <Route path="fuel-prices" element={<FuelPrices />} />
               <Route path="fuel-price-history" element={<FuelPriceHistory />} />
+              <Route path="deliverect" element={<Deliverect />} />
             </Route>
           </Routes>
         </AuthProvider>
