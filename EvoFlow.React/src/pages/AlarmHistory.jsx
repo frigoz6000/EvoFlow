@@ -18,32 +18,9 @@ const PARAMETERS = ['Flow Rate', 'Pressure', 'Temperature', 'Voltage', 'Signal S
 const PRODUCTS = ['Diesel', 'Petrol', 'LPG', 'AdBlue', 'Kerosene']
 const RESOLUTIONS = ['Resolved', 'Auto-Closed', 'Manually Closed', 'Escalated & Resolved']
 
-function rnd(arr) { return arr[Math.floor(Math.random() * arr.length)] }
-function rndBetween(a, b) { return a + Math.floor(Math.random() * (b - a + 1)) }
-
-// 150 historical alarm records across Jan–Mar 2026
-const HISTORY = Array.from({ length: 150 }, (_, i) => {
-  const month = rndBetween(1, 3)
-  const day = rndBetween(1, 28)
-  const openDate = `2026-0${month}-${String(day).padStart(2, '0')}`
-  const closeDays = rndBetween(1, 14)
-  const closeDate = new Date(2026, month - 1, day + closeDays).toISOString().split('T')[0]
-  return {
-    id: i + 1,
-    group: rnd(GROUPS),
-    site: rnd(SITES),
-    severity: SEVERITIES[Math.floor(Math.random() * 4)],
-    malfunction: rnd(MALFUNCTIONS),
-    openingDate: openDate,
-    closingDate: closeDate,
-    durationDays: closeDays,
-    category: rnd(CATEGORIES),
-    equipment: rnd(EQUIPMENT),
-    parameter: rnd(PARAMETERS),
-    product: rnd(PRODUCTS),
-    resolution: rnd(RESOLUTIONS),
-  }
-})
+// Reset: this was fictional demo data with no real backend behind it. Left empty
+// pending a real alarm-history data source.
+const HISTORY = []
 
 
 const SEV_BADGE = {

@@ -1,14 +1,16 @@
 using Dapper;
 using EvoFlow.Api.Data;
+using EvoFlow.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
 namespace EvoFlow.Api.Controllers;
 
 [ApiController]
 [Route("api/import")]
-public class ImportController(IDapperConnectionFactory connectionFactory, ILogger<ImportController> logger) : ControllerBase
+public class ImportController(IDapperConnectionFactory connectionFactory, ILogger<ImportController> logger, IEmailService emailService) : ControllerBase
 {
     private static readonly string ScriptPath = @"C:\Users\roryj\.paperclip\instances\default\workspaces\0f171b86-1c9b-491f-b414-089c40818833\import_xml.py";
 
@@ -940,6 +942,293 @@ public class ImportController(IDapperConnectionFactory connectionFactory, ILogge
         }
 
         return (siteId, pumpCount, tankCount);
+    }
+
+    /// <summary>
+    /// Accepts a system "event_log_entries" XML export (log_entry rows keyed by grp/code/subcode —
+    /// POS online/offline, HTTP logins, fuelling point errors, grade availability, price changes,
+    /// tank gauge alarms, leakage reports, terminal online/offline, clock changes), and imports
+    /// each entry into SystemEvents. Existing (SiteId, SeqNo) pairs are skipped so re-imports are safe.
+    /// Requires the SystemEvents table — see EvoFlow.Api/Sql/CreateSystemEventsTable.sql.
+    /// </summary>
+    [HttpPost("system-events-upload")]
+    [RequestSizeLimit(50 * 1024 * 1024)]
+    public async Task<IActionResult> UploadSystemEventsXml(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest(new { error = "No file uploaded." });
+
+        var fileName = Path.GetFileName(file.FileName);
+        var now = DateTime.UtcNow;
+
+        string xmlContent;
+        using (var reader = new StreamReader(file.OpenReadStream()))
+            xmlContent = await reader.ReadToEndAsync();
+
+        try
+        {
+            var result = await ProcessSystemEventsXmlAsync(xmlContent);
+            using var conn = connectionFactory.CreateConnection();
+            await conn.ExecuteAsync(ImportLogInsertSql, new
+            {
+                FileName = fileName,
+                Status = "success",
+                Message = $"Processed OK. Site: {result.SiteId}, Entries: {result.TotalEntries}, Inserted: {result.Inserted}, Skipped (duplicate): {result.Skipped}",
+                ImportedAtUtc = now
+            });
+            logger.LogInformation("System events XML import success: {File}, site={Site}, inserted={Inserted}", fileName, result.SiteId, result.Inserted);
+            return Ok(new
+            {
+                message = "Import successful",
+                fileName,
+                siteId = result.SiteId,
+                totalEntries = result.TotalEntries,
+                inserted = result.Inserted,
+                skipped = result.Skipped
+            });
+        }
+        catch (Exception ex)
+        {
+            using var conn = connectionFactory.CreateConnection();
+            await conn.ExecuteAsync(ImportLogInsertSql, new
+            {
+                FileName = fileName,
+                Status = "failed",
+                Message = ex.Message,
+                ImportedAtUtc = now
+            });
+            logger.LogError(ex, "System events XML import failed: {File}", fileName);
+            return StatusCode(500, new { error = ex.Message, fileName });
+        }
+    }
+
+    private async Task<(string SiteId, int TotalEntries, int Inserted, int Skipped)> ProcessSystemEventsXmlAsync(string xmlContent)
+    {
+        var root = XElement.Parse(xmlContent);
+
+        var siteId = ((string?)root.Attribute("system_number") ?? "").Trim();
+        if (string.IsNullOrEmpty(siteId))
+            throw new InvalidOperationException("No system_number attribute on event_log_entries root.");
+        var systemName = ((string?)root.Attribute("system_name") ?? "").Trim();
+        var stationId = ((string?)root.Attribute("station_id") ?? "").Trim();
+
+        using var conn = connectionFactory.CreateConnection();
+
+        // Upsert site (same convention as the DOMS import)
+        await conn.ExecuteAsync(@"
+            IF NOT EXISTS (SELECT 1 FROM Sites WHERE SiteId = @SiteId)
+                INSERT INTO Sites (SiteId, SiteName, OpeningHour, ClosingHour, CreatedUtc)
+                VALUES (@SiteId, @SiteName, '00:00:00', '23:59:59', GETUTCDATE())
+            ELSE IF @SiteName <> ''
+                UPDATE Sites SET SiteName = @SiteName WHERE SiteId = @SiteId",
+            new { SiteId = siteId, SiteName = systemName });
+
+        int total = 0, inserted = 0, skipped = 0;
+        var newSuddenLossAlerts = new List<SuddenLossAlert>();
+
+        foreach (var entry in root.Elements("log_entry"))
+        {
+            total++;
+
+            var seqNo = Int32Val((string?)entry.Attribute("seqno"));
+            var dateStr = (string?)entry.Attribute("date");
+            var timeStr = (string?)entry.Attribute("time");
+            var grp = (string?)entry.Attribute("grp") ?? "";
+            var code = (string?)entry.Attribute("code") ?? "";
+            var subcode = (string?)entry.Attribute("subcode");
+            var text = (string?)entry.Attribute("text") ?? "";
+
+            if (seqNo == null || string.IsNullOrEmpty(dateStr)) { skipped++; continue; }
+
+            var eventDate = ParseDate(dateStr);
+            if (eventDate == null) { skipped++; continue; }
+            var eventTime = ParseTimeOnly(timeStr ?? "000000");
+            var eventDateTime = new DateTime(eventDate.Value.Year, eventDate.Value.Month, eventDate.Value.Day,
+                eventTime.Hour, eventTime.Minute, eventTime.Second, DateTimeKind.Unspecified);
+
+            var deviceId = (string?)entry.Element("device")?.Element("id")?.Attribute("value");
+            var ipAddress = (string?)entry.Element("device")?.Element("ip_addr")?.Attribute("value")
+                             ?? (string?)entry.Element("user")?.Attribute("ip_addr")
+                             ?? (string?)entry.Element("time_changed")?.Attribute("ip_addr");
+            var userName = (string?)entry.Element("user")?.Attribute("name");
+
+            var category = CategorizeEvent(grp, code, subcode);
+
+            var rowsAffected = await conn.ExecuteAsync(@"
+                IF NOT EXISTS (SELECT 1 FROM SystemEvents WHERE SiteId=@SiteId AND SeqNo=@SeqNo)
+                    INSERT INTO SystemEvents
+                        (SiteId, SystemName, StationId, SeqNo, EventDate, EventTime, EventDateTime,
+                         Grp, Code, Subcode, EventCategory, EventText, DeviceId, UserName, IpAddress, RawXml)
+                    VALUES
+                        (@SiteId, @SystemName, @StationId, @SeqNo, @EventDate, @EventTime, @EventDateTime,
+                         @Grp, @Code, @Subcode, @EventCategory, @EventText, @DeviceId, @UserName, @IpAddress, @RawXml)",
+                new
+                {
+                    SiteId = siteId,
+                    SystemName = string.IsNullOrEmpty(systemName) ? null : systemName,
+                    StationId = string.IsNullOrEmpty(stationId) ? null : stationId,
+                    SeqNo = seqNo,
+                    EventDate = eventDate,
+                    EventTime = eventTime,
+                    EventDateTime = eventDateTime,
+                    Grp = grp,
+                    Code = code,
+                    Subcode = subcode,
+                    EventCategory = category,
+                    EventText = text,
+                    DeviceId = deviceId,
+                    UserName = userName,
+                    IpAddress = ipAddress,
+                    RawXml = entry.ToString()
+                });
+
+            if (rowsAffected > 0) inserted++; else skipped++;
+
+            // Sudden Loss / possible Sudden Loss tank gauge alarms also get parsed into
+            // SuddenLossEvents (Loss=... L, t=... sec, c.r.=..., m.r.=... l/min pulled out
+            // of the device event_txt attribute) alongside the generic SystemEvents row.
+            if (grp == "0x04" && code == "0x02" && (subcode == "0x67" || subcode == "0x66"))
+            {
+                var systemEventId = await conn.ExecuteScalarAsync<long?>(
+                    "SELECT SystemEventId FROM SystemEvents WHERE SiteId=@SiteId AND SeqNo=@SeqNo",
+                    new { SiteId = siteId, SeqNo = seqNo });
+
+                var eventTxt = (string?)entry.Element("device")?.Attribute("event_txt") ?? "";
+                var match = Regex.Match(eventTxt,
+                    @"Loss=(?<loss>[\d.]+)\s*L,\s*t=(?<t>[\d.]+)\s*sec,\s*c\.r\.=(?<cr>[\d.]+),\s*m\.r\.=(?<mr>[\d.]+)\s*l/min",
+                    RegexOptions.IgnoreCase);
+
+                var isPossible = text.Contains("possible", StringComparison.OrdinalIgnoreCase);
+                var volumeLostLitres = match.Success ? DecimalVal(match.Groups["loss"].Value) : null;
+
+                var suddenLossInserted = await conn.ExecuteAsync(@"
+                    IF NOT EXISTS (SELECT 1 FROM SuddenLossEvents WHERE SiteId=@SiteId AND SeqNo=@SeqNo)
+                        INSERT INTO SuddenLossEvents
+                            (SystemEventId, SiteId, SeqNo, EventDateTime, TankId, IsPossible,
+                             VolumeLostLitres, DurationSeconds, ConsumptionRate, MaxRateLPerMin, EventText)
+                        VALUES
+                            (@SystemEventId, @SiteId, @SeqNo, @EventDateTime, @TankId, @IsPossible,
+                             @VolumeLostLitres, @DurationSeconds, @ConsumptionRate, @MaxRateLPerMin, @EventText)",
+                    new
+                    {
+                        SystemEventId = systemEventId,
+                        SiteId = siteId,
+                        SeqNo = seqNo,
+                        EventDateTime = eventDateTime,
+                        TankId = deviceId,
+                        IsPossible = isPossible,
+                        VolumeLostLitres = volumeLostLitres,
+                        DurationSeconds = match.Success ? Int32Val(match.Groups["t"].Value) : null,
+                        ConsumptionRate = match.Success ? DecimalVal(match.Groups["cr"].Value) : null,
+                        MaxRateLPerMin = match.Success ? DecimalVal(match.Groups["mr"].Value) : null,
+                        EventText = text
+                    });
+
+                // Only alert on genuinely new events — re-imports of already-seen data stay silent.
+                if (suddenLossInserted > 0)
+                    newSuddenLossAlerts.Add(new SuddenLossAlert(eventDateTime, deviceId, isPossible, volumeLostLitres));
+            }
+        }
+
+        if (newSuddenLossAlerts.Count > 0)
+            await SendSuddenLossAlertAsync(conn, siteId, systemName, newSuddenLossAlerts);
+
+        return (siteId, total, inserted, skipped);
+    }
+
+    private record SuddenLossAlert(DateTime EventDateTime, string? TankId, bool IsPossible, decimal? VolumeLostLitres);
+
+    /// <summary>
+    /// Emails whoever is subscribed to the "Sudden Loss Alarm" in Alarm Settings, if it's enabled.
+    /// One consolidated email per import batch rather than one per event. Never throws — a failed
+    /// alert should not fail the import itself.
+    /// </summary>
+    private async Task SendSuddenLossAlertAsync(System.Data.IDbConnection conn, string siteId, string siteName, List<SuddenLossAlert> events)
+    {
+        try
+        {
+            var recipientEmails = (await conn.QueryAsync<string>(@"
+                SELECT DISTINCT er.Email
+                FROM AlarmTypes at
+                JOIN AlarmSettings aset ON aset.AlarmTypeId = at.Id AND aset.IsEnabled = 1
+                JOIN AlarmSettingRecipients asr ON asr.AlarmSettingId = aset.Id
+                JOIN EmailRecipients er ON er.Id = asr.EmailRecipientId AND er.IsActive = 1
+                WHERE at.Name = 'Sudden Loss Alarm'")).ToList();
+
+            if (recipientEmails.Count == 0)
+            {
+                logger.LogInformation("Sudden Loss Alarm not enabled or has no recipients — skipping alert for site {SiteId} ({Count} new event(s)).",
+                    siteId, events.Count);
+                return;
+            }
+
+            var displaySiteName = string.IsNullOrEmpty(siteName) ? siteId : siteName;
+            var subject = $"Sudden Loss Alarm — {displaySiteName} ({siteId}) — {events.Count} new event{(events.Count > 1 ? "s" : "")}";
+
+            var rowsHtml = string.Join("", events
+                .OrderByDescending(e => e.EventDateTime)
+                .Select(e => $"""
+                    <tr>
+                        <td style="padding:4px 8px;border:1px solid #ddd;">{e.EventDateTime:yyyy-MM-dd HH:mm:ss}</td>
+                        <td style="padding:4px 8px;border:1px solid #ddd;">{System.Net.WebUtility.HtmlEncode(e.TankId ?? "—")}</td>
+                        <td style="padding:4px 8px;border:1px solid #ddd;">{(e.IsPossible ? "Possible" : "Confirmed")}</td>
+                        <td style="padding:4px 8px;border:1px solid #ddd;">{(e.VolumeLostLitres.HasValue ? e.VolumeLostLitres.Value.ToString("0.00") + " L" : "—")}</td>
+                    </tr>
+                    """));
+
+            var body = $"""
+                <p>The following Sudden Loss tank gauge alarm(s) were detected at <strong>{System.Net.WebUtility.HtmlEncode(displaySiteName)} ({siteId})</strong>:</p>
+                <table style="border-collapse:collapse;font-family:sans-serif;font-size:13px;">
+                    <tr style="background:#1a1d35;color:#fff;">
+                        <th style="padding:4px 8px;">Date/Time</th>
+                        <th style="padding:4px 8px;">Tank</th>
+                        <th style="padding:4px 8px;">Type</th>
+                        <th style="padding:4px 8px;">Volume Lost</th>
+                    </tr>
+                    {rowsHtml}
+                </table>
+                """;
+
+            await emailService.SendAsync(recipientEmails, subject, body);
+            logger.LogInformation("Sudden Loss Alarm email sent to {Count} recipient(s) for site {SiteId} ({EventCount} event(s)).",
+                recipientEmails.Count, siteId, events.Count);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to send Sudden Loss Alarm email for site {SiteId}", siteId);
+        }
+    }
+
+    /// <summary>
+    /// Maps grp/code/subcode to a friendly event category. Falls back to a
+    /// "Grp x / Code y" label for anything not seen before so new event types
+    /// never fail an import — they just show up uncategorized until this map
+    /// is extended.
+    /// </summary>
+    private static string CategorizeEvent(string grp, string code, string? subcode)
+    {
+        return (grp, code, subcode) switch
+        {
+            ("0x0b", "0x01", "0x01") => "POS Online",
+            ("0x0b", "0x01", "0x00") => "POS Offline",
+            ("0x02", "0x01", "0x01") => "Fuelling Point Online",
+            ("0x02", "0x01", "0x00") => "Fuelling Point Offline",
+            ("0x03", "0x01", "0x01") => "Terminal Online",
+            ("0x03", "0x01", "0x00") => "Terminal Offline",
+            ("0x01", "0x11", "0x01") => "HTTP Login On",
+            ("0x01", "0x11", "0x00") => "HTTP Login Off",
+            ("0x02", "0x04", "0x10") => "Fuelling Point Error: Preset Overrun",
+            ("0x02", "0x84", "0x10") => "Fuelling Point Error Cleared: Preset Overrun",
+            ("0x02", "0x04", "0x22") => "Fuelling Point Error: Totals Mismatch",
+            ("0x02", "0x84", "0x22") => "Fuelling Point Error Cleared: Totals Mismatch",
+            ("0x01", "0x23", "0x01") => "Grade Availability",
+            ("0x01", "0x22", "0x01") => "Price Change",
+            ("0x04", "0x11", _) => "Leakage Test Report",
+            ("0x04", "0x02", "0x67") => "Tank Gauge Alarm: Sudden Loss",
+            ("0x04", "0x02", "0x66") => "Tank Gauge Alarm: Possible Sudden Loss",
+            ("0x01", "0x21", "0x00") => "Clock Changed",
+            _ => $"Other (grp {grp} / code {code}{(string.IsNullOrEmpty(subcode) ? "" : $" / sub {subcode}")})"
+        };
     }
 
     private static DateOnly? ParseDate(string? s)

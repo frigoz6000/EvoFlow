@@ -16,27 +16,9 @@ const PARAMETERS = ['Flow Rate', 'Pressure', 'Temperature', 'Voltage', 'Signal S
 const PRODUCTS = ['Diesel', 'Petrol', 'LPG', 'AdBlue', 'Kerosene']
 const TRACKING = ['Open', 'Assigned', 'Under Review', 'Escalated']
 
-function rnd(arr) { return arr[Math.floor(Math.random() * arr.length)] }
-function rndDate() {
-  const d = new Date(2026, 0, 1)
-  d.setDate(d.getDate() + Math.floor(Math.random() * 96))
-  return d.toISOString().split('T')[0]
-}
-
-const ALARMS = Array.from({ length: 100 }, (_, i) => ({
-  id: i + 1,
-  group: rnd(GROUPS),
-  site: rnd(SITES),
-  severity: SEVERITIES[Math.floor(Math.random() * 4)],
-  malfunction: rnd(MALFUNCTIONS),
-  openingDate: rndDate(),
-  category: rnd(CATEGORIES),
-  equipment: rnd(EQUIPMENT),
-  equipmentDetail: rnd(EQUIPMENT_DETAILS),
-  parameter: rnd(PARAMETERS),
-  product: rnd(PRODUCTS),
-  tracking: rnd(TRACKING),
-}))
+// Reset: this was fictional demo data with no real backend behind it. Left empty
+// pending a real active-alarms data source.
+const ALARMS = []
 
 const SEV_STYLES = {
   Critical: { bg: '#dc2626', color: '#fff', border: '#b91c1c' },

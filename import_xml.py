@@ -427,6 +427,8 @@ def main():
         # Step 1: Delete all data (in FK-safe order)
         print("Deleting all existing data...")
         tables = [
+            "SuddenLossEvents",
+            "SystemEvents",
             "PumpFlowInfo",
             "PumpMonitoringGrade",
             "PumpMonitoring",

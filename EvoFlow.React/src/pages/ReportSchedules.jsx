@@ -14,6 +14,8 @@ const REPORT_TYPES = [
   'Flow Rate Analysis',
   'Site Comparison Report',
   'Fuel Consumption Report',
+  'Sudden Loss Report',
+  'Volume Discrepancies Report',
 ]
 
 const DAYS = [

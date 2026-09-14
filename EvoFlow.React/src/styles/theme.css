@@ -223,10 +223,10 @@ body {
 
 .sidebar-section-label {
   padding: 14px 16px 4px;
-  font-size: 9.5px;
+  font-size: 12.5px;
   font-weight: 700;
   letter-spacing: 1.2px;
-  text-transform: uppercase;
+  text-transform: none;
   color: var(--sidebar-section-label);
   white-space: nowrap;
   overflow: hidden;
@@ -238,10 +238,10 @@ body {
   justify-content: space-between;
   width: 100%;
   padding: 14px 16px 4px;
-  font-size: 9.5px;
+  font-size: 12.5px;
   font-weight: 700;
   letter-spacing: 1.2px;
-  text-transform: uppercase;
+  text-transform: none;
   color: var(--sidebar-section-label);
   background: none;
   border: none;

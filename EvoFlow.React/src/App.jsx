@@ -11,9 +11,11 @@ import DomsInfo from './pages/DomsInfo'
 import FlowRates from './pages/FlowRates'
 import DeviceAlerts from './pages/DeviceAlerts'
 import VolumeRevenue from './pages/VolumeRevenue'
+import VolumeDiscrepancies from './pages/VolumeDiscrepancies'
+import SystemEvents from './pages/SystemEvents'
+import SuddenLoss from './pages/SuddenLoss'
 import ActiveAlarms from './pages/ActiveAlarms'
 import AlarmHistory from './pages/AlarmHistory'
-import AlarmNotifications from './pages/AlarmNotifications'
 import TankGauges from './pages/TankGauges'
 import EmailRecipients from './pages/EmailRecipients'
 import EmailConfig from './pages/EmailConfig'
@@ -54,9 +56,11 @@ export default function App() {
               <Route path="flow-rates" element={<FlowRates />} />
               <Route path="device-alerts" element={<DeviceAlerts />} />
               <Route path="volume-revenue" element={<VolumeRevenue />} />
+              <Route path="volume-discrepancies" element={<VolumeDiscrepancies />} />
+              <Route path="system-events" element={<SystemEvents />} />
+              <Route path="sudden-loss" element={<SuddenLoss />} />
               <Route path="active-alarms" element={<ActiveAlarms />} />
               <Route path="alarm-history" element={<AlarmHistory />} />
-              <Route path="alarm-notifications" element={<AlarmNotifications />} />
               <Route path="tank-gauges" element={<TankGauges />} />
               <Route path="config/email-recipients" element={<EmailRecipients />} />
               <Route path="config/email-config" element={<EmailConfig />} />

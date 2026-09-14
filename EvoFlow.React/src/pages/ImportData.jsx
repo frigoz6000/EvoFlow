@@ -173,7 +173,12 @@ export default function ImportData() {
   const [seedPriceResult, setSeedPriceResult] = useState(null)
   const [seedPriceError, setSeedPriceError] = useState(null)
 
-  const anyRunning = fullStatus === 'running' || appendStatus === 'running' || anonStatus === 'running' || moveDatesStatus === 'running' || randomizeStatus === 'running' || seedPriceStatus === 'running'
+  const [eventsFile, setEventsFile] = useState(null)
+  const [eventsStatus, setEventsStatus] = useState('idle')
+  const [eventsResult, setEventsResult] = useState(null)
+  const [eventsError, setEventsError] = useState(null)
+
+  const anyRunning = fullStatus === 'running' || appendStatus === 'running' || anonStatus === 'running' || moveDatesStatus === 'running' || randomizeStatus === 'running' || seedPriceStatus === 'running' || eventsStatus === 'running'
 
   function handleImport(skipDelete) {
     if (skipDelete) {
@@ -232,6 +237,35 @@ export default function ImportData() {
       .catch(e => {
         const msg = e.response?.data?.error || e.message || 'Randomization failed'
         setRandomizeError(msg); setRandomizeStatus('error')
+      })
+  }
+
+  function handleEventsFileChange(e) {
+    setEventsFile(e.target.files?.[0] || null)
+    setEventsResult(null)
+    setEventsError(null)
+    setEventsStatus('idle')
+  }
+
+  function handleImportEvents() {
+    if (!eventsFile) return
+    setEventsStatus('running')
+    setEventsResult(null)
+    setEventsError(null)
+
+    const formData = new FormData()
+    formData.append('file', eventsFile)
+
+    api.post('/import/system-events-upload', formData, {
+      timeout: 300000,
+      // Override the api client's default 'Content-Type: application/json' so the
+      // browser can set 'multipart/form-data; boundary=...' itself for this upload.
+      headers: { 'Content-Type': undefined },
+    })
+      .then(r => { setEventsResult(r.data); setEventsStatus('done') })
+      .catch(e => {
+        const msg = e.response?.data?.error || e.message || 'Import failed'
+        setEventsError(msg); setEventsStatus('error')
       })
   }
 
@@ -316,6 +350,66 @@ export default function ImportData() {
           </button>
           {appendStatus === 'done' && appendResult && <ResultPanel result={appendResult} />}
           {appendStatus === 'error' && <ErrorPanel error={appendError} />}
+        </div>
+      </div>
+
+      {/* Import system events XML */}
+      <div className="card mt-4" style={{ maxWidth: 600 }}>
+        <div className="card-header">
+          <span className="card-title">Import System Events</span>
+        </div>
+        <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6 }}>
+            Upload an <code style={{ background: 'var(--surface)', padding: '2px 6px', borderRadius: 4, fontSize: 12 }}>event_log_entries</code> XML
+            export (POS online/offline, HTTP logins, fuelling point errors, grade availability,
+            price changes, tank gauge alarms, leakage reports, clock changes) into the{' '}
+            <code style={{ background: 'var(--surface)', padding: '2px 6px', borderRadius: 4, fontSize: 12 }}>SystemEvents</code> table.
+            "Sudden Loss" and "possible Sudden Loss" tank gauge alarms are additionally parsed
+            (volume lost, duration, rates) into <code style={{ background: 'var(--surface)', padding: '2px 6px', borderRadius: 4, fontSize: 12 }}>SuddenLossEvents</code>.
+            Already-imported entries (matched by site + sequence number) are skipped automatically.
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <input
+              type="file"
+              accept=".xml"
+              onChange={handleEventsFileChange}
+              disabled={anyRunning}
+              style={{ fontSize: 13, color: 'var(--text-secondary)' }}
+            />
+            <button
+              onClick={handleImportEvents}
+              disabled={anyRunning || !eventsFile}
+              style={{
+                background: eventsStatus === 'running' ? 'var(--surface)' : '#2563eb',
+                border: '1px solid ' + (eventsStatus === 'running' ? 'var(--border)' : '#2563eb'),
+                borderRadius: 8, padding: '10px 24px',
+                cursor: (anyRunning || !eventsFile) ? 'not-allowed' : 'pointer',
+                color: eventsStatus === 'running' ? 'var(--text-muted)' : '#fff',
+                fontSize: 14, fontWeight: 700,
+                display: 'flex', alignItems: 'center', gap: 8,
+                opacity: (anyRunning || !eventsFile) ? 0.7 : 1, transition: 'background 0.15s',
+              }}
+            >
+              {eventsStatus === 'running' ? <><SpinnerIcon /> Importing…</> : <><DownloadIcon /> Import Events XML</>}
+            </button>
+          </div>
+          {eventsStatus === 'done' && eventsResult && (
+            <div style={{ background: 'rgba(22,163,74,0.08)', border: '1px solid #16a34a', borderRadius: 8, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#16a34a', fontWeight: 700, fontSize: 15 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                Import complete
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <span>Site: <strong>{eventsResult.siteId}</strong></span>
+                <span>Entries in file: <strong>{eventsResult.totalEntries?.toLocaleString()}</strong></span>
+                <span>Inserted: <strong>{eventsResult.inserted?.toLocaleString()}</strong></span>
+                <span>Skipped (already imported): <strong>{eventsResult.skipped?.toLocaleString()}</strong></span>
+              </div>
+            </div>
+          )}
+          {eventsStatus === 'error' && <ErrorPanel error={eventsError} title="Import failed (has CreateSystemEventsTable.sql been run?)" />}
         </div>
       </div>
 

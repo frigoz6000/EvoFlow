@@ -1,14 +1,14 @@
 const translations = {
   en: {
     // Nav sections
-    nav_main: 'MAIN', nav_monitoring: 'MONITORING', nav_sites: 'SITES',
-    nav_fuel_prices: 'FUEL PRICES', nav_reports: 'REPORTS', nav_alarms: 'ALARMS',
-    nav_email: 'EMAIL', nav_whatsapp: 'WHATSAPP', nav_deliverect: 'DELIVERECT', nav_config: 'CONFIG',
+    nav_main: 'Main', nav_monitoring: 'Monitoring', nav_sites: 'Sites',
+    nav_fuel_prices: 'Fuel Prices', nav_reports: 'Reports', nav_alarms: 'Alarms',
+    nav_email: 'Email', nav_whatsapp: 'WhatsApp', nav_deliverect: 'Deliverect', nav_config: 'Config',
     // Nav items
     nav_home: 'Home', nav_pump_monitor: 'Pump Monitor', nav_all_sites: 'All Sites',
     nav_site_map: 'Site Map', nav_fuel_prices_item: 'Fuel Prices', nav_price_history: 'Price History',
     nav_doms_info: 'Doms Info', nav_flow_rates: 'Flow Rates', nav_device_alerts: 'Device Alerts',
-    nav_volume_revenue: 'Volume & Revenue', nav_tank_gauges: 'Tank Gauges',
+    nav_volume_revenue: 'Volume & Revenue', nav_volume_discrepancies: 'Volume Discrepancies', nav_system_events: 'System Events', nav_sudden_loss: 'Sudden Loss', nav_tank_gauges: 'Tank Gauges',
     nav_active_alarms: 'Active Alarms', nav_alarm_history: 'Alarm History',
     nav_notifications: 'Notifications', nav_recipients: 'Recipients',
     nav_email_settings: 'Settings', nav_email_log: 'Email Log',
@@ -244,9 +244,9 @@ const translations = {
   },
 
   fr: {
-    nav_main: 'PRINCIPAL', nav_monitoring: 'SURVEILLANCE', nav_sites: 'SITES',
-    nav_fuel_prices: 'PRIX CARBURANT', nav_reports: 'RAPPORTS', nav_alarms: 'ALARMES',
-    nav_email: 'EMAIL', nav_whatsapp: 'WHATSAPP', nav_config: 'CONFIG',
+    nav_main: 'Principal', nav_monitoring: 'Surveillance', nav_sites: 'Sites',
+    nav_fuel_prices: 'Prix Carburant', nav_reports: 'Rapports', nav_alarms: 'Alarmes',
+    nav_email: 'Email', nav_whatsapp: 'WhatsApp', nav_config: 'Config',
     nav_home: 'Accueil', nav_pump_monitor: 'Surveillance Pompes', nav_all_sites: 'Tous les Sites',
     nav_site_map: 'Carte des Sites', nav_fuel_prices_item: 'Prix Carburant', nav_price_history: 'Historique Prix',
     nav_doms_info: 'Info Doms', nav_flow_rates: 'Débits', nav_device_alerts: 'Alertes Appareils',
@@ -409,9 +409,9 @@ const translations = {
   },
 
   es: {
-    nav_main: 'PRINCIPAL', nav_monitoring: 'MONITOREO', nav_sites: 'SITIOS',
-    nav_fuel_prices: 'PRECIOS COMBUSTIBLE', nav_reports: 'INFORMES', nav_alarms: 'ALARMAS',
-    nav_email: 'EMAIL', nav_whatsapp: 'WHATSAPP', nav_config: 'CONFIG',
+    nav_main: 'Principal', nav_monitoring: 'Monitoreo', nav_sites: 'Sitios',
+    nav_fuel_prices: 'Precios Combustible', nav_reports: 'Informes', nav_alarms: 'Alarmas',
+    nav_email: 'Email', nav_whatsapp: 'WhatsApp', nav_config: 'Config',
     nav_home: 'Inicio', nav_pump_monitor: 'Monitor de Bombas', nav_all_sites: 'Todos los Sitios',
     nav_site_map: 'Mapa de Sitios', nav_fuel_prices_item: 'Precios Combustible', nav_price_history: 'Historial Precios',
     nav_doms_info: 'Info Doms', nav_flow_rates: 'Caudales', nav_device_alerts: 'Alertas Dispositivos',
@@ -572,9 +572,9 @@ const translations = {
   },
 
   de: {
-    nav_main: 'HAUPT', nav_monitoring: 'ÜBERWACHUNG', nav_sites: 'STANDORTE',
-    nav_fuel_prices: 'KRAFTSTOFFPREISE', nav_reports: 'BERICHTE', nav_alarms: 'ALARME',
-    nav_email: 'EMAIL', nav_whatsapp: 'WHATSAPP', nav_config: 'CONFIG',
+    nav_main: 'Haupt', nav_monitoring: 'Überwachung', nav_sites: 'Standorte',
+    nav_fuel_prices: 'Kraftstoffpreise', nav_reports: 'Berichte', nav_alarms: 'Alarme',
+    nav_email: 'Email', nav_whatsapp: 'WhatsApp', nav_config: 'Config',
     nav_home: 'Startseite', nav_pump_monitor: 'Pumpenüberwachung', nav_all_sites: 'Alle Standorte',
     nav_site_map: 'Standortkarte', nav_fuel_prices_item: 'Kraftstoffpreise', nav_price_history: 'Preisverlauf',
     nav_doms_info: 'Doms Info', nav_flow_rates: 'Durchflussraten', nav_device_alerts: 'Gerätewarnungen',
@@ -735,9 +735,9 @@ const translations = {
   },
 
   it: {
-    nav_main: 'PRINCIPALE', nav_monitoring: 'MONITORAGGIO', nav_sites: 'SITI',
-    nav_fuel_prices: 'PREZZI CARBURANTE', nav_reports: 'REPORT', nav_alarms: 'ALLARMI',
-    nav_email: 'EMAIL', nav_whatsapp: 'WHATSAPP', nav_config: 'CONFIG',
+    nav_main: 'Principale', nav_monitoring: 'Monitoraggio', nav_sites: 'Siti',
+    nav_fuel_prices: 'Prezzi Carburante', nav_reports: 'Report', nav_alarms: 'Allarmi',
+    nav_email: 'Email', nav_whatsapp: 'WhatsApp', nav_config: 'Config',
     nav_home: 'Home', nav_pump_monitor: 'Monitor Pompe', nav_all_sites: 'Tutti i Siti',
     nav_site_map: 'Mappa Siti', nav_fuel_prices_item: 'Prezzi Carburante', nav_price_history: 'Storico Prezzi',
     nav_doms_info: 'Info Doms', nav_flow_rates: 'Portate', nav_device_alerts: 'Avvisi Dispositivi',
@@ -898,9 +898,9 @@ const translations = {
   },
 
   pt: {
-    nav_main: 'PRINCIPAL', nav_monitoring: 'MONITORAMENTO', nav_sites: 'SITES',
-    nav_fuel_prices: 'PREÇOS COMBUSTÍVEL', nav_reports: 'RELATÓRIOS', nav_alarms: 'ALARMES',
-    nav_email: 'EMAIL', nav_whatsapp: 'WHATSAPP', nav_config: 'CONFIG',
+    nav_main: 'Principal', nav_monitoring: 'Monitoramento', nav_sites: 'Sites',
+    nav_fuel_prices: 'Preços Combustível', nav_reports: 'Relatórios', nav_alarms: 'Alarmes',
+    nav_email: 'Email', nav_whatsapp: 'WhatsApp', nav_config: 'Config',
     nav_home: 'Início', nav_pump_monitor: 'Monitor de Bombas', nav_all_sites: 'Todos os Sites',
     nav_site_map: 'Mapa dos Sites', nav_fuel_prices_item: 'Preços Combustível', nav_price_history: 'Histórico Preços',
     nav_doms_info: 'Info Doms', nav_flow_rates: 'Taxas de Fluxo', nav_device_alerts: 'Alertas Dispositivos',

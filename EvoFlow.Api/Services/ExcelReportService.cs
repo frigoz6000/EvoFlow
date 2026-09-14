@@ -47,6 +47,12 @@ public class ExcelReportService(IDapperConnectionFactory connectionFactory, ILog
                 case "Site Comparison Report":
                     await BuildSiteComparisonSheet(wb);
                     break;
+                case "Sudden Loss Report":
+                    await BuildSuddenLossSheet(wb);
+                    break;
+                case "Volume Discrepancies Report":
+                    await BuildVolumeDiscrepanciesSheet(wb);
+                    break;
                 default:
                     await BuildVolumeRevenueSheet(wb, reportType);
                     break;
@@ -399,6 +405,92 @@ public class ExcelReportService(IDapperConnectionFactory connectionFactory, ILog
         AutoFit(ws, headers.Length);
     }
 
+    private async Task BuildSuddenLossSheet(XLWorkbook wb)
+    {
+        using var conn = connectionFactory.CreateConnection();
+        var latestDate = await conn.ExecuteScalarAsync<DateOnly?>(
+            "SELECT MAX(CAST(EventDateTime AS DATE)) FROM SuddenLossEvents");
+        if (latestDate is null) { wb.AddWorksheet("No Data"); return; }
+
+        var rows = await conn.QueryAsync<SuddenLossReportRow>("""
+            SELECT sl.EventDateTime, sl.SiteId, s.SiteName, sl.TankId, sl.IsPossible,
+                   sl.VolumeLostLitres, sl.DurationSeconds, sl.ConsumptionRate, sl.MaxRateLPerMin, sl.EventText
+            FROM SuddenLossEvents sl
+            LEFT JOIN Sites s ON s.SiteId = sl.SiteId
+            WHERE CAST(sl.EventDateTime AS DATE) = @d
+            ORDER BY sl.SiteId, sl.EventDateTime
+            """, new { d = latestDate });
+
+        var ws = wb.AddWorksheet("Sudden Loss");
+        AddTitle(ws, "Sudden Loss Report", latestDate.Value);
+        var headers = new[] { "Date/Time", "Site ID", "Site Name", "Tank", "Type",
+            "Volume Lost (L)", "Duration (s)", "Cons. Rate", "Max Rate (L/min)", "Text" };
+        WriteHeaders(ws, 3, headers);
+
+        int row = 4;
+        foreach (var r in rows)
+        {
+            ws.Cell(row, 1).Value = r.EventDateTime.ToString("yyyy-MM-dd HH:mm:ss");
+            ws.Cell(row, 2).Value = r.SiteId;
+            ws.Cell(row, 3).Value = r.SiteName ?? "";
+            ws.Cell(row, 4).Value = r.TankId ?? "";
+            ws.Cell(row, 5).Value = r.IsPossible ? "Possible" : "Confirmed";
+            if (r.VolumeLostLitres.HasValue) { ws.Cell(row, 6).Value = r.VolumeLostLitres.Value; ws.Cell(row, 6).Style.NumberFormat.Format = "#,##0.00"; }
+            if (r.DurationSeconds.HasValue) ws.Cell(row, 7).Value = r.DurationSeconds.Value;
+            if (r.ConsumptionRate.HasValue) ws.Cell(row, 8).Value = r.ConsumptionRate.Value;
+            if (r.MaxRateLPerMin.HasValue) ws.Cell(row, 9).Value = r.MaxRateLPerMin.Value;
+            ws.Cell(row, 10).Value = r.EventText ?? "";
+            row++;
+        }
+        if (row == 4) ws.Cell(4, 1).Value = "No sudden loss events found for this date.";
+        AutoFit(ws, headers.Length);
+    }
+
+    private async Task BuildVolumeDiscrepanciesSheet(XLWorkbook wb)
+    {
+        using var conn = connectionFactory.CreateConnection();
+        var latestBusinessDate = await conn.ExecuteScalarAsync<DateOnly?>(
+            "SELECT MAX(BusinessDate) FROM PumpTotals");
+        if (latestBusinessDate is null) { wb.AddWorksheet("No Data"); return; }
+        var activityDate = latestBusinessDate.Value.AddDays(-1);
+
+        var rows = await conn.QueryAsync<VolumeDiscrepancyReportRow>(
+            new CommandDefinition(
+                "dbo.GetVolumeDiscrepancies",
+                new { DateFrom = activityDate, DateTo = activityDate, SiteId = (string?)null, Threshold = 0.01m },
+                commandType: System.Data.CommandType.StoredProcedure,
+                commandTimeout: 120));
+
+        var ws = wb.AddWorksheet("Volume Discrepancies");
+        AddTitle(ws, "Volume Discrepancies Report", activityDate);
+        var headers = new[] { "Activity Date", "Site ID", "Site Name", "Device", "Grade", "Tank(s)",
+            "Pump Vol (L)", "FP Vol (L)", "Missing Vol (L)", "Pump Money (£)", "FP Money (£)", "Missing Money (£)",
+            "Sudden Loss Events", "Sudden Loss Vol (L)" };
+        WriteHeaders(ws, 3, headers);
+
+        int row = 4;
+        foreach (var r in rows)
+        {
+            ws.Cell(row, 1).Value = r.ActivityDate.ToString("yyyy-MM-dd");
+            ws.Cell(row, 2).Value = r.SiteId;
+            ws.Cell(row, 3).Value = r.SiteName ?? "";
+            ws.Cell(row, 4).Value = r.FuellingPointId;
+            ws.Cell(row, 5).Value = r.GradeDescription ?? r.GradeId;
+            ws.Cell(row, 6).Value = r.TankIds ?? "";
+            ws.Cell(row, 7).Value = r.PhysicalPumpVolume; ws.Cell(row, 7).Style.NumberFormat.Format = "#,##0.00";
+            ws.Cell(row, 8).Value = r.RecordedFpVolume;   ws.Cell(row, 8).Style.NumberFormat.Format = "#,##0.00";
+            ws.Cell(row, 9).Value = r.MissingVolume;      ws.Cell(row, 9).Style.NumberFormat.Format = "#,##0.00";
+            ws.Cell(row, 10).Value = r.PhysicalPumpMoney; ws.Cell(row, 10).Style.NumberFormat.Format = "#,##0.00";
+            ws.Cell(row, 11).Value = r.RecordedFpMoney;   ws.Cell(row, 11).Style.NumberFormat.Format = "#,##0.00";
+            ws.Cell(row, 12).Value = r.MissingMoney;      ws.Cell(row, 12).Style.NumberFormat.Format = "#,##0.00";
+            ws.Cell(row, 13).Value = r.SuddenLossCount;
+            if (r.SuddenLossVolumeL.HasValue) { ws.Cell(row, 14).Value = r.SuddenLossVolumeL.Value; ws.Cell(row, 14).Style.NumberFormat.Format = "#,##0.00"; }
+            row++;
+        }
+        if (row == 4) ws.Cell(4, 1).Value = "No volume discrepancies found for this date.";
+        AutoFit(ws, headers.Length);
+    }
+
     // --- Helpers ---
 
     private static void AddTitle(IXLWorksheet ws, string title, DateOnly date)
@@ -452,4 +544,14 @@ public class ExcelReportService(IDapperConnectionFactory connectionFactory, ILog
 
     private record SiteComparisonRow(string SiteId, string? SiteName, decimal TotalVolume, decimal DailyVolume,
         decimal TotalMoney, decimal DailyMoney, int PumpCount);
+
+    private record SuddenLossReportRow(DateTime EventDateTime, string SiteId, string? SiteName, string? TankId,
+        bool IsPossible, decimal? VolumeLostLitres, int? DurationSeconds, decimal? ConsumptionRate,
+        decimal? MaxRateLPerMin, string? EventText);
+
+    private record VolumeDiscrepancyReportRow(string SiteId, string? SiteName, string FuellingPointId,
+        DateOnly ActivityDate, DateOnly ReportDate, int GradeOption, string GradeId, string? GradeDescription,
+        string? TankIds, decimal PhysicalPumpVolume, decimal RecordedFpVolume, decimal MissingVolume,
+        decimal PhysicalPumpMoney, decimal RecordedFpMoney, decimal MissingMoney,
+        int SuddenLossCount, decimal? SuddenLossVolumeL);
 }
