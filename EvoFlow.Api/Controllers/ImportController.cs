@@ -950,59 +950,93 @@ public class ImportController(IDapperConnectionFactory connectionFactory, ILogge
     /// tank gauge alarms, leakage reports, terminal online/offline, clock changes), and imports
     /// each entry into SystemEvents. Existing (SiteId, SeqNo) pairs are skipped so re-imports are safe.
     /// Requires the SystemEvents table — see EvoFlow.Api/Sql/CreateSystemEventsTable.sql.
+    ///
+    /// Accepts one or more files under the "files" form field. Every file is processed and
+    /// logged individually, but any new Sudden Loss events found across the whole batch are
+    /// combined into a single alert email covering every affected site, rather than one email
+    /// per site.
     /// </summary>
     [HttpPost("system-events-upload")]
     [RequestSizeLimit(50 * 1024 * 1024)]
-    public async Task<IActionResult> UploadSystemEventsXml(IFormFile file)
+    public async Task<IActionResult> UploadSystemEventsXml()
     {
-        if (file == null || file.Length == 0)
+        var files = Request.Form.Files.Count > 0 ? Request.Form.Files.ToList() : new List<IFormFile>();
+        if (files.Count == 0)
             return BadRequest(new { error = "No file uploaded." });
 
-        var fileName = Path.GetFileName(file.FileName);
         var now = DateTime.UtcNow;
+        var fileResults = new List<object>();
+        var allNewSuddenLossAlerts = new List<SuddenLossAlert>();
+        int successCount = 0, failCount = 0;
 
-        string xmlContent;
-        using (var reader = new StreamReader(file.OpenReadStream()))
-            xmlContent = await reader.ReadToEndAsync();
+        using var conn = connectionFactory.CreateConnection();
 
-        try
+        foreach (var file in files)
         {
-            var result = await ProcessSystemEventsXmlAsync(xmlContent);
-            using var conn = connectionFactory.CreateConnection();
-            await conn.ExecuteAsync(ImportLogInsertSql, new
+            if (file.Length == 0) continue;
+            var fileName = Path.GetFileName(file.FileName);
+
+            string xmlContent;
+            using (var reader = new StreamReader(file.OpenReadStream()))
+                xmlContent = await reader.ReadToEndAsync();
+
+            try
             {
-                FileName = fileName,
-                Status = "success",
-                Message = $"Processed OK. Site: {result.SiteId}, Entries: {result.TotalEntries}, Inserted: {result.Inserted}, Skipped (duplicate): {result.Skipped}",
-                ImportedAtUtc = now
-            });
-            logger.LogInformation("System events XML import success: {File}, site={Site}, inserted={Inserted}", fileName, result.SiteId, result.Inserted);
-            return Ok(new
+                var result = await ProcessSystemEventsXmlAsync(xmlContent);
+                allNewSuddenLossAlerts.AddRange(result.NewSuddenLossAlerts);
+
+                await conn.ExecuteAsync(ImportLogInsertSql, new
+                {
+                    FileName = fileName,
+                    Status = "success",
+                    Message = $"Processed OK. Site: {result.SiteId}, Entries: {result.TotalEntries}, Inserted: {result.Inserted}, Skipped (duplicate): {result.Skipped}",
+                    ImportedAtUtc = now
+                });
+                logger.LogInformation("System events XML import success: {File}, site={Site}, inserted={Inserted}", fileName, result.SiteId, result.Inserted);
+
+                successCount++;
+                fileResults.Add(new
+                {
+                    fileName,
+                    success = true,
+                    siteId = result.SiteId,
+                    totalEntries = result.TotalEntries,
+                    inserted = result.Inserted,
+                    skipped = result.Skipped
+                });
+            }
+            catch (Exception ex)
             {
-                message = "Import successful",
-                fileName,
-                siteId = result.SiteId,
-                totalEntries = result.TotalEntries,
-                inserted = result.Inserted,
-                skipped = result.Skipped
-            });
+                await conn.ExecuteAsync(ImportLogInsertSql, new
+                {
+                    FileName = fileName,
+                    Status = "failed",
+                    Message = ex.Message,
+                    ImportedAtUtc = now
+                });
+                logger.LogError(ex, "System events XML import failed: {File}", fileName);
+
+                failCount++;
+                fileResults.Add(new { fileName, success = false, error = ex.Message });
+            }
         }
-        catch (Exception ex)
+
+        // One consolidated email for the whole batch, covering every site that had a
+        // genuinely new Sudden Loss event — not one email per site.
+        if (allNewSuddenLossAlerts.Count > 0)
+            await SendSuddenLossAlertAsync(conn, allNewSuddenLossAlerts);
+
+        return Ok(new
         {
-            using var conn = connectionFactory.CreateConnection();
-            await conn.ExecuteAsync(ImportLogInsertSql, new
-            {
-                FileName = fileName,
-                Status = "failed",
-                Message = ex.Message,
-                ImportedAtUtc = now
-            });
-            logger.LogError(ex, "System events XML import failed: {File}", fileName);
-            return StatusCode(500, new { error = ex.Message, fileName });
-        }
+            message = failCount == 0 ? "Import successful" : "Import completed with errors",
+            filesProcessed = files.Count,
+            succeeded = successCount,
+            failed = failCount,
+            results = fileResults
+        });
     }
 
-    private async Task<(string SiteId, int TotalEntries, int Inserted, int Skipped)> ProcessSystemEventsXmlAsync(string xmlContent)
+    private async Task<(string SiteId, string SiteName, int TotalEntries, int Inserted, int Skipped, List<SuddenLossAlert> NewSuddenLossAlerts)> ProcessSystemEventsXmlAsync(string xmlContent)
     {
         var root = XElement.Parse(xmlContent);
 
@@ -1126,24 +1160,23 @@ public class ImportController(IDapperConnectionFactory connectionFactory, ILogge
 
                 // Only alert on genuinely new events — re-imports of already-seen data stay silent.
                 if (suddenLossInserted > 0)
-                    newSuddenLossAlerts.Add(new SuddenLossAlert(eventDateTime, deviceId, isPossible, volumeLostLitres));
+                    newSuddenLossAlerts.Add(new SuddenLossAlert(siteId, systemName, eventDateTime, deviceId, isPossible, volumeLostLitres));
             }
         }
 
-        if (newSuddenLossAlerts.Count > 0)
-            await SendSuddenLossAlertAsync(conn, siteId, systemName, newSuddenLossAlerts);
-
-        return (siteId, total, inserted, skipped);
+        // Alerting is handled by the caller, which aggregates new events across every
+        // file in the batch so sites end up in one consolidated email rather than one each.
+        return (siteId, systemName, total, inserted, skipped, newSuddenLossAlerts);
     }
 
-    private record SuddenLossAlert(DateTime EventDateTime, string? TankId, bool IsPossible, decimal? VolumeLostLitres);
+    private record SuddenLossAlert(string SiteId, string SiteName, DateTime EventDateTime, string? TankId, bool IsPossible, decimal? VolumeLostLitres);
 
     /// <summary>
     /// Emails whoever is subscribed to the "Sudden Loss Alarm" in Alarm Settings, if it's enabled.
-    /// One consolidated email per import batch rather than one per event. Never throws — a failed
-    /// alert should not fail the import itself.
+    /// One consolidated email per import batch covering every affected site — not one email per
+    /// site. Never throws — a failed alert should not fail the import itself.
     /// </summary>
-    private async Task SendSuddenLossAlertAsync(System.Data.IDbConnection conn, string siteId, string siteName, List<SuddenLossAlert> events)
+    private async Task SendSuddenLossAlertAsync(System.Data.IDbConnection conn, List<SuddenLossAlert> events)
     {
         try
         {
@@ -1155,47 +1188,117 @@ public class ImportController(IDapperConnectionFactory connectionFactory, ILogge
                 JOIN EmailRecipients er ON er.Id = asr.EmailRecipientId AND er.IsActive = 1
                 WHERE at.Name = 'Sudden Loss Alarm'")).ToList();
 
+            var siteCount = events.Select(e => e.SiteId).Distinct().Count();
+
             if (recipientEmails.Count == 0)
             {
-                logger.LogInformation("Sudden Loss Alarm not enabled or has no recipients — skipping alert for site {SiteId} ({Count} new event(s)).",
-                    siteId, events.Count);
+                logger.LogInformation("Sudden Loss Alarm not enabled or has no recipients — skipping alert for {SiteCount} site(s), {Count} new event(s).",
+                    siteCount, events.Count);
                 return;
             }
 
-            var displaySiteName = string.IsNullOrEmpty(siteName) ? siteId : siteName;
-            var subject = $"Sudden Loss Alarm — {displaySiteName} ({siteId}) — {events.Count} new event{(events.Count > 1 ? "s" : "")}";
+            var plural = events.Count == 1 ? "event requires" : "events require";
+            var siteWord = siteCount == 1 ? "site" : "sites";
+            var subject = $"Sudden Loss Alarm — {events.Count} new event{(events.Count > 1 ? "s" : "")} across {siteCount} {siteWord}";
+            var timestamp = DateTime.Now.ToString("dddd dd MMMM yyyy") + " &#8226; " + DateTime.Now.ToString("HH:mm");
 
             var rowsHtml = string.Join("", events
                 .OrderByDescending(e => e.EventDateTime)
-                .Select(e => $"""
-                    <tr>
-                        <td style="padding:4px 8px;border:1px solid #ddd;">{e.EventDateTime:yyyy-MM-dd HH:mm:ss}</td>
-                        <td style="padding:4px 8px;border:1px solid #ddd;">{System.Net.WebUtility.HtmlEncode(e.TankId ?? "—")}</td>
-                        <td style="padding:4px 8px;border:1px solid #ddd;">{(e.IsPossible ? "Possible" : "Confirmed")}</td>
-                        <td style="padding:4px 8px;border:1px solid #ddd;">{(e.VolumeLostLitres.HasValue ? e.VolumeLostLitres.Value.ToString("0.00") + " L" : "—")}</td>
-                    </tr>
-                    """));
+                .Select(e =>
+                {
+                    var (badgeLabel, badgeBg, badgeFg) = e.IsPossible
+                        ? ("Possible", "#fef0c7", "#93540b")
+                        : ("Confirmed", "#fee4e2", "#b42318");
+                    var displaySite = string.IsNullOrEmpty(e.SiteName) ? e.SiteId : $"{e.SiteName} ({e.SiteId})";
+
+                    return $"""
+                        <tr>
+                          {Td($"<span style='color:#667085;white-space:nowrap;'>{e.EventDateTime:dd-MMM-yyyy HH:mm:ss}</span>")}
+                          {Td($"<span style='font-weight:600;color:#101828;'>{HtmlEnc(displaySite)}</span>")}
+                          {Td($"<span style='font-weight:600;color:#101828;'>{HtmlEnc(e.TankId ?? "—")}</span>")}
+                          {Td($"<span style='display:inline-block;background-color:{badgeBg};color:{badgeFg};font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;white-space:nowrap;'>{badgeLabel}</span>")}
+                          {Td(e.VolumeLostLitres.HasValue ? e.VolumeLostLitres.Value.ToString("0.00") + " L" : "—", right: true)}
+                        </tr>
+                        """;
+                }));
 
             var body = $"""
-                <p>The following Sudden Loss tank gauge alarm(s) were detected at <strong>{System.Net.WebUtility.HtmlEncode(displaySiteName)} ({siteId})</strong>:</p>
-                <table style="border-collapse:collapse;font-family:sans-serif;font-size:13px;">
-                    <tr style="background:#1a1d35;color:#fff;">
-                        <th style="padding:4px 8px;">Date/Time</th>
-                        <th style="padding:4px 8px;">Tank</th>
-                        <th style="padding:4px 8px;">Type</th>
-                        <th style="padding:4px 8px;">Volume Lost</th>
+                <div style='margin:0;padding:0;background-color:#f1f3f6;'>
+                  <table role='presentation' width='100%' cellpadding='0' cellspacing='0' style='background-color:#f1f3f6;padding:24px 12px;'>
+                    <tr>
+                      <td align='center'>
+                        <table role='presentation' width='820' cellpadding='0' cellspacing='0'
+                               style='width:100%;max-width:820px;background-color:#ffffff;border-radius:14px;overflow:hidden;
+                                      border:1px solid #e4e7ec;font-family:Segoe UI,Roboto,Helvetica,Arial,sans-serif;'>
+
+                          <!-- Header -->
+                          <tr>
+                            <td style='background-color:#0f2440;padding:28px 32px;'>
+                              <table role='presentation' width='100%' cellpadding='0' cellspacing='0'>
+                                <tr>
+                                  <td>
+                                    <div style='font-size:20px;font-weight:600;color:#ffffff;letter-spacing:.3px;'>
+                                      Sudden Loss Alarm
+                                    </div>
+                                    <div style='font-size:13px;color:#9db2cc;padding-top:6px;'>
+                                      {siteCount} {siteWord} affected &#8226; {timestamp}
+                                    </div>
+                                  </td>
+                                  <td align='right' style='vertical-align:middle;'>
+                                    <span style='display:inline-block;background-color:#e8503a;color:#ffffff;
+                                                 font-size:13px;font-weight:600;padding:6px 14px;border-radius:999px;'>
+                                      {events.Count} new
+                                    </span>
+                                  </td>
+                                </tr>
+                              </table>
+                            </td>
+                          </tr>
+
+                          <!-- Intro -->
+                          <tr>
+                            <td style='padding:24px 32px 8px 32px;'>
+                              <div style='font-size:14px;color:#475467;line-height:1.5;'>
+                                The following {events.Count} tank gauge sudden-loss {plural} attention, across {siteCount} {siteWord}.
+                              </div>
+                            </td>
+                          </tr>
+
+                          <!-- Detail table -->
+                          <tr>
+                            <td style='padding:16px 32px 8px 32px;'>
+                              <table role='presentation' width='100%' cellpadding='0' cellspacing='0' style='border-collapse:collapse;'>
+                                <tr>
+                                  {Th("Date/Time")}{Th("Site")}{Th("Tank")}{Th("Type")}{Th("Volume Lost", right: true)}
+                                </tr>
+                                {rowsHtml}
+                              </table>
+                            </td>
+                          </tr>
+
+                          <!-- Footer -->
+                          <tr>
+                            <td style='padding:20px 32px 26px 32px;'>
+                              <div style='border-top:1px solid #eaecf0;padding-top:16px;font-size:12px;color:#98a2b3;line-height:1.6;'>
+                                Sent automatically by EvoFlow when new Sudden Loss (or possible Sudden Loss) events are imported from site data.
+                              </div>
+                            </td>
+                          </tr>
+
+                        </table>
+                      </td>
                     </tr>
-                    {rowsHtml}
-                </table>
+                  </table>
+                </div>
                 """;
 
             await emailService.SendAsync(recipientEmails, subject, body);
-            logger.LogInformation("Sudden Loss Alarm email sent to {Count} recipient(s) for site {SiteId} ({EventCount} event(s)).",
-                recipientEmails.Count, siteId, events.Count);
+            logger.LogInformation("Sudden Loss Alarm email sent to {Count} recipient(s) covering {SiteCount} site(s), {EventCount} event(s).",
+                recipientEmails.Count, siteCount, events.Count);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to send Sudden Loss Alarm email for site {SiteId}", siteId);
+            logger.LogError(ex, "Failed to send consolidated Sudden Loss Alarm email");
         }
     }
 
@@ -1254,6 +1357,21 @@ public class ImportController(IDapperConnectionFactory connectionFactory, ILogge
     private static int Bit(string? val) => val?.ToLower() == "yes" ? 1 : 0;
     private static decimal? DecimalVal(string? s) => decimal.TryParse(s, out var v) ? v : null;
     private static int? Int32Val(string? s) => int.TryParse(s, out var v) ? v : null;
+
+    // ---------------------------------------------------------
+    // Sudden Loss email template helpers — styled to match the
+    // EvoMonitor alert email (dark header bar, pill badges, plain
+    // table-based layout for broad email-client support).
+    // ---------------------------------------------------------
+    private static string Th(string text, bool right = false) =>
+        $"<th align='{(right ? "right" : "left")}' style='padding:10px 12px;font-size:11px;font-weight:600;" +
+        $"color:#667085;text-transform:uppercase;letter-spacing:.6px;border-bottom:2px solid #eaecf0;'>{text}</th>";
+
+    private static string Td(string? inner, bool right = false) =>
+        $"<td align='{(right ? "right" : "left")}' style='padding:12px;font-size:14px;color:#344054;" +
+        $"border-bottom:1px solid #f2f4f7;vertical-align:middle;'>{inner ?? ""}</td>";
+
+    private static string HtmlEnc(string? value) => System.Net.WebUtility.HtmlEncode(value ?? "");
 
     private static async Task<(int exitCode, string stdout, string stderr)> RunProcess(
         string executable, string arguments, TimeSpan timeout)

@@ -241,20 +241,20 @@ export default function ImportData() {
   }
 
   function handleEventsFileChange(e) {
-    setEventsFile(e.target.files?.[0] || null)
+    setEventsFile(e.target.files?.length ? Array.from(e.target.files) : null)
     setEventsResult(null)
     setEventsError(null)
     setEventsStatus('idle')
   }
 
   function handleImportEvents() {
-    if (!eventsFile) return
+    if (!eventsFile || eventsFile.length === 0) return
     setEventsStatus('running')
     setEventsResult(null)
     setEventsError(null)
 
     const formData = new FormData()
-    formData.append('file', eventsFile)
+    eventsFile.forEach(f => formData.append('files', f))
 
     api.post('/import/system-events-upload', formData, {
       timeout: 300000,
@@ -367,30 +367,36 @@ export default function ImportData() {
             "Sudden Loss" and "possible Sudden Loss" tank gauge alarms are additionally parsed
             (volume lost, duration, rates) into <code style={{ background: 'var(--surface)', padding: '2px 6px', borderRadius: 4, fontSize: 12 }}>SuddenLossEvents</code>.
             Already-imported entries (matched by site + sequence number) are skipped automatically.
+            Select multiple files (one per site) to import them as a single batch — any new
+            Sudden Loss events found are combined into one alert email covering every site,
+            rather than a separate email per site.
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <input
               type="file"
               accept=".xml"
+              multiple
               onChange={handleEventsFileChange}
               disabled={anyRunning}
               style={{ fontSize: 13, color: 'var(--text-secondary)' }}
             />
             <button
               onClick={handleImportEvents}
-              disabled={anyRunning || !eventsFile}
+              disabled={anyRunning || !eventsFile || eventsFile.length === 0}
               style={{
                 background: eventsStatus === 'running' ? 'var(--surface)' : '#2563eb',
                 border: '1px solid ' + (eventsStatus === 'running' ? 'var(--border)' : '#2563eb'),
                 borderRadius: 8, padding: '10px 24px',
-                cursor: (anyRunning || !eventsFile) ? 'not-allowed' : 'pointer',
+                cursor: (anyRunning || !eventsFile || eventsFile.length === 0) ? 'not-allowed' : 'pointer',
                 color: eventsStatus === 'running' ? 'var(--text-muted)' : '#fff',
                 fontSize: 14, fontWeight: 700,
                 display: 'flex', alignItems: 'center', gap: 8,
-                opacity: (anyRunning || !eventsFile) ? 0.7 : 1, transition: 'background 0.15s',
+                opacity: (anyRunning || !eventsFile || eventsFile.length === 0) ? 0.7 : 1, transition: 'background 0.15s',
               }}
             >
-              {eventsStatus === 'running' ? <><SpinnerIcon /> Importing…</> : <><DownloadIcon /> Import Events XML</>}
+              {eventsStatus === 'running'
+                ? <><SpinnerIcon /> Importing…</>
+                : <><DownloadIcon /> Import Events XML{eventsFile?.length > 1 ? ` (${eventsFile.length} files)` : ''}</>}
             </button>
           </div>
           {eventsStatus === 'done' && eventsResult && (
@@ -399,14 +405,22 @@ export default function ImportData() {
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
-                Import complete
+                {eventsResult.message}
               </div>
               <div style={{ fontSize: 13, color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <span>Site: <strong>{eventsResult.siteId}</strong></span>
-                <span>Entries in file: <strong>{eventsResult.totalEntries?.toLocaleString()}</strong></span>
-                <span>Inserted: <strong>{eventsResult.inserted?.toLocaleString()}</strong></span>
-                <span>Skipped (already imported): <strong>{eventsResult.skipped?.toLocaleString()}</strong></span>
+                <span>Files processed: <strong>{eventsResult.filesProcessed}</strong> ({eventsResult.succeeded} succeeded, {eventsResult.failed} failed)</span>
               </div>
+              {Array.isArray(eventsResult.results) && eventsResult.results.length > 0 && (
+                <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12.5 }}>
+                  {eventsResult.results.map((r, i) => (
+                    <div key={i} style={{ color: r.success ? 'var(--text-secondary)' : '#dc2626' }}>
+                      {r.success
+                        ? `${r.fileName} — site ${r.siteId}: ${r.inserted?.toLocaleString()} inserted, ${r.skipped?.toLocaleString()} skipped (of ${r.totalEntries?.toLocaleString()})`
+                        : `${r.fileName} — failed: ${r.error}`}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
           {eventsStatus === 'error' && <ErrorPanel error={eventsError} title="Import failed (has CreateSystemEventsTable.sql been run?)" />}
