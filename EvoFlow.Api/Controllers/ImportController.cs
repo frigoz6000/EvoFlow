@@ -10,9 +10,20 @@ namespace EvoFlow.Api.Controllers;
 
 [ApiController]
 [Route("api/import")]
-public class ImportController(IDapperConnectionFactory connectionFactory, ILogger<ImportController> logger, IEmailService emailService) : ControllerBase
+public class ImportController(
+    IDapperConnectionFactory connectionFactory,
+    ILogger<ImportController> logger,
+    IEmailService emailService,
+    IConfiguration configuration) : ControllerBase
 {
-    private static readonly string ScriptPath = @"C:\Users\roryj\.paperclip\instances\default\workspaces\0f171b86-1c9b-491f-b414-089c40818833\import_xml.py";
+    private static readonly string ScriptPath = @"C:\0Repos\EvoFlow\import_xml.py";
+
+    /// <summary>Folder scanned by the system-events folder import. Override with Import:DomsFilesPath.</summary>
+    private string SystemEventsFolder =>
+        configuration["Import:DomsFilesPath"]?.Trim() is { Length: > 0 } p ? p : @"C:\Zips\domsfiles";
+
+    /// <summary>Only *.xml files whose name contains this (case-insensitive) are imported.</summary>
+    private const string SystemEventsFilePattern = "newevent";
 
     private const string PopulateSql = @"
         TRUNCATE TABLE DomsInfoSnapshot;
@@ -964,6 +975,92 @@ public class ImportController(IDapperConnectionFactory connectionFactory, ILogge
         if (files.Count == 0)
             return BadRequest(new { error = "No file uploaded." });
 
+        var batch = new List<(string FileName, string Xml)>();
+        foreach (var file in files)
+        {
+            if (file.Length == 0) continue;
+            using var reader = new StreamReader(file.OpenReadStream());
+            batch.Add((Path.GetFileName(file.FileName), await reader.ReadToEndAsync()));
+        }
+
+        return Ok(await ImportSystemEventsBatchAsync(batch));
+    }
+
+    /// <summary>
+    /// Imports every "newevent" system-events XML file sitting in the DOMS files folder
+    /// (<see cref="SystemEventsFolder"/>), rather than requiring files to be uploaded one at a
+    /// time. Matches top-level *.xml files whose name contains "newevent" (case-insensitive).
+    ///
+    /// Batch semantics are identical to <see cref="UploadSystemEventsXml"/>: each file is
+    /// processed and logged individually, and any new Sudden Loss events found across the whole
+    /// batch are combined into a single alert email covering every affected site.
+    /// </summary>
+    [HttpPost("system-events-folder")]
+    public async Task<IActionResult> ImportSystemEventsFromFolder()
+    {
+        var folder = SystemEventsFolder;
+
+        if (!Directory.Exists(folder))
+            return StatusCode(500, new { error = $"Folder not found: {folder}" });
+
+        // Top-level only, and match on the name rather than a "*newevent*.xml" glob so the
+        // comparison is explicitly case-insensitive on every platform.
+        var paths = Directory.EnumerateFiles(folder, "*.xml", SearchOption.TopDirectoryOnly)
+            .Where(p => Path.GetFileName(p).Contains(SystemEventsFilePattern, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        logger.LogInformation("System events folder import: {Count} file(s) matching '{Pattern}' in {Folder}",
+            paths.Count, SystemEventsFilePattern, folder);
+
+        if (paths.Count == 0)
+            return Ok(new
+            {
+                message = $"No files matching \"{SystemEventsFilePattern}\" found in {folder}",
+                folder,
+                filesProcessed = 0,
+                succeeded = 0,
+                failed = 0,
+                results = Array.Empty<object>()
+            });
+
+        var batch = new List<(string FileName, string Xml)>();
+        var unreadable = new List<object>();
+
+        foreach (var path in paths)
+        {
+            try
+            {
+                batch.Add((Path.GetFileName(path), await System.IO.File.ReadAllTextAsync(path)));
+            }
+            catch (Exception ex)
+            {
+                // A locked or unreadable file must not abort the rest of the batch.
+                logger.LogError(ex, "Could not read system events file {Path}", path);
+                unreadable.Add(new { fileName = Path.GetFileName(path), success = false, error = ex.Message });
+            }
+        }
+
+        var result = await ImportSystemEventsBatchAsync(batch, unreadable);
+        return Ok(new
+        {
+            result.message,
+            folder,
+            result.filesProcessed,
+            result.succeeded,
+            result.failed,
+            result.results
+        });
+    }
+
+    /// <summary>
+    /// Shared batch import used by both the upload and folder-scan endpoints. Each file is
+    /// processed and logged independently; new Sudden Loss events across the whole batch are
+    /// combined into one alert email rather than one per site.
+    /// </summary>
+    private async Task<(string message, int filesProcessed, int succeeded, int failed, List<object> results)>
+        ImportSystemEventsBatchAsync(List<(string FileName, string Xml)> batch, List<object>? preexistingFailures = null)
+    {
         var now = DateTime.UtcNow;
         var fileResults = new List<object>();
         var allNewSuddenLossAlerts = new List<SuddenLossAlert>();
@@ -971,15 +1068,15 @@ public class ImportController(IDapperConnectionFactory connectionFactory, ILogge
 
         using var conn = connectionFactory.CreateConnection();
 
-        foreach (var file in files)
+        // Files that could not even be read are reported alongside the processed ones.
+        if (preexistingFailures is { Count: > 0 })
         {
-            if (file.Length == 0) continue;
-            var fileName = Path.GetFileName(file.FileName);
+            fileResults.AddRange(preexistingFailures);
+            failCount += preexistingFailures.Count;
+        }
 
-            string xmlContent;
-            using (var reader = new StreamReader(file.OpenReadStream()))
-                xmlContent = await reader.ReadToEndAsync();
-
+        foreach (var (fileName, xmlContent) in batch)
+        {
             try
             {
                 var result = await ProcessSystemEventsXmlAsync(xmlContent);
@@ -1026,14 +1123,13 @@ public class ImportController(IDapperConnectionFactory connectionFactory, ILogge
         if (allNewSuddenLossAlerts.Count > 0)
             await SendSuddenLossAlertAsync(conn, allNewSuddenLossAlerts);
 
-        return Ok(new
-        {
-            message = failCount == 0 ? "Import successful" : "Import completed with errors",
-            filesProcessed = files.Count,
-            succeeded = successCount,
-            failed = failCount,
-            results = fileResults
-        });
+        return (
+            failCount == 0 ? "Import successful" : "Import completed with errors",
+            successCount + failCount,
+            successCount,
+            failCount,
+            fileResults
+        );
     }
 
     private async Task<(string SiteId, string SiteName, int TotalEntries, int Inserted, int Skipped, List<SuddenLossAlert> NewSuddenLossAlerts)> ProcessSystemEventsXmlAsync(string xmlContent)

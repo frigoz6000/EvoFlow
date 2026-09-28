@@ -173,7 +173,6 @@ export default function ImportData() {
   const [seedPriceResult, setSeedPriceResult] = useState(null)
   const [seedPriceError, setSeedPriceError] = useState(null)
 
-  const [eventsFile, setEventsFile] = useState(null)
   const [eventsStatus, setEventsStatus] = useState('idle')
   const [eventsResult, setEventsResult] = useState(null)
   const [eventsError, setEventsError] = useState(null)
@@ -240,28 +239,12 @@ export default function ImportData() {
       })
   }
 
-  function handleEventsFileChange(e) {
-    setEventsFile(e.target.files?.length ? Array.from(e.target.files) : null)
-    setEventsResult(null)
-    setEventsError(null)
-    setEventsStatus('idle')
-  }
-
   function handleImportEvents() {
-    if (!eventsFile || eventsFile.length === 0) return
     setEventsStatus('running')
     setEventsResult(null)
     setEventsError(null)
 
-    const formData = new FormData()
-    eventsFile.forEach(f => formData.append('files', f))
-
-    api.post('/import/system-events-upload', formData, {
-      timeout: 300000,
-      // Override the api client's default 'Content-Type: application/json' so the
-      // browser can set 'multipart/form-data; boundary=...' itself for this upload.
-      headers: { 'Content-Type': undefined },
-    })
+    api.post('/import/system-events-folder', null, { timeout: 600000 })
       .then(r => { setEventsResult(r.data); setEventsStatus('done') })
       .catch(e => {
         const msg = e.response?.data?.error || e.message || 'Import failed'
@@ -360,55 +343,62 @@ export default function ImportData() {
         </div>
         <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
           <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6 }}>
-            Upload an <code style={{ background: 'var(--surface)', padding: '2px 6px', borderRadius: 4, fontSize: 12 }}>event_log_entries</code> XML
-            export (POS online/offline, HTTP logins, fuelling point errors, grade availability,
+            Imports every <code style={{ background: 'var(--surface)', padding: '2px 6px', borderRadius: 4, fontSize: 12 }}>event_log_entries</code> XML
+            file whose name contains <strong>newevent</strong> from{' '}
+            <code style={{ background: 'var(--surface)', padding: '2px 6px', borderRadius: 4, fontSize: 12 }}>C:\Zips\domsfiles\</code>{' '}
+            (POS online/offline, HTTP logins, fuelling point errors, grade availability,
             price changes, tank gauge alarms, leakage reports, clock changes) into the{' '}
             <code style={{ background: 'var(--surface)', padding: '2px 6px', borderRadius: 4, fontSize: 12 }}>SystemEvents</code> table.
             "Sudden Loss" and "possible Sudden Loss" tank gauge alarms are additionally parsed
             (volume lost, duration, rates) into <code style={{ background: 'var(--surface)', padding: '2px 6px', borderRadius: 4, fontSize: 12 }}>SuddenLossEvents</code>.
-            Already-imported entries (matched by site + sequence number) are skipped automatically.
-            Select multiple files (one per site) to import them as a single batch — any new
+            Already-imported entries (matched by site + sequence number) are skipped automatically,
+            so re-running is safe. All matching files are imported as a single batch — any new
             Sudden Loss events found are combined into one alert email covering every site,
             rather than a separate email per site.
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <input
-              type="file"
-              accept=".xml"
-              multiple
-              onChange={handleEventsFileChange}
-              disabled={anyRunning}
-              style={{ fontSize: 13, color: 'var(--text-secondary)' }}
-            />
             <button
               onClick={handleImportEvents}
-              disabled={anyRunning || !eventsFile || eventsFile.length === 0}
+              disabled={anyRunning}
               style={{
                 background: eventsStatus === 'running' ? 'var(--surface)' : '#2563eb',
                 border: '1px solid ' + (eventsStatus === 'running' ? 'var(--border)' : '#2563eb'),
-                borderRadius: 8, padding: '10px 24px',
-                cursor: (anyRunning || !eventsFile || eventsFile.length === 0) ? 'not-allowed' : 'pointer',
+                borderRadius: 8, padding: '12px 28px',
+                cursor: anyRunning ? 'not-allowed' : 'pointer',
                 color: eventsStatus === 'running' ? 'var(--text-muted)' : '#fff',
-                fontSize: 14, fontWeight: 700,
-                display: 'flex', alignItems: 'center', gap: 8,
-                opacity: (anyRunning || !eventsFile || eventsFile.length === 0) ? 0.7 : 1, transition: 'background 0.15s',
+                fontSize: 15, fontWeight: 700,
+                display: 'flex', alignItems: 'center', gap: 10,
+                opacity: anyRunning ? 0.7 : 1, transition: 'background 0.15s',
               }}
             >
               {eventsStatus === 'running'
                 ? <><SpinnerIcon /> Importing…</>
-                : <><DownloadIcon /> Import Events XML{eventsFile?.length > 1 ? ` (${eventsFile.length} files)` : ''}</>}
+                : <><DownloadIcon /> Import Newevent Files</>}
             </button>
           </div>
           {eventsStatus === 'done' && eventsResult && (
-            <div style={{ background: 'rgba(22,163,74,0.08)', border: '1px solid #16a34a', borderRadius: 8, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#16a34a', fontWeight: 700, fontSize: 15 }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12"/>
-                </svg>
+            /* A run that matched nothing is reported in amber rather than as a green success —
+               "0 files imported" is almost always a misnamed or misplaced file, not a win. */
+            <div style={{
+              background: eventsResult.filesProcessed === 0 ? 'rgba(234,179,8,0.08)' : 'rgba(22,163,74,0.08)',
+              border: '1px solid ' + (eventsResult.filesProcessed === 0 ? '#ca8a04' : '#16a34a'),
+              borderRadius: 8, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 8,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: eventsResult.filesProcessed === 0 ? '#ca8a04' : '#16a34a', fontWeight: 700, fontSize: 15 }}>
+                {eventsResult.filesProcessed === 0 ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                )}
                 {eventsResult.message}
               </div>
               <div style={{ fontSize: 13, color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <span>Files processed: <strong>{eventsResult.filesProcessed}</strong> ({eventsResult.succeeded} succeeded, {eventsResult.failed} failed)</span>
+                {eventsResult.folder && <span>Folder: <code style={{ fontSize: 12 }}>{eventsResult.folder}</code></span>}
               </div>
               {Array.isArray(eventsResult.results) && eventsResult.results.length > 0 && (
                 <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12.5 }}>

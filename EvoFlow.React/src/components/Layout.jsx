@@ -48,6 +48,11 @@ const NAV_DEF = [
   { to: '/config/report-schedules', icon: IconCalendar, labelKey: 'nav_report_schedules' },
   { to: '/config/import-data', icon: IconTable, labelKey: 'nav_import_data' },
   { to: '/data-integrity', icon: IconShieldCheck, labelKey: 'nav_data_integrity' },
+  { section: 'nav_roadmap', sectionIcon: IconClipboardList },
+  { to: '/new-ideas', icon: IconActivity, labelKey: 'nav_new_ideas' },
+  { to: '/run-out-prediction', icon: IconDroplets, labelKey: 'nav_run_out_prediction' },
+  { to: '/variance-analysis', icon: IconShieldCheck, labelKey: 'nav_variance_analysis' },
+  { to: '/fuel-timeline', icon: IconClipboardList, labelKey: 'nav_fuel_timeline' },
 ]
 
 const PAGE_TITLE_KEYS = {
@@ -76,6 +81,10 @@ const PAGE_TITLE_KEYS = {
   '/fuel-prices': 'nav_fuel_prices_item',
   '/fuel-price-history': 'nav_price_history',
   '/deliverect': 'nav_deliverect_orders',
+  '/new-ideas': 'nav_new_ideas',
+  '/run-out-prediction': 'nav_run_out_prediction',
+  '/variance-analysis': 'nav_variance_analysis',
+  '/fuel-timeline': 'nav_fuel_timeline',
 }
 
 export default function Layout() {

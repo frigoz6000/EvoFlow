@@ -29,6 +29,10 @@ import SiteMap from './pages/SiteMap'
 import FuelPrices from './pages/FuelPrices'
 import FuelPriceHistory from './pages/FuelPriceHistory'
 import Deliverect from './pages/Deliverect'
+import NewIdeas from './pages/NewIdeas'
+import RunOutPrediction from './pages/RunOutPrediction'
+import VarianceAnalysis from './pages/VarianceAnalysis'
+import FuelTimeline from './pages/FuelTimeline'
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuth()
@@ -73,6 +77,10 @@ export default function App() {
               <Route path="fuel-prices" element={<FuelPrices />} />
               <Route path="fuel-price-history" element={<FuelPriceHistory />} />
               <Route path="deliverect" element={<Deliverect />} />
+              <Route path="new-ideas" element={<NewIdeas />} />
+              <Route path="run-out-prediction" element={<RunOutPrediction />} />
+              <Route path="variance-analysis" element={<VarianceAnalysis />} />
+              <Route path="fuel-timeline" element={<FuelTimeline />} />
             </Route>
           </Routes>
         </AuthProvider>

@@ -12,7 +12,7 @@ from datetime import datetime, date, time
 
 CONN_STR = (
     "DRIVER={ODBC Driver 17 for SQL Server};"
-    "SERVER=DESKTOP-QOQ7DHK\\SQLEXPRESS01;"
+    "SERVER=LAPTOP-5D9C94TO\\SQLEXPRESS;"
     "DATABASE=EvoFlow;"
     "Trusted_Connection=yes;"
 )

@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useLanguage } from '../i18n/LanguageContext'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   LineChart, Line,
@@ -8,6 +8,7 @@ import {
 } from 'recharts'
 import { sitesApi } from '../api/client'
 import ErrorBoundary from '../components/ErrorBoundary'
+import { SiteRunOutPanel, SiteVariancePanel } from '../components/SiteForecastPanels'
 
 const PINK   = '#e91e8c'
 const PURPLE = '#7c3aed'
@@ -499,6 +500,31 @@ export default function SiteDetail() {
                 </tbody>
               </table>
             )}
+          </div>
+        </div>
+
+        {/* Forecast + reconciliation, scoped to this site. Placed above the raw
+            gauge readings so the verdicts come before the numbers behind them. */}
+        <SiteRunOutPanel siteId={siteId} />
+
+        <SiteVariancePanel siteId={siteId} />
+
+        {/* Timeline entry point - one chronological view of this site */}
+        <div className="card">
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, padding: '12px 16px' }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 650, color: 'var(--text-primary)' }}>Fuel Investigation Timeline</div>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
+                Stock, dispensing, deliveries and alarms for this site day by day, in one chronological view.
+              </div>
+            </div>
+            <Link
+              to={`/fuel-timeline?siteId=${encodeURIComponent(siteId)}`}
+              className="btn btn-primary btn-sm"
+              style={{ marginLeft: 'auto', textDecoration: 'none' }}
+            >
+              Open timeline →
+            </Link>
           </div>
         </div>
 
