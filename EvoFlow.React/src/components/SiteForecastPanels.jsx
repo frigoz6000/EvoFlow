@@ -118,7 +118,9 @@ function useSiteData(fetcher, siteId) {
 
 function PanelShell({ title, subtitle, hint, linkTo, linkLabel, loading, error, empty, children }) {
   return (
-    <div className="card">
+    // .card carries no margin of its own, and these panels sit at page level
+    // rather than inside a grid, so the gap has to be explicit.
+    <div className="card" style={{ marginBottom: 14 }}>
       <div className="card-header">
         <span className="card-title">{title}</span>
         <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>

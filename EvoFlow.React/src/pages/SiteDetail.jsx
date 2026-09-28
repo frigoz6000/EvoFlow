@@ -254,7 +254,7 @@ export default function SiteDetail() {
       </div>
 
       {/* KPI row */}
-      <div className="kpi-row" style={{ marginBottom: 14 }}>
+      <div className="kpi-row kpi-row-4" style={{ marginBottom: 14 }}>
         <KpiCard
           label="Total Revenue"
           value={fmtGbp(totalRevenue)}
@@ -286,7 +286,7 @@ export default function SiteDetail() {
       </div>
 
       {/* Charts row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 14, marginBottom: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 360px', gap: 14, marginBottom: 14 }}>
         {/* Revenue & Volume trend */}
         <ErrorBoundary fallback={<div className="card" style={{padding:24}}>Chart unavailable</div>}>
           <div className="card">
@@ -391,6 +391,32 @@ export default function SiteDetail() {
         </ErrorBoundary>
       </div>
 
+      {/* Run-out forecast and reconciliation for this site, full width so the
+          charts inside them have room. Sits directly under the trend chart
+          because the verdicts matter more than the raw tables below. */}
+      <SiteRunOutPanel siteId={siteId} />
+
+      <SiteVariancePanel siteId={siteId} />
+
+      {/* Timeline entry point - one chronological view of this site */}
+      <div className="card" style={{ marginBottom: 14 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, padding: '12px 16px' }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 650, color: 'var(--text-primary)' }}>Fuel Investigation Timeline</div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
+              Stock, dispensing, deliveries and alarms for this site day by day, in one chronological view.
+            </div>
+          </div>
+          <Link
+            to={`/fuel-timeline?siteId=${encodeURIComponent(siteId)}`}
+            className="btn btn-primary btn-sm"
+            style={{ marginLeft: 'auto', textDecoration: 'none' }}
+          >
+            Open timeline →
+          </Link>
+        </div>
+      </div>
+
       {/* Fuel Price History chart */}
       <ErrorBoundary fallback={<div className="card" style={{padding:24}}>Chart unavailable</div>}>
         <div className="card" style={{ marginBottom: 14 }}>
@@ -458,7 +484,7 @@ export default function SiteDetail() {
       </ErrorBoundary>
 
       {/* Bottom row: pumps + tanks */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 14, marginBottom: 14 }}>
         {/* Pump devices */}
         <div className="card">
           <div className="card-header">
@@ -503,30 +529,6 @@ export default function SiteDetail() {
           </div>
         </div>
 
-        {/* Forecast + reconciliation, scoped to this site. Placed above the raw
-            gauge readings so the verdicts come before the numbers behind them. */}
-        <SiteRunOutPanel siteId={siteId} />
-
-        <SiteVariancePanel siteId={siteId} />
-
-        {/* Timeline entry point - one chronological view of this site */}
-        <div className="card">
-          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, padding: '12px 16px' }}>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 650, color: 'var(--text-primary)' }}>Fuel Investigation Timeline</div>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
-                Stock, dispensing, deliveries and alarms for this site day by day, in one chronological view.
-              </div>
-            </div>
-            <Link
-              to={`/fuel-timeline?siteId=${encodeURIComponent(siteId)}`}
-              className="btn btn-primary btn-sm"
-              style={{ marginLeft: 'auto', textDecoration: 'none' }}
-            >
-              Open timeline →
-            </Link>
-          </div>
-        </div>
 
         {/* Tank gauges */}
         <div className="card">

@@ -876,6 +876,18 @@ table.evo-table {
   .kpi-row { grid-template-columns: repeat(2, 1fr); }
 }
 
+/* Four tiles on one line. The base .kpi-row is 3-up because the dashboard has
+   six tiles (two clean rows); a four-tile row needs its own column count or the
+   fourth tile drops onto a line of its own. */
+.kpi-row-4 { grid-template-columns: repeat(4, 1fr); }
+
+@media (max-width: 1250px) {
+  .kpi-row-4 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 620px) {
+  .kpi-row-4 { grid-template-columns: 1fr; }
+}
+
 .kpi-card {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
