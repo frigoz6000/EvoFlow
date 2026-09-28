@@ -120,7 +120,7 @@ export default function Login() {
             style={{
               width: '100%',
               padding: '11px',
-              background: 'var(--accent, #2f37b8)',
+              background: 'var(--accent, #e91e8c)',
               color: '#fff',
               border: 'none',
               borderRadius: 'var(--radius, 7px)',

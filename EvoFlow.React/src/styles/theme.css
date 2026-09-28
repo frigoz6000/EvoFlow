@@ -1,21 +1,16 @@
 /* EvoFlow — Modern light/dark theme */
 :root,
 [data-theme="light"] {
-  /* Brand palette, sampled from the evoOrder artwork:
-       #181c67  deep nav blue   (#142678 toward the lower edge)
-       #ff9c1b  highlight orange
-     The nav carries the blue; orange is used sparingly, as in the artwork. */
-  --sidebar-bg: linear-gradient(170deg, #181c67 0%, #181c67 58%, #17226f 100%);
-  --sidebar-solid: #181c67;
-  /* evoFlow wordmark: heavy nav-blue "evo", lighter grey "Flow" */
-  --brand-evo: #181c67;
+  --sidebar-bg: #1a1d35;
+  /* evoFlow wordmark: heavy navy "evo", lighter grey "Flow" */
+  --brand-evo: #16166b;
   --brand-suffix: #8e8e96;
   --sidebar-text: #ffffff;
   --sidebar-text-active: #ffffff;
-  --sidebar-hover: #242a80;
-  --sidebar-active-bg: #2b32a0;
-  --sidebar-active-border: #ff9c1b;
-  --sidebar-section-label: #a8b2e8;
+  --sidebar-hover: #22274a;
+  --sidebar-active-bg: #2d3460;
+  --sidebar-active-border: #e91e8c;
+  --sidebar-section-label: #c0c8e8;
   --sidebar-width: 216px;
   --sidebar-width-collapsed: 56px;
 
@@ -33,40 +28,19 @@
   --text-secondary: #5c6478;
   --text-muted: #9ca3af;
 
-  /* Primary accent: the brand blue, lifted enough to stay legible on white. */
-  --accent: #2f37b8;
-  --accent-hover: #232a95;
-  --accent-light: #e9ebff;
-  /* Filled-button background. Split from --accent because a link on a dark
-     card wants a LIGHT blue while white button text wants a DARK one; one
-     token cannot satisfy both in dark mode. */
-  --accent-solid: #2f37b8;
-  --accent-solid-hover: #232a95;
-
-  /* Highlight: the artwork's orange. Eyebrow labels, the active nav marker and
-     key calls to action - deliberately not the default button colour. */
-  --highlight: #ff9c1b;
-  --highlight-hover: #e8860c;
-  --highlight-light: #fff2df;
-  /* The artwork's orange sits on deep blue, where it is bright and legible.
-     On a white card it only reaches 2.1:1, so orange TEXT on light surfaces
-     uses this deeper burnt tone (5.0:1) instead. */
-  --highlight-text: #b45309;
+  --accent: #e91e8c;
+  --accent-hover: #c9197a;
+  --accent-light: #fce4f3;
 
   --green: #22c55e;
   --green-light: #dcfce7;
-  --green-text: #15803d;
-  /* Warning amber, kept a step away from the brand orange so a Warning badge
-     never reads as a highlight. */
   --orange: #f59e0b;
   --orange-light: #fef3c7;
-  --orange-text: #b45309;
   --red: #ef4444;
   --red-light: #fee2e2;
-  --red-text: #dc2626;
 
   --table-header-bg: #f8f9fc;
-  --table-row-hover: #f4f6ff;
+  --table-row-hover: #f5f7ff;
   --table-border: #eaecf0;
 
   --input-bg: #f2f4f8;
@@ -82,61 +56,49 @@
 }
 
 [data-theme="dark"] {
-  /* Same brand family, sunk to night depths so the two themes read as one product. */
-  --sidebar-bg: linear-gradient(170deg, #0d1040 0%, #0d1040 58%, #0c1449 100%);
-  --sidebar-solid: #0d1040;
+  --sidebar-bg: #111320;
   --brand-evo: #eceefb;
   --brand-suffix: #7a85b0;
   --sidebar-text: #ffffff;
   --sidebar-text-active: #ffffff;
-  --sidebar-hover: #171d57;
-  --sidebar-active-bg: #1e2672;
-  --sidebar-active-border: #ff9c1b;
-  --sidebar-section-label: #98a3dd;
+  --sidebar-hover: #181c34;
+  --sidebar-active-bg: #1f2448;
+  --sidebar-active-border: #e91e8c;
+  --sidebar-section-label: #b0b9d8;
 
-  --topbar-bg: #0f1230;
-  --topbar-border: #1c2150;
+  --topbar-bg: #151828;
+  --topbar-border: #1e2340;
 
-  --body-bg: #0a0d26;
-  --card-bg: #121635;
-  --card-border: #1e2450;
+  --body-bg: #0f1120;
+  --card-bg: #161929;
+  --card-border: #1e2340;
   --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.25);
   --card-shadow-hover: 0 2px 8px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.3);
 
-  --text-primary: #e2e6fb;
-  --text-secondary: #8b95c8;
-  --text-muted: #5a6392;
+  --text-primary: #dde1f5;
+  --text-secondary: #7a85b0;
+  --text-muted: #4a5270;
 
-  --accent: #6f7bf0;
-  --accent-hover: #8b95f7;
-  --accent-light: #1b2168;
-  --accent-solid: #4b57dc;
-  --accent-solid-hover: #5a66e6;
-
-  --highlight: #ffab3d;
-  --highlight-hover: #ffbc63;
-  --highlight-light: #3a2708;
-  --highlight-text: #ffab3d;
+  --accent: #f048a8;
+  --accent-hover: #e91e8c;
+  --accent-light: #3a0e28;
 
   --green: #22c55e;
   --green-light: #0d2e1a;
-  --green-text: #4ade80;
   --orange: #f59e0b;
   --orange-light: #2e1f06;
-  --orange-text: #fbbf24;
   --red: #f87171;
   --red-light: #2e0f0f;
-  --red-text: #f87171;
 
-  --table-header-bg: #0e1130cc;
-  --table-row-hover: #181e45;
-  --table-border: #1e2450;
+  --table-header-bg: #12152280;
+  --table-row-hover: #1a1f3a;
+  --table-border: #1e2340;
 
-  --input-bg: #161b40;
-  --input-border: #222a55;
+  --input-bg: #1a1f38;
+  --input-border: #232847;
 
-  --tank-cap-color: #1e2450;
-  --tank-body-bg: #1b2447;
+  --tank-cap-color: #1e2340;
+  --tank-body-bg: #1e293b;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -283,15 +245,6 @@ body {
    there regardless of which theme is active. */
 .wordmark-on-dark .wordmark-evo { color: #ffffff; }
 .wordmark-on-dark .wordmark-suffix { color: rgba(255, 255, 255, 0.55); }
-
-/* Eyebrow label, as "ORDER & COLLECT" is set in the brand artwork. */
-.eyebrow {
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: 1.4px;
-  text-transform: uppercase;
-  color: var(--highlight-text);
-}
 
 .sidebar-nav {
   flex: 1;
@@ -621,8 +574,8 @@ body {
   letter-spacing: 0.1px;
 }
 
-.btn-primary { background: var(--accent-solid); color: white; }
-.btn-primary:hover { background: var(--accent-solid-hover); transform: translateY(-1px); box-shadow: 0 3px 10px rgba(74,124,247,0.3); }
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 3px 10px rgba(74,124,247,0.3); }
 
 .btn-outline { background: var(--card-bg); color: var(--text-primary); border-color: var(--card-border); }
 .btn-outline:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
@@ -798,12 +751,15 @@ table.evo-table {
   letter-spacing: 0.1px;
 }
 
-.badge-green { background: var(--green-light); color: var(--green-text); }
-.badge-red { background: var(--red-light); color: var(--red-text); }
-.badge-orange { background: var(--orange-light); color: var(--orange-text); }
+.badge-green { background: var(--green-light); color: #15803d; }
+.badge-red { background: var(--red-light); color: #dc2626; }
+.badge-orange { background: var(--orange-light); color: #b45309; }
 .badge-blue { background: var(--accent-light); color: var(--accent); }
 .badge-gray { background: var(--input-bg); color: var(--text-secondary); }
 
+[data-theme="dark"] .badge-green { color: #4ade80; }
+[data-theme="dark"] .badge-red { color: #f87171; }
+[data-theme="dark"] .badge-orange { color: #fbbf24; }
 
 /* ── Site ID link ── */
 .site-id-link {
@@ -824,10 +780,11 @@ table.evo-table {
   cursor: pointer;
   border: 1px solid #16a34a;
   background: var(--green-light);
-  color: var(--green-text);
+  color: #15803d;
   transition: all 0.12s;
 }
 .btn-navigate:hover { background: #16a34a; color: white; }
+[data-theme="dark"] .btn-navigate { color: #4ade80; }
 [data-theme="dark"] .btn-navigate:hover { background: #16a34a; color: white; }
 
 /* ── Stat cards ── */
@@ -928,7 +885,7 @@ table.evo-table {
 }
 
 .page-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
-.page-btn.active { background: var(--accent-solid); color: white; border-color: var(--accent-solid); }
+.page-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
 .page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
 /* ── Utility ── */

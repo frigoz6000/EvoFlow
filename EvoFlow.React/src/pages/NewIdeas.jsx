@@ -234,7 +234,7 @@ function StatusBadge({ status, children }) {
 function SectionHeading({ kicker, title, blurb }) {
   return (
     <div style={{ marginBottom: 14 }}>
-      <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', color: 'var(--highlight-text)' }}>
+      <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', color: 'var(--accent)' }}>
         {kicker}
       </div>
       <h2 style={{ margin: '4px 0 0', fontSize: 18, fontWeight: 650, color: 'var(--text-primary)' }}>{title}</h2>

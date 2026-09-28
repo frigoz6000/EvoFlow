@@ -10,13 +10,13 @@ import { sitesApi } from '../api/client'
 import ErrorBoundary from '../components/ErrorBoundary'
 import { SiteRunOutPanel, SiteVariancePanel } from '../components/SiteForecastPanels'
 
-const BRAND  = '#2f37b8'   // brand blue, primary series
-const VIOLET = '#7c3aed'   // harmonises with the blue
-const SKY    = '#0ea5e9'
+const PINK   = '#e91e8c'
+const PURPLE = '#7c3aed'
+const BLUE   = '#0ea5e9'
 const GREEN  = '#22c55e'
 const ORANGE = '#f59e0b'
 const RED    = '#ef4444'
-const PIE_COLORS = [BRAND, VIOLET, SKY, GREEN, ORANGE, RED, '#8b5cf6', '#06b6d4']
+const PIE_COLORS = [PINK, PURPLE, BLUE, GREEN, ORANGE, RED, '#8b5cf6', '#06b6d4']
 
 function TankGaugeVisual({ fillPct, uid }) {
   const pct = parseFloat(fillPct)
@@ -71,7 +71,7 @@ function fmtDateTime(s) {
 }
 
 function KpiCard({ label, value, sub, icon, accent }) {
-  const color = accent || BRAND
+  const color = accent || PINK
   const bg = color + '18'
   return (
     <div className="kpi-card" style={{ '--kc': color }}>
@@ -107,7 +107,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   )
 }
 
-const GRADE_COLORS = [BRAND, VIOLET, SKY, GREEN, ORANGE, RED, '#8b5cf6', '#06b6d4']
+const GRADE_COLORS = [PINK, PURPLE, BLUE, GREEN, ORANGE, RED, '#8b5cf6', '#06b6d4']
 
 export default function SiteDetail() {
   const { siteId } = useParams()
@@ -259,14 +259,14 @@ export default function SiteDetail() {
           label="Total Revenue"
           value={fmtGbp(totalRevenue)}
           sub="All pump transactions"
-          accent={BRAND}
+          accent={PINK}
           icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>}
         />
         <KpiCard
           label="Total Volume"
           value={`${fmt(totalVolume)} L`}
           sub="Fuel dispensed (litres)"
-          accent={VIOLET}
+          accent={PURPLE}
           icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 3h18v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3z"/><line x1="3" y1="8" x2="21" y2="8"/><line x1="12" y1="8" x2="12" y2="18"/></svg>}
         />
         <KpiCard
@@ -302,12 +302,12 @@ export default function SiteDetail() {
                   <AreaChart data={dailyChart} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="sdGradRev" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={BRAND} stopOpacity={0.25}/>
-                        <stop offset="95%" stopColor={BRAND} stopOpacity={0.02}/>
+                        <stop offset="5%" stopColor={PINK} stopOpacity={0.25}/>
+                        <stop offset="95%" stopColor={PINK} stopOpacity={0.02}/>
                       </linearGradient>
                       <linearGradient id="sdGradVol" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={VIOLET} stopOpacity={0.2}/>
-                        <stop offset="95%" stopColor={VIOLET} stopOpacity={0.02}/>
+                        <stop offset="5%" stopColor={PURPLE} stopOpacity={0.2}/>
+                        <stop offset="95%" stopColor={PURPLE} stopOpacity={0.02}/>
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--table-border)" />
@@ -315,8 +315,8 @@ export default function SiteDetail() {
                     <YAxis tick={{ fontSize: 11, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} tickFormatter={v => fmt(v)} />
                     <Tooltip content={<CustomTooltip />} />
                     <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
-                    <Area type="monotone" dataKey="revenue" name="£ Revenue" stroke={BRAND} strokeWidth={2.5} fill="url(#sdGradRev)" dot={false} />
-                    <Area type="monotone" dataKey="volume" name="Vol (L)" stroke={ORANGE} strokeWidth={2} fill="url(#sdGradVol)" dot={false} strokeDasharray="4 2" />
+                    <Area type="monotone" dataKey="revenue" name="£ Revenue" stroke={PINK} strokeWidth={2.5} fill="url(#sdGradRev)" dot={false} />
+                    <Area type="monotone" dataKey="volume" name="Vol (L)" stroke={PURPLE} strokeWidth={2} fill="url(#sdGradVol)" dot={false} strokeDasharray="4 2" />
                   </AreaChart>
                 </ResponsiveContainer>
               )}
