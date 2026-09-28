@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import '../styles/theme.css'
 import ErrorBoundary from './ErrorBoundary'
 import LanguageSelector from './LanguageSelector'
+import Wordmark from './Wordmark'
 import api from '../api/client'
 import { sitesApi } from '../api/client'
 import { useLanguage } from '../i18n/LanguageContext'
@@ -104,7 +105,7 @@ export default function Layout() {
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const searchRef = useRef(null)
   const titleKey = PAGE_TITLE_KEYS[location.pathname]
-  const title = titleKey ? t(titleKey) : 'EvoFlow'
+  const title = titleKey ? t(titleKey) : 'evoFlow'
 
   const NAV_SECTIONS = (() => {
     const sections = []
@@ -187,8 +188,8 @@ export default function Layout() {
         onMouseLeave={() => setHovered(false)}
       >
         <div className="sidebar-brand">
-          <img src="/evoflow-icon.png" alt="EvoFlow" className="sidebar-brand-logo-img" />
-          {!effectiveCollapsed && <span className="sidebar-brand-name">EvoFlow</span>}
+          <img src="/evoflow-icon.png" alt="" className="sidebar-brand-logo-img" />
+          {!effectiveCollapsed && <Wordmark onDark className="sidebar-brand-name" />}
         </div>
         <div className="sidebar-nav">
           {NAV_SECTIONS.map(sec => {

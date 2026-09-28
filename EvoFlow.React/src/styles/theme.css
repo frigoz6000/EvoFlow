@@ -2,6 +2,9 @@
 :root,
 [data-theme="light"] {
   --sidebar-bg: #1a1d35;
+  /* evoFlow wordmark: heavy navy "evo", lighter grey "Flow" */
+  --brand-evo: #16166b;
+  --brand-suffix: #8e8e96;
   --sidebar-text: #ffffff;
   --sidebar-text-active: #ffffff;
   --sidebar-hover: #22274a;
@@ -54,6 +57,8 @@
 
 [data-theme="dark"] {
   --sidebar-bg: #111320;
+  --brand-evo: #eceefb;
+  --brand-suffix: #7a85b0;
   --sidebar-text: #ffffff;
   --sidebar-text-active: #ffffff;
   --sidebar-hover: #181c34;
@@ -215,6 +220,31 @@ body {
   opacity: 0;
   pointer-events: none;
 }
+
+/* ---- evoFlow wordmark ---- */
+.wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  white-space: nowrap;
+  line-height: 1;
+  letter-spacing: -0.4px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.wordmark-evo {
+  font-weight: 800;
+  color: var(--brand-evo);
+}
+
+.wordmark-suffix {
+  font-weight: 400;
+  color: var(--brand-suffix);
+}
+
+/* The sidebar is dark navy in both themes, so the mark needs its own pairing
+   there regardless of which theme is active. */
+.wordmark-on-dark .wordmark-evo { color: #ffffff; }
+.wordmark-on-dark .wordmark-suffix { color: rgba(255, 255, 255, 0.55); }
 
 .sidebar-nav {
   flex: 1;

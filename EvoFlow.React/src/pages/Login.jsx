@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import Wordmark from '../components/Wordmark'
 
 export default function Login() {
   const { login } = useAuth()
@@ -45,8 +46,8 @@ export default function Login() {
         maxWidth: 400,
       }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <img src="/evoflow-icon.png" alt="EvoFlow" style={{ height: 48, marginBottom: 12 }} />
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' }}>EvoFlow</h1>
+          <img src="/evoflow-icon.png" alt="" style={{ height: 48, marginBottom: 12 }} />
+          <h1 style={{ margin: 0 }}><Wordmark size={26} /></h1>
           <p style={{ margin: '4px 0 0', fontSize: 14, color: 'var(--text-muted)' }}>Sign in to continue</p>
         </div>
 
